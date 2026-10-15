@@ -1,0 +1,78 @@
+{
+  "at": "2026-10-15T19:17:18.806Z",
+  "implementation_commit": "d29ddda8a9ce8ad4b8e29acd3b94517fa3d091cb",
+  "base_commit": "86ddddf",
+  "feature": "Opt-in metadata-only hierarchy escalation",
+  "default_enabled": false,
+  "unit_component_tests": {
+    "failed": 0,
+    "passed": 520
+  },
+  "integration_excluding_existing_ocr_file": {
+    "passed": 82,
+    "failed": 0,
+    "excluded": "tests/integration/attachments.test.ts"
+  },
+  "untouched_main_ocr_baseline": {
+    "failures": [
+      "a photo of a KYC form is read offline, cleaned and completed without stopping",
+      "a scanned PDF page is rendered, read by OCR and returned with black bars",
+      "a photo with a PAN glued to its label never sends the PAN to the model"
+    ],
+    "passed": 6,
+    "failed": 3,
+    "scope": "Same three existing Windows OCR failures reproduced on untouched main with identical dependencies.",
+    "candidate_same_failures": true
+  },
+  "new_security_tests": {
+    "ui_identity_boundaries": 4,
+    "integration": 19
+  },
+  "typecheck": "passed",
+  "web_build": "passed",
+  "web_lint": "passed",
+  "browser": {
+    "selected_user_token": true,
+    "acknowledgement": true,
+    "manager_warning": true,
+    "observed_console_errors": 0,
+    "screenshot": "docs/screenshots/security-warning-manager.png"
+  },
+  "http_demo": {
+    "at": "2026-10-15T19:17:18.806Z",
+    "provider": "simulated",
+    "rows": [
+      {
+        "check": "browser_manager_delivery_and_ack_after_three_synthetic_chat_requests",
+        "passed": true
+      },
+      {
+        "check": "six_attempts_next_level_and_peer_isolation",
+        "passed": true
+      },
+      {
+        "check": "ten_attempts_security_escalation_no_self_review",
+        "passed": true
+      },
+      {
+        "check": "admin_activity_goes_to_independent_ceo_reviewer",
+        "passed": true
+      },
+      {
+        "check": "no_automatic_punishment_normal_masking_and_salary_acl_unchanged",
+        "passed": true
+      },
+      {
+        "check": "manager_alerts_contain_no_prompt_or_seeded_values",
+        "passed": true
+      }
+    ],
+    "manager_levels": [
+      3,
+      2,
+      1
+    ]
+  },
+  "frozen_evidence_changed": false,
+  "scope": "Post-freeze synthetic prototype verification with simulated provider. Existing production demo was not changed. No automated punishment or external messaging; detection misses remain outside these counters."
+}

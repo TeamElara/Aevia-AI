@@ -58,4 +58,3 @@ For an isolated keyless demo, set `SECURITY_ESCALATION_ENABLED=true` in the shel
 Demo: as Asha, send the supplied synthetic injection starter three times in new chats. Each request stays blocked at zero model calls. Switch to Ravi: a manager warning appears. At six attempts CEO receives the next-level warning; at ten Admin receives the security warning. Acknowledgement marks it reviewed without changing Asha's access. Separately, repeated Admin activity routes to CEO rather than Admin reviewing themselves.
 
 Validation covers real-Mongo routing for every seeded identity, actor/peer isolation, fake-clock boundaries, concurrent duplicates, cooldown renewal, restart persistence, outbox recovery, default-off behavior, unchanged disclosure controls, privacy, and late UI responses across identity switches.
-
