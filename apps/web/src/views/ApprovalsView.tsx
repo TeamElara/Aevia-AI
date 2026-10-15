@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ApiError, decideApproval, listApprovals } from '../api/client'
 import type { Approval } from '../api/contract'
 import { Masthead } from '../components/Masthead'
+import { Arrow } from '../components/ui'
 import { useAdmin } from '../lib/useAdmin'
 
 function useNow(ms = 1000) {
@@ -67,25 +68,34 @@ export function ApprovalsView() {
   const past = items.filter((a) => !pending.includes(a))
 
   return (
-    <div className="flex flex-col gap-3">
-      <Masthead title="Approvals" count={pending.length}>
+    <div className="flex flex-col">
+      <Masthead label="Approvals" title="Held for a person." muted="Nothing leaves until you say so." count={pending.length}>
         Requests that would send a confidential document to the external model wait here for up to 10 minutes. The request
         itself is held encrypted in gateway memory; this list shows metadata only.
-        <span className="mt-2 block text-[12px] text-faint">
+        <span className="mt-1 block text-[13px] text-faint">
           {error ? `Error: ${error}` : `${pending.length} pending${admin?.backend === 'mock' ? ' · mock' : admin?.backend === 'simulated' ? ' · simulated provider' : ''}`}
         </span>
       </Masthead>
-      <section className="sheet min-w-0">
-        <div className="space-y-6 px-5 py-6 sm:px-8">
+      <section className="stg mt-10 min-w-0" style={{ ['--i' as string]: 4 }}>
+        <div className="space-y-6">
 
-          {notice && <p className="border-l-2 border-fg py-1.5 pl-4 text-[13px] text-fg" role="status">{notice}</p>}
+          {notice && (
+            <p className="animate-msg rounded-r-[10px] border-l-2 border-accent bg-surface px-4 py-3 text-[13.5px] text-muted" role="status">
+              {notice}
+            </p>
+          )}
 
           {pending.length === 0 ? (
-            <div className="border border-dashed border-line-strong px-6 py-10 text-center">
-              <p className="text-[14px] text-muted">Nothing waiting for approval.</p>
-              <p className="mt-1 text-[12px] text-faint">
+            <div className="flex items-center gap-[18px] rounded-[16px] border border-dashed border-line px-[22px] py-5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line text-faint" aria-hidden="true">
+                ✓
+              </span>
+              <div>
+              <p className="font-medium text-fg">Nothing waiting for approval.</p>
+              <p className="mt-0.5 text-[13px] text-faint">
                 To create one, sign in as Meera in Chat and ask: “Summarise the Project Garuda roadmap”.
               </p>
+              </div>
             </div>
           ) : (
             <ul className="space-y-3">
@@ -93,10 +103,11 @@ export function ApprovalsView() {
                 const left = Date.parse(a.expires_at) - now
                 const total = Date.parse(a.expires_at) - Date.parse(a.created_at)
                 return (
-                  <li key={a.approval_id} className="ink p-5 sm:p-6">
+                  <li key={a.approval_id} className="card animate-row p-5 shadow-[inset_3px_0_0_var(--color-accent),var(--shadow)] sm:p-6">
+                    <span className="tag risk mb-4">Pending approval</span>
                     <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
                       <div className="min-w-0 flex-1 space-y-1.5">
-                        <p className="text-[15px] tracking-[-0.01em] text-fg">{a.reason}</p>
+                        <p className="text-[16px] font-medium text-fg">{a.reason}</p>
                         <p className="font-mono text-[11px] text-muted">
                           {a.user_pseudo} · docs {a.doc_ids.join(', ')}
                         </p>
@@ -105,25 +116,26 @@ export function ApprovalsView() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="display text-[44px] tabular-nums text-fg">{countdown(left)}</p>
+                        <p className="display text-[40px] tabular-nums text-fg">{countdown(left)}</p>
                         <p className="mt-2 text-[11px] text-faint">until expiry</p>
                       </div>
                     </div>
                     <div className="mt-4 h-px w-full bg-line">
-                      <div className="h-px bg-fg transition-[width] duration-1000" style={{ width: `${(left / total) * 100}%` }} />
+                      <div className="h-px bg-accent transition-[width] duration-1000" style={{ width: `${(left / total) * 100}%` }} />
                     </div>
                     <div className="mt-4 flex gap-2">
                       <button
                         disabled={busy === a.approval_id}
                         onClick={() => decide(a, 'approve')}
-                        className="rounded-full bg-fg px-4 py-1.5 text-[13px] text-void transition hover:bg-fg/80 disabled:opacity-40"
+                        className="btn btn-primary btn-sm"
                       >
                         Approve
+                        <Arrow />
                       </button>
                       <button
                         disabled={busy === a.approval_id}
                         onClick={() => decide(a, 'reject')}
-                        className="rounded-full border border-line-strong px-4 py-1.5 text-[13px] text-muted transition hover:border-fg hover:text-fg disabled:opacity-40"
+                        className="btn btn-ghost btn-sm"
                       >
                         Reject
                       </button>
@@ -136,7 +148,7 @@ export function ApprovalsView() {
 
           {past.length > 0 && (
             <div>
-              <h3 className="mb-2 text-[13px] text-fg">History</h3>
+              <h3 className="label mb-3">History</h3>
               <ul className="divide-y divide-line border-t border-line">
                 {past.map((a) => (
                   <li key={a.approval_id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-[13px]">

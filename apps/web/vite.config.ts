@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +8,26 @@ import { fileURLToPath } from 'node:url'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const gateway = env.GATEWAY_URL || 'http://localhost:8080'
+
+  // The gateway accepts one browser Origin (CORS_ORIGIN, default
+  // http://localhost:5173) and answers 403 to any other, so a console on 5174
+  // could never sign in. Requests from this dev server's own page are
+  // same-origin, so drop their Origin; requests from any other site keep it and
+  // the gateway still refuses them.
+  const toGateway: ProxyOptions = {
+    target: gateway,
+    changeOrigin: true,
+    configure: (proxy) =>
+      proxy.on('proxyReq', (proxyReq, req) => {
+        const origin = req.headers.origin
+        if (!origin || !req.headers.host) return
+        try {
+          if (new URL(origin).host === req.headers.host) proxyReq.removeHeader('origin')
+        } catch {
+          // An opaque Origin such as "null" is left for the gateway to refuse.
+        }
+      }),
+  }
 
   return {
     plugins: [
@@ -30,8 +50,8 @@ export default defineConfig(({ mode }) => {
       // The Eval view reads eval/*.jsonl, eval/checks.mjs and results/*.json from the repo root.
       fs: { allow: ['../..'] },
       proxy: {
-        '/api': { target: gateway, changeOrigin: true },
-        '/v1': { target: gateway, changeOrigin: true },
+        '/api': toGateway,
+        '/v1': toGateway,
       },
     },
   }

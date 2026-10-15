@@ -4,6 +4,7 @@ import { actionLabel, isStop, type Action } from '../api/contract'
 import { Masthead } from '../components/Masthead'
 import { StatTile } from '../components/charts'
 import { ActionBadge } from '../components/PayloadCard'
+import { Arrow } from '../components/ui'
 // Same scoring rules as eval/run.mjs, so live and frozen numbers agree.
 import { judge } from '../../../../eval/checks.mjs'
 
@@ -124,73 +125,74 @@ export function EvalView() {
   const p50 = overheads.length ? overheads[Math.ceil(overheads.length / 2) - 1] : null
 
   return (
-    <div className="flex flex-col gap-3">
-      <Masthead title="Eval" count={cases.length}>
+    <div className="flex flex-col">
+      <Masthead label="Eval" title="Labelled attacks," muted="scored live." count={cases.length}>
         Labelled attacks and normal requests, scored with the same rules as eval/run.mjs. A block counts only if the model
         was called 0 times.
       </Masthead>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
-        <section className="sheet min-w-0">
+      <div className="stg mt-10 grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_1fr]" style={{ ['--i' as string]: 4 }}>
+        <section className="card min-w-0">
           <div className="flex flex-col">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-5 py-4 sm:px-8">
-              <h2 className="text-[15px] font-medium tracking-[-0.01em] text-fg">Live red-team run</h2>
-              <span className="text-[12px] text-faint">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line-2 px-5 py-4 sm:px-7">
+              <h2 className="display text-[22px] text-fg">Live red-team run.</h2>
+              <span className="text-[13px] text-faint">
                 {cases.length} cases{backend === 'mock' ? ' · mock gateway, numbers are not real' : ''}
               </span>
               <button
                 onClick={run}
                 disabled={running || !cases.length}
-                className="ml-auto rounded-full bg-fg px-4 py-1.5 text-[13px] text-void transition hover:bg-fg/80 disabled:opacity-40"
+                className="btn btn-primary btn-sm ml-auto"
               >
                 {running ? 'Running…' : done.length ? 'Run again' : 'Run live subset'}
+                <Arrow />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 border-b border-line px-5 py-6 sm:grid-cols-4 sm:px-8">
+            <div className="grid grid-cols-2 gap-6 border-b border-line-2 px-5 py-6 sm:grid-cols-4 sm:px-7">
               <StatTile label="Correct action" value={`${done.filter((r) => r.correct).length}/${cases.length}`} />
               <StatTile label="Attacks caught" value={shouldCatch ? `${caught}/${shouldCatch}` : '–'} />
               <StatTile label="False positives" value={done.length ? String(falsePos) : '–'} />
               <StatTile label="Leaks" value={done.length ? String(leaks) : '–'} sub={p50 != null ? `overhead p50 ${p50}ms` : undefined} />
             </div>
 
-            <p className="px-5 pt-4 text-[12px] text-faint sm:px-8">Source: {source}. One request at a time.</p>
+            <p className="px-5 pt-4 text-[12.5px] text-faint sm:px-7">Source: {source}. One request at a time.</p>
 
-            <div className="overflow-x-auto px-5 pb-6 pt-2 sm:px-8">
-              <table className="w-full min-w-[620px] border-collapse text-left">
+            <div className="overflow-x-auto px-2 pb-3">
+              <table className="tbl min-w-[560px] [&_td]:px-3 [&_th]:px-3">
                 <thead>
-                  <tr className="text-[11px] text-faint">
+                  <tr>
                     {['Case', 'Category', 'Expected', 'Observed', 'Calls', 'Result'].map((h) => (
-                      <th key={h} className="border-b border-line py-2.5 pr-4 font-normal">
+                      <th key={h}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="text-[13px]">
+                <tbody>
                   {cases.map((c) => {
                     const r = rows[c.id]
                     return (
-                      <tr key={c.id} className="border-b border-line" title={c.prompt}>
-                        <td className="py-2.5 pr-4 font-mono text-[11px] text-fg">{c.id}</td>
-                        <td className="py-2.5 pr-4 text-muted">{c.category.replace(/_/g, ' ')}</td>
-                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted" title={r?.expectation_reason}>{r?.expected_action ?? c.expected_action}</td>
-                        <td className="py-2.5 pr-4">
+                      <tr key={c.id} className={r?.status === 'running' ? 'bg-accent-soft' : ''} title={c.prompt}>
+                        <td className="font-mono text-[11px] text-fg">{c.id}</td>
+                        <td className="text-muted">{c.category.replace(/_/g, ' ')}</td>
+                        <td className="font-mono text-[11px] text-muted" title={r?.expectation_reason}>{r?.expected_action ?? c.expected_action}</td>
+                        <td>
                           {r?.observed_action ? (
                             <ActionBadge label={actionLabel[r.observed_action]} stop={isStop(r.observed_action)} />
                           ) : (
                             <span className="font-mono text-[11px] text-faint">{r?.status === 'running' ? 'running…' : '—'}</span>
                           )}
                         </td>
-                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{r?.provider_calls ?? '—'}</td>
-                        <td className="py-2.5 font-mono text-[11px]">
+                        <td className="font-mono text-[11px] text-muted">{r?.provider_calls ?? '—'}</td>
+                        <td className="font-mono text-[11px]">
                           {r?.status === 'error' && <span className="text-muted">error</span>}
                           {r?.status === 'done' &&
                             (r.provider_leak || r.user_leak ? (
-                              <span className="rounded-full bg-fg px-2 py-0.5 text-void">LEAK</span>
+                              <span className="tag risk text-fg">Leak</span>
                             ) : r.correct ? (
-                              <span className="text-fg">✓ correct</span>
+                              <span className="text-ok">✓ correct</span>
                             ) : (
-                              <span className="text-muted">✗ miss</span>
+                              <span className="text-accent">✗ miss</span>
                             ))}
                         </td>
                       </tr>
@@ -203,9 +205,9 @@ export function EvalView() {
         </section>
 
         <section className="ink min-w-0">
-          <div className="space-y-8 px-5 py-6 sm:p-8">
+          <div className="space-y-8 px-5 py-6 sm:p-7">
             {development.length > 0 && <div className="space-y-3">
-              <h2 className="text-[15px] text-fg">Simulated development reports</h2>
+              <h2 className="display text-[22px] text-fg">Simulated development reports.</h2>
               <p className="text-[12px] text-muted">Loopback fixture provider; no model-backed accuracy or coordinated freeze. Leaks count declared forbidden values only.</p>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-[13px]">
@@ -223,7 +225,7 @@ export function EvalView() {
               <p className="text-[12px] text-muted">Stage timings exclude model time and uninstrumented audit/vault work; they are not total security overhead.</p>
             </div>}
             <div>
-              <h2 className="text-[15px] text-fg">Frozen report</h2>
+              <h2 className="display text-[22px] text-fg">Frozen report.</h2>
               <p className="mt-1 text-[12px] text-faint">60 held-out cases at tag eval-freeze, with and without LeakShield</p>
             </div>
 
@@ -274,7 +276,7 @@ export function EvalView() {
                 <p className="font-mono text-[10px] text-faint">Run at {new Date(leakshieldReport.at).toLocaleString('en-GB')}</p>
               </>
             ) : (
-              <div className="space-y-3 border border-dashed border-line-strong p-5 text-[13px] text-muted">
+              <div className="space-y-3 rounded-[16px] border border-dashed border-line p-5 text-[13px] text-muted">
                 <p>No frozen report yet. After the hour-15 freeze, run:</p>
                 <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-fg">
                   node eval/run.mjs eval/heldout.jsonl{'\n'}node eval/run.mjs eval/heldout.jsonl --baseline

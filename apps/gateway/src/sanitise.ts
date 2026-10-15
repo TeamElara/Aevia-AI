@@ -17,9 +17,12 @@ export function sanitiseLinks(text: string, hosts: readonly string[], findLinks?
       text = text.slice(0, link.start) + replacement + text.slice(link.end);
     }
   }
-  text = text.replace(/!\[[^\]]*\]\([^\n]*?\)/g, '[image removed]');
+  // Stop at the next label rather than rescanning malformed image candidates.
+  text = text.replace(/!\[[^[\]]{0,500}\]\((?:\[link removed\]|[^[\n]{0,8192}?)\)/g, '[image removed]');
+  // Oversized/malformed images must not remain automatic-fetch syntax either.
+  text = text.replace(/!\[/g, '[image removed]');
   // HTML is never passed through. Clients must render this field as text, never innerHTML.
-  text = text.replace(/<[^>]*>/g, '[markup removed]');
+  text = text.replace(/<[^<>]*>/g, '[markup removed]');
   text = text.replace(/\b(?:https?:\/\/|www\.)[^\s<>"'\])]+/gi, raw => {
     try {
       const u = new URL(raw.startsWith('www.') ? `https://${raw}` : raw);
@@ -29,6 +32,6 @@ export function sanitiseLinks(text: string, hosts: readonly string[], findLinks?
     } catch { return '[link removed]'; }
   });
   text = text.replace(/\b(?:javascript|data|vbscript|file):[^\s)]+/gi, '[link removed]');
-  text = text.replace(/\]\(\s*\/\/[^)]*\)/g, ']([link removed])');
+  text = text.replace(/\]\(\s*\/\/[^)\]]*\)/g, ']([link removed])');
   return text;
 }

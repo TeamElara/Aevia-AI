@@ -1,0 +1,129 @@
+import type { Backend } from '../api/client'
+import type { DemoUser } from '../data/demo'
+import { backendLabel, initials } from '../lib/format'
+import type { Tone } from '../lib/tone'
+import { avatarTone, type View } from '../lib/views'
+import { useState, type PointerEvent } from 'react'
+import { useSlider } from '../lib/useSlider'
+import { Icon, Magnetic, Orb, ThemeToggle } from './ui'
+
+
+const monitor: { id: View; icon: Parameters<typeof Icon>[0]['name']; sub: string }[] = [
+  { id: 'Incidents', icon: 'bolt', sub: 'Live stream' },
+  { id: 'Overview', icon: 'chart', sub: 'Stats' },
+  { id: 'Approvals', icon: 'clock', sub: 'Held requests' },
+  { id: 'Eval', icon: 'check', sub: 'Red-team run' },
+]
+
+
+export function Avatar({ user, index, size = 32 }: { user: DemoUser; index: number; size?: number }) {
+  return (
+    <span
+      className="grid shrink-0 place-items-center rounded-full font-medium text-white"
+      style={{ width: size, height: size, fontSize: size * 0.36, background: avatarTone[index % avatarTone.length] }}
+      aria-hidden="true"
+    >
+      {initials(user.name)}
+    </span>
+  )
+}
+
+export function Sidebar({
+  view,
+  tone,
+  user,
+  userIndex,
+  backend,
+  onGo,
+  onNewChat,
+  onSignIn,
+}: {
+  view: View
+  tone: Tone
+  user: DemoUser
+  userIndex: number
+  backend: Backend | null
+  onGo: (v: View) => void
+  onNewChat: () => void
+  onSignIn: () => void
+}) {
+  const [navRef, pill] = useSlider(view)
+  const [hover, setHover] = useState<{ y: number; h: number } | null>(null)
+  const onHover = (e: PointerEvent<HTMLElement>) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.nav-item')
+    setHover(item ? { y: item.offsetTop, h: item.offsetHeight } : null)
+  }
+  return (
+    <div className="flex h-full flex-col gap-6 p-4">
+      <button onClick={() => onGo('Chat')} className="flex items-center gap-2.5 px-2 pt-1" aria-label="LeakShield, open Chat">
+        <Orb tone={tone} size={28} />
+        <span className="font-display text-[18px] font-semibold tracking-[-0.03em]">LeakShield</span>
+      </button>
+
+      <Magnetic strength={0.08} className="w-full">
+        <button onClick={onNewChat} className="btn btn-ghost group w-full justify-start shadow-[var(--shadow)]">
+          <span className="transition-transform duration-500 [transition-timing-function:var(--ease-spring)] group-hover:rotate-90">
+            <Icon name="plus" />
+          </span>
+          New chat
+        </button>
+      </Magnetic>
+
+      <nav
+        ref={navRef}
+        aria-label="Views"
+        className="relative space-y-5"
+        onPointerOver={onHover}
+        onPointerLeave={() => setHover(null)}
+      >
+        <span className="nav-pill" style={pill} aria-hidden="true" />
+        <span
+          className="nav-hover"
+          aria-hidden="true"
+          style={hover ? { width: '100%', height: hover.h, transform: `translateY(${hover.y}px)`, opacity: 1 } : { width: '100%' }}
+        />
+        <button className="nav-item" data-on={view === 'Chat'} aria-current={view === 'Chat' ? 'page' : undefined} onClick={() => onGo('Chat')}>
+          <Icon name="chat" />
+          Chat
+        </button>
+        <div>
+          <p className="label mb-1.5 px-2.5">Monitor</p>
+          <div className="space-y-0.5">
+            {monitor.map((m) => (
+              <button key={m.id} className="nav-item" data-on={view === m.id} aria-current={view === m.id ? 'page' : undefined} onClick={() => onGo(m.id)}>
+                <Icon name={m.icon} />
+                <span className="flex-1">{m.id}</span>
+                <span className="text-[11.5px] text-faint">{m.sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      <div className="mt-auto space-y-2">
+        <div className="flex items-center justify-between px-2.5">
+          <span
+            className="flex items-center gap-2 text-[12.5px] text-faint"
+            title={backend === 'simulated' ? 'Real local gateway with a simulated provider' : backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : backend ? 'Connected to apps/gateway' : 'Signing in'}
+          >
+            <span className="live-dot" style={backend === 'live' ? undefined : { background: 'var(--color-faint)', animation: 'none' }} />
+            {backend ? backendLabel[backend] : 'connecting…'}
+          </span>
+          <ThemeToggle />
+        </div>
+        <button
+          onClick={onSignIn}
+          className="card flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition hover:border-line-strong"
+          aria-label={`Signed in as ${user.name}. Change who is signed in`}
+        >
+          <Avatar user={user} index={userIndex} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[14px] font-medium">{user.name}</span>
+            <span className="block truncate text-[12px] text-faint">{user.role} · switch</span>
+          </span>
+          <Icon name="chevron" className="h-4 w-4 text-faint" />
+        </button>
+      </div>
+    </div>
+  )
+}
