@@ -1,6 +1,6 @@
 # LeakShield — Alwaz: access and approvals
 
-Access-control and approval modules for the team plan in `docs/PLAN.md`. The React scaffold is in `apps/web`; its chat/gateway wiring belongs to the other team modules and is not implemented here.
+Access-control and approval modules for the team plan in `docs/PLAN.md`. Includes a runnable HTTP integration host using Ojaswi’s detector branch and a connected approvals UI. The local host uses an explicitly simulated provider; team-account Groq verification and a real-model baseline remain external dependencies.
 
 ## Reproduce
 
@@ -9,10 +9,11 @@ Install Node.js 22+ and pnpm 11.25.0, then run:
 ```sh
 pnpm install --frozen-lockfile
 pnpm test
+pnpm typecheck:access
 pnpm eval:validate
 ```
 
-Tests automatically download MongoDB on first run and start an isolated local database, then stop it. No Docker, real provider credentials or external Mongo account is required. Tests use a deterministic simulated provider and explicitly injected scanner callbacks. They verify access and approval boundaries; they do not validate the team's absent PII detector or conversation vault.
+Tests automatically download MongoDB on first run and start an isolated local database, then stop it. No Docker, real provider credentials or external Mongo account is required. Tests use a deterministic simulated provider and explicitly injected scanner callbacks. The suite covers access boundaries, the actual detector package, real HTTP/JWT integration, scoped masking/restoration, link sanitization and encrypted approvals. All provider responses used by these tests are explicitly simulated.
 
 For an existing local MongoDB, copy `.env.example`, export its values in your shell, then run `pnpm seed`. Generate independent JWT and fingerprint secrets with `openssl rand -hex 32`; no default secrets are shipped. Set `MONGO_URL` if different from `mongodb://localhost:27017`. Run `node seed/seed.js --tokens` to write one-hour demo JWTs to ignored `seed/tokens.json`. The scripts read shell environment variables; they do not automatically load `.env`.
 
@@ -31,3 +32,26 @@ Run `pnpm test:report` when deliberately refreshing the measured access report; 
 Evidence: [results](results/alwaz/RESULTS.md), [classifier decision](docs/CLASSIFIER-DECISION.md), [handoff](docs/ALWAZ-HANDOFF.md), [eight-slide deck](docs/Alwaz-LeakShield.pptx).
 
 Run `pnpm classifier:spike` separately to download the pinned English classifier and measure Node feasibility. This downloads approximately 713 MB; model weights stay ignored in `.cache`. The classifier is optional and not a substitute for ACLs. The locally quantized variant can be reproduced using `tools/quantize-classifier.py` with Python ONNX dependencies; the normal upstream model supports the default full-precision path.
+
+## Run the complete local access demo
+
+Terminal 1:
+
+```sh
+pnpm demo:access
+```
+
+Terminal 2:
+
+```sh
+npm ci --prefix apps/web
+npm run dev --prefix apps/web -- --host 127.0.0.1
+```
+
+Open http://127.0.0.1:5173 . The UI labels **simulated provider**. Mongo is temporary, demo JWT/fingerprint keys are generated in memory, and the host binds only to loopback. No passwords or API keys are needed for this demo. The echo provider demonstrates boundaries, not model answer quality.
+
+As Meera, send “Garuda roadmap”. Keep that chat open. In another tab choose Admin in the Approvals view, then approve or reject. The requester’s chat polls for its own result. Admin sees metadata and a countdown. Try Asha → salary (denied), Ravi → salary (allowed), and Meera → payments (fake credential blocks with zero provider calls).
+
+The reference host under `retrieval/integration` is isolated from Mahatva’s eventual production entry point. It provides demo login only when explicitly enabled. Production authentication, actual Groq/Ollama transport and deployment hardening are not supplied by the demo. The eval passthrough header is not implemented in this host; do not use it as a baseline runner.
+
+`pnpm test:integration:report` deliberately refreshes the HTTP evidence. Normal tests do not rewrite committed reports. The shared evaluator’s full frozen/baseline run still needs the remaining team cases and a real provider.

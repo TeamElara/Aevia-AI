@@ -1,10 +1,10 @@
 # Five-minute team demo script
 
-Development rehearsal plan; do not present unavailable team features as live.
+Development rehearsal plan. `pnpm demo:access` runs real integration boundaries with an explicitly simulated echo provider. Model-answer quality and a real-provider video remain unverified.
 
 0:00–0:25 — Alwaz introduces the seven-stage architecture and ACLs as the primary boundary.
-0:25–1:15 — Team gateway owner demonstrates Asha's synthetic KYC record and two-turn masking/restoration once the vault is integrated.
-1:15–1:35 — Demonstrate fake-key block and zero provider calls once outbound detectors are wired.
+0:25–1:15 — Team gateway owner demonstrates Asha's synthetic KYC record and two-turn masking/restoration using the reference vault and actual detectors; use a real model only after the team supplies its transport.
+1:15–1:35 — Demonstrate fake-key block and zero provider calls with actual outbound detectors.
 1:35–2:25 — Detector owner demonstrates injection variants using measured cases.
 2:25–3:15 — Alwaz demonstrates Asha denied salary access, impersonation still denied, Ravi HR permitted. No restricted titles in denied responses.
 3:15–3:35 — Alwaz demonstrates quarantined vendor/onboarding sources.

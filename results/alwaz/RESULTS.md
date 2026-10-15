@@ -4,7 +4,8 @@
 
 | Check | Observed |
 | --- | --- |
-| Vitest security tests | 20 passed, 0 failed |
+| Standalone access tests | 20 passed, 0 failed |
+| Combined suite including HTTP + detectors | 141 passed, 0 failed |
 | Access fixture behavior | 37/37 expected access actions |
 | Seeded documents / quarantined | 10 / 2 |
 | Local access p50 / p95 | 0.398 ms / 1.398 ms |
@@ -14,3 +15,10 @@
 Access fixtures use real local MongoDB with simulated provider and explicitly injected pass-through scanner callbacks. The HR employee-master case verifies access only; masking behavior is tested separately using a test-only callback. Access timings cover these 37 development paths, excluding Mongo startup, actual provider/network time, real detectors, and human approval wait. They are not full gateway overhead or final frozen robustness figures. Classifier percentiles cover short English development prompts, not 512-token windows or Hinglish accuracy.
 
 No real-provider baseline, full-team leak rate, independent held-out accuracy, production privacy claim or full demo readiness is asserted. Raw payloads are never written to these reports. Reproduce with `pnpm test`, `pnpm eval:validate` and optionally `pnpm classifier:spike`.
+
+
+## HTTP integration evidence
+
+All 37/37 fixtures now pass with real HTTP + JWT + Mongo + the actual detector package and conversation vault. The provider is explicitly simulated. Local p50/p95: 2.405/4.192 ms, including loopback HTTP and real scanning, excluding actual model/network latency and human approval wait. The older standalone access timings above remain a narrower measurement. These figures are development evidence; no frozen accuracy, real-model leak rate or production overhead claim is made.
+
+The five-value privacy scan of audit, incidents, approval metadata and captured logs passes. The eight required integration boundaries are covered with simulated responses. Reproduce the HTTP report using `pnpm test:integration:report`.

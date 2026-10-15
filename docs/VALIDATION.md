@@ -1,7 +1,12 @@
-# Validation record
+# Validation record — 15 October 2026
 
-See results/alwaz/RESULTS.md and its JSON evidence. The earlier in-memory predicate tests were replaced by Vitest tests against a real isolated MongoDB process. Tests cover seed/index behavior, all access fixtures, assembly rechecks, ingestion carriers, request hashes, encryption metadata privacy, replay/expiry, failure handling, response fingerprints and approval result isolation.
+- Combined Vitest: 141 passed across actual detector tests, standalone access tests and real HTTP integration tests.
+- The eight PLAN §10 boundary checks exercise actual detectors, JWTs, real Mongo, scoped vault, restoration/link order, encrypted approvals and a simulated provider.
+- Five seeded values: zero hits in integration audit, incidents, approval metadata and captured logs.
+- All 37 access fixtures pass through the HTTP integration; scope/timings are in results/alwaz/http-integration.json.
+- The web app passes TypeScript/production build and ESLint using its npm lockfile. Browser access to localhost was rejected by the approval gate, so no visual/browser E2E pass is claimed.
+- Optional real fp32 classifier adapter: clean source permitted, injected source quarantined. Both fp32 and locally quantized int8 Node experiments are recorded separately.
+- The eight-slide development deck was rendered and visually reviewed through file rendering.
+- GitHub device sign-in was completed by the user. Work is published for review at https://github.com/TeamElara/Aevia-AI/pull/1 .
 
-Still dependent on absent team modules: full PII/canary scanning, exact vault restoration, restored-value URL sanitization, full audit/incident/log privacy, web chat wiring, real Groq/Ollama payload capture and baseline. No passing result is recorded for those absent components.
-
-The optional real fp32 classifier adapter was exercised on one clean source and one injected source: clean permitted, injection quarantined. All eight slides were rendered and visually reviewed. A clean local clone installed the frozen lockfile and passed its tests/schema validation. An initial GitHub push failed because credentials were missing. The user subsequently completed GitHub’s device sign-in; the branch is now published for review at https://github.com/TeamElara/Aevia-AI/pull/1 .
+Limits: no authenticated Groq console inspection, real-model baseline, complete frozen dataset, second-laptop rehearsal or real-model demo recording. The reference host deliberately does not implement eval passthrough or production login.

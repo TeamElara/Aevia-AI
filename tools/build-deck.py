@@ -8,6 +8,7 @@ from pptx.enum.shapes import MSO_SHAPE, MSO_CONNECTOR
 from pptx.enum.text import PP_ALIGN
 root=Path(__file__).resolve().parents[1]
 r=json.loads((root/'results/alwaz/access-eval.json').read_text())
+h=json.loads((root/'results/alwaz/http-integration.json').read_text())
 c=json.loads((root/'results/alwaz/classifier-spike.json').read_text())['results']
 p=Presentation();p.slide_width=Inches(13.333);p.slide_height=Inches(7.5)
 BG='111B2B';FG='F1F5FA';MUTED='B6C3D7';GREEN='64DEB1'
@@ -44,16 +45,16 @@ for i,label in enumerate(labels):
  if i<4:
   con=s.shapes.add_connector(MSO_CONNECTOR.STRAIGHT,Inches(x+2.12),Inches(3.35),Inches(x+2.48),Inches(3.35));con.line.color.rgb=RGBColor.from_string(GREEN)
 text(s,'Approval → current policy and ACL check → outbound scan again',.75,4.8,11.8,.9,24,GREEN)
-text(s,'The provider and final scanner callbacks are supplied by the team gateway.',.75,6.0,11.8,.6,19,MUTED)
+text(s,'Actual detector callbacks are integrated; the local provider is explicitly simulated.',.75,6.0,11.8,.6,19,MUTED)
 s=slide('Identity and provider permission','Read access and external transmission are separate decisions.')
 table(s,['Scenario','Expected boundary'],[['Asha requests salary bands','Deny; no restricted title'],['Ravi requests salary bands','Permit HR retrieval'],['Admin requests board minutes','Deny; no document bypass'],['CEO requests board minutes','Read locally; deny cloud send'],['Meera requests Garuda','Require admin approval']])
 s=slide('Quarantine and approvals')
 text(s,'Ingest source → scan hidden carriers → quarantine whole document',.75,1.9,11.8,1.1,27,GREEN)
 text(s,'Comments, hidden CSS, white text, zero-width characters and alt/title attributes are checked before rendering.',.75,3.1,11.6,1.1,24)
 text(s,'Pending requests use AES-GCM in memory for ten minutes. Mongo stores metadata and request hash. Approval is single use and rechecks current permissions.',.75,4.7,11.6,1.5,24)
-s=slide('Measured access evidence','Real local MongoDB · simulated provider · development fixtures')
-table(s,['Measurement','Observed'],[['Vitest security suite','20 passed · 0 failed'],['Expected access actions',f"{r['passed']} / {r['cases']}"],['Synthetic corpus','10 documents · 2 quarantined'],['Local access p50 / p95',f"{r['p50_ms']:.3f} / {r['p95_ms']:.3f} ms"]])
-text(s,'Excludes real detectors, model/network time and human approval wait. This is not the final frozen gateway evaluation.',.75,5.9,11.7,.9,19,MUTED)
+s=slide('Measured access evidence','HTTP, JWT, real MongoDB and detectors · simulated provider')
+table(s,['Measurement','Observed'],[['Vitest security suite','141 passed · 0 failed'],['Expected access actions',f"{r['passed']} / {r['cases']}"],['Synthetic corpus','10 documents · 2 quarantined'],['HTTP integration p50 / p95',f"{h['p50_ms']:.3f} / {h['p95_ms']:.3f} ms"]])
+text(s,'Includes real detectors. Excludes model/network time and human approval wait. This is not the final frozen gateway evaluation.',.75,5.9,11.7,.9,19,MUTED)
 s.notes_slide.notes_text_frame.text='Source: results/alwaz/access-eval.json. Access-only fixtures are not detector precision/recall or full-team leak metrics.'
 s=slide('Classifier feasibility','Pinned ProtectAI DeBERTa model · local Node ONNX · English only')
 table(s,['Variant','Warm p50','Warm p95'],[[x['dtype'],f"{x['p50_ms']:.2f} ms",f"{x['p95_ms']:.2f} ms"] for x in c],2.2)
@@ -65,8 +66,8 @@ table(s,['Control','Act reference'],[['Limit outbound personal data','Section 6(
 text(s,'These provisions have phased commencement; as of 15 Oct 2026, the cited substantive duties are scheduled for 13 May 2027.',.75,5.9,11.7,.9,19,MUTED)
 s.notes_slide.notes_text_frame.text='Primary source: https://www.indiacode.nic.in/bitstream/123456789/22037/1/a2023-22.pdf ; sections 6(1), 8(5)-(7), commencement footnote at page 5. Controls assist implementation but do not satisfy notice, consent, notification or erasure workflows on their own.'
 s=slide('Integration limits and next gates')
-text(s,'Ready: access modules, approval backend, seed, fixtures, Node classifier spike and reproducible tests.',.75,1.9,11.8,1.2,27,GREEN)
-text(s,'Team integration: real gateway scans and vault, UI wiring, audit privacy, Groq/Ollama baseline and frozen evaluation.',.75,3.5,11.8,1.3,25)
+text(s,'Ready: access, encrypted approvals, HTTP/JWT, scoped vault, actual detectors and connected approval UI.',.75,1.9,11.8,1.2,27,GREEN)
+text(s,'Remaining: team Groq settings, actual Groq/Ollama transport, full frozen evaluation and real-model rehearsal.',.75,3.5,11.8,1.3,25)
 text(s,'Approved content reaches Groq. Fingerprints catch copying, not paraphrases. Team Groq settings still need account verification.',.75,5.25,11.8,1.1,23,MUTED)
 s.notes_slide.notes_text_frame.text='Groq policy source: https://console.groq.com/docs/your-data . Team-specific ZDR and rate limits have not been verified. Implementation published for review: https://github.com/TeamElara/Aevia-AI/pull/1 .'
 p.save(root/'docs/Alwaz-LeakShield.pptx')

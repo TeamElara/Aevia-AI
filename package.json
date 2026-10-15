@@ -6,18 +6,22 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "vitest run tests/security",
+    "test": "vitest run tests/security tests/integration packages/detectors/test",
     "seed": "node seed/seed.js",
     "benchmark": "node tests/security/benchmark.js",
     "eval:validate": "node eval/validate.mjs eval/dev.jsonl eval/heldout.jsonl eval/robustness.jsonl eval/alwaz/heldout.jsonl eval/alwaz/robustness.jsonl",
     "classifier:spike": "node tools/classifier-spike.mjs",
-    "test:report": "WRITE_ACCESS_RESULTS=1 vitest run tests/security"
+    "test:report": "WRITE_ACCESS_RESULTS=1 vitest run tests/security",
+    "demo:access": "node --import tsx seed/run-access-demo.mjs",
+    "test:integration:report": "WRITE_GATEWAY_RESULTS=1 vitest run tests/integration",
+    "typecheck:access": "tsc -p tsconfig.access.json"
   },
   "dependencies": {
     "mongodb": "^7.7.0"
   },
   "devDependencies": {
     "@huggingface/transformers": "^4.3.1",
+    "@types/node": "^24.19.2",
     "mongodb-memory-server": "^11.3.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

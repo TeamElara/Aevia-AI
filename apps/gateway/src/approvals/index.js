@@ -6,7 +6,7 @@ export function createApprovals({ metadata, revalidate, replay, now = Date.now, 
   const pending = new Map();
   const purge = () => { for (const [id, item] of pending) if (now() >= item.expiresAt) pending.delete(id); };
   const timer = setInterval(purge, Math.min(ttlMs, 30_000)); timer.unref();
-  const isAdmin = actor => { if (!actor?.id || !actor.roles?.includes('admin')) throw new Error('Admin required'); };
+  const isAdmin = actor => { if (!actor?.id || (!Array.isArray(actor.roles) || !actor.roles.includes('admin'))) throw new Error('Admin required'); };
   return {
     async enqueue(payload, ctx) {
       purge();
@@ -37,9 +37,11 @@ export function createApprovals({ metadata, revalidate, replay, now = Date.now, 
         const { payload, ctx } = JSON.parse(clear.toString('utf8'));
         if (now() >= item.expiresAt || !(await revalidate(payload, ctx))) throw new Error('Approval no longer allowed');
         if (now() >= item.expiresAt) throw new Error('Approval expired');
-        await metadata.updateOne({ _id: id }, { $set: { status: 'approved' } });
+        await metadata.updateOne({ _id: id }, { $set: { status: 'replaying' } });
         if (now() >= item.expiresAt) throw new Error('Approval expired');
-        return await replay(payload, ctx); // Replay must enter the full gateway policy + ACL pipeline.
+        const result = await replay(payload, ctx); // Replay enters the full gateway policy + ACL pipeline.
+        await metadata.updateOne({ _id: id }, { $set: { status: 'approved' } });
+        return result;
       } catch (error) {
         await metadata.updateOne({ _id: id }, { $set: { status: 'failed' } });
         throw error;
@@ -50,7 +52,7 @@ export function createApprovals({ metadata, revalidate, replay, now = Date.now, 
       if (!pending.delete(id)) throw new Error('Approval missing, consumed or expired');
       await metadata.updateOne({ _id: id }, { $set: { status: 'rejected' } });
     },
-    list(actor) { isAdmin(actor); purge(); return [...pending].map(([id, item]) => ({ id, expires_at: new Date(item.expiresAt).toISOString() })); },
+    list(actor) { isAdmin(actor); purge(); return [...pending].map(([id, item]) => ({ id, request_hash: item.digest.toString('hex'), expires_at: new Date(item.expiresAt).toISOString() })); },
     close() { clearInterval(timer); pending.clear(); },
   };
 }
