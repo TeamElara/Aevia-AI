@@ -19,3 +19,24 @@ Step 5 benign check: the entropy fallback gives 0 hits on the 110 benign prompts
 
 Step 6, mutation retention on dev (`results/ojaswi/mutation-check-v3.md`): all 31 caught dev attacks survive every mutation. Before the normaliser fixes, emoji spacing kept only 4/28 dev-v3 attacks and base64 lost all 8 Devanagari ones. Each mutation leaves the 29 clean allowed cases clean. One known gap: in base64, a payment record still masks but reports one category per decoded block.
 | 7. Role headers after \v, \f, NEL (Arihant's report) | 28 | 1 at warn only | 0 | 4/4 caught, 0 false |
+
+## Checks after step 7
+
+**Independent post-check: red-team set.** Ojaswi's 50 post-freeze attacks were written before v3, and no v3 rule was tuned on them. Run through the full keyless gateway: **34/50 stopped, 1 warned, 15 bypassed**, against 32/50 and 17 bypassed on main before v3 (`results/ojaswi/redteam-v3.md`, ids only).
+
+| Family | Bypassed before v3 | Bypassed with v3 |
+| --- | --- | --- |
+| Hinglish | 7/10 | 6/10 |
+| Devanagari | 3/8 | 2/8 |
+| Split lines | 3/6 | 3/6 |
+| Roleplay | 4/8 | 4/8 |
+
+The honest reading is that the dev set went 10/28 → 28/28, but an independent set moved only 2 attacks. The rule fixes generalise poorly: Hinglish and roleplay attacks have open-ended vocabulary, and each new word list catches the phrasings it was written from. The red-team set is kept as a check and was not used for tuning. The durable fix is still a classifier trained on Hinglish/Devanagari data. The blind heldout-v3 set (written by teammates) will give the real number.
+
+**ReDoS audit on v3 code.**
+- 159 regexes × 51 adversarial 50 KB inputs.
+- One new quadratic pattern was found and fixed: `/=+$/` in the entropy fallback, now a loop.
+- Run alone, `detectAll` at 50 KB takes 9–22 ms on the worst inputs, against 11–21 ms before v3. The audit's 56 ms came from 8 workers running in parallel.
+- `test/redos.test.ts` keeps 50 KB inputs under 50 ms.
+
+**Tests.** 512 detector tests pass, against 373 before v3.

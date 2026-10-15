@@ -105,7 +105,10 @@ const TOKEN = /(?<![A-Za-z0-9_\-+/=])[A-Za-z0-9_\-+/=]{24,200}(?![A-Za-z0-9_\-+/
 export const entropySecrets: Detector = (text) => {
   const hits: Hit[] = [];
   for (const m of text.matchAll(TOKEN)) {
-    const v = m[0].replace(/=+$/, '');
+    // Trim base64 padding with a loop: /=+$/ rescans a long run of '=' from every start.
+    let cut = m[0].length;
+    while (cut > 0 && m[0][cut - 1] === '=') cut--;
+    const v = m[0].slice(0, cut);
     if (v.length < 24 || /^[0-9a-f]+$/i.test(v) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) continue;
     const classes = [/[a-z]/, /[A-Z]/, /\d/].filter((r) => r.test(v)).length;
     if (classes < 3 || entropy(v) < 4.2) continue;
