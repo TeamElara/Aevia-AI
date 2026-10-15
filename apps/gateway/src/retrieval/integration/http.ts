@@ -54,7 +54,7 @@ export function createIntegrationServer({ db, jwtSecret, fingerprintKey, provide
         const conversation=conversations.get(conversation_id);
         const result=await access.run(user.id,{prompt:body.message,history:conversation.history.slice(-19),attached_doc:body.attached_doc,conversation_id});
         if(['allow','warn','mask','redact','require_approval'].includes(result.action)) { conversation.history.push(body.message);conversation.history=conversation.history.slice(-20); }
-        if(result.id)requests.set(result.request_id,{user:user.id,conversation_id,approval_id:result.id,expires:Date.parse(result.expires_at)});
+        if('id' in result && typeof result.id==='string' && 'expires_at' in result && typeof result.expires_at==='string')requests.set(result.request_id,{user:user.id,conversation_id,approval_id:result.id,expires:Date.parse(result.expires_at)});
         return reply(res,200,format(result,conversation_id,result.request_id,req.headers['x-eval-capture']==='1'));
       }
       if(req.method==='GET'&&url.pathname==='/api/approvals'){ await access.list(user.id);return reply(res,200,(await db.collection('approvals').find().sort({created_at:-1}).limit(100).toArray()).map(approvalView)); }
