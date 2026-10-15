@@ -26,9 +26,13 @@ export function findLinks(text: string): Link[] {
     links.push({ start, end, url, host: hostOf(url), kind });
   };
   // [^[\]] (not just [^\]]) keeps a run of "[" characters from rescanning to the end each time.
-  for (const m of text.matchAll(/!\[[^[\]]{0,500}\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]{0,200}")?\s*\)/g)) push(m.index!, m.index! + m[0].length, m[1], 'markdown_image');
-  for (const m of text.matchAll(/\[[^[\]]{0,500}\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]{0,200}")?\s*\)/g)) push(m.index!, m.index! + m[0].length, m[1], 'markdown_link');
-  for (const m of text.matchAll(/<(?:img|a|iframe|script)\b[^>]*?(?:src|href)\s*=\s*["']([^"']+)["'][^>]*>/gi)) push(m.index!, m.index! + m[0].length, m[1], 'html');
+  // The URL stops at "[" for the same reason: each "[a](" start would otherwise rescan the rest of the text (ReDoS).
+  // Bound structured URL/attribute captures, not the input. The final bare-URL pass
+  // still inspects the whole text and catches HTTP(S) URLs beyond these limits.
+  for (const m of text.matchAll(/!\[[^[\]]{0,500}\]\(\s*<?([^)\s>\[]{1,8192})>?(?:\s+"[^"]{0,200}")?\s*\)/g)) push(m.index!, m.index! + m[0].length, m[1]!, 'markdown_image');
+  for (const m of text.matchAll(/\[[^[\]]{0,500}\]\(\s*<?([^)\s>\[]{1,8192})>?(?:\s+"[^"]{0,200}")?\s*\)/g)) push(m.index!, m.index! + m[0].length, m[1]!, 'markdown_link');
+  // A new '<' ends a malformed tag candidate instead of rescanning later tags.
+  for (const m of text.matchAll(/<(?:img|a|iframe|script)\b[^<>]{0,8192}?(?:src|href)\s*=\s*["']([^"'<]{1,8192})["'][^<>]{0,8192}>/gi)) push(m.index!, m.index! + m[0].length, m[1]!, 'html');
   for (const m of text.matchAll(/\bhttps?:\/\/[^\s<>()"'\]]+/g)) push(m.index!, m.index! + m[0].length, m[0], 'bare');
   return links.sort((a, b) => a.start - b.start);
 }
