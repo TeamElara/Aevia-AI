@@ -1,16 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0e1726;
-  --color-panel: #152238;
-  --color-line: #2a3b5c;
-  --color-muted: #a9b4c6;
-  --color-signal: #5b9bff;
-  --color-alert: #f29a38;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --color-void: #030303;
+  --color-panel: #0a0a0a;
+  --color-line: rgba(255, 255, 255, 0.16);
+  --color-line-strong: rgba(255, 255, 255, 0.32);
+  --color-fg: #f2f2f2;
+  --color-muted: #8c8c8c;
+  --color-faint: #5a5a5a;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  --animate-twinkle: twinkle 4s ease-in-out infinite;
+  --animate-float: float 7s ease-in-out infinite;
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.9; }
+  }
+  @keyframes float {
+    0%, 100% { transform: perspective(1400px) rotateY(-16deg) rotateX(4deg) translateY(0); }
+    50% { transform: perspective(1400px) rotateY(-12deg) rotateX(2deg) translateY(-8px); }
+  }
 }
 
 body {
-  @apply bg-ink text-slate-100 font-sans antialiased;
+  @apply bg-void text-fg font-sans antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-twinkle,
+  .animate-float {
+    animation: none;
+  }
 }
