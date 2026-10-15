@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { chat, login, pollApprovalResult, type Backend } from './api/client'
 import { actionLabel, answerText, isStop } from './api/contract'
-import { Chamfer } from './components/Chamfer'
 import { ChatPanel, type Turn } from './components/ChatPanel'
+import { Masthead } from './components/Masthead'
 import { PayloadCard, type Exchange } from './components/PayloadCard'
-import { Starfield } from './components/Starfield'
 import { exampleExchanges, users } from './data/demo'
-import { initials, pad2 } from './lib/format'
+import { backendLabel, pad2 } from './lib/format'
 import { ApprovalsView } from './views/ApprovalsView'
 import { EvalView } from './views/EvalView'
 import { IncidentsView } from './views/IncidentsView'
@@ -99,8 +98,8 @@ export default function App() {
   const selectedIndex = done.findIndex((t) => t.id === selectedId)
   const cardIndex = showingLive ? (selectedIndex === -1 ? cards.length - 1 : selectedIndex) : exampleIndex
 
-  const step = (delta: number) => {
-    const next = (cardIndex + delta + cards.length) % cards.length
+  const pick = (i: number) => {
+    const next = (i + cards.length) % cards.length
     if (showingLive) setSelectedId(done[next].id)
     else setExampleIndex(next)
   }
@@ -108,68 +107,78 @@ export default function App() {
   const user = users.find((u) => u.id === activeUser)!
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
-      <Starfield />
-
-      <div className="relative mx-auto flex min-h-screen max-w-[1440px] flex-col px-4 pb-4 sm:px-6 sm:pb-6">
-        <div className="flex justify-center">
-          <Chamfer corners={{ tl: 0, tr: 0, br: 12, bl: 12 }} className="px-5 py-2.5">
-            <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-[13px]">
-              {views.map((v) => (
+    <div className="min-h-screen overflow-x-hidden">
+      <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col px-3 pb-3 sm:px-5 sm:pb-5">
+        <header className="grid grid-cols-2 items-baseline gap-y-2 pb-3 pt-4 text-[12px] md:grid-cols-3">
+          <span className="font-medium tracking-[-0.01em]">LeakShield©</span>
+          <nav className="col-span-2 row-start-2 md:col-span-1 md:row-start-auto md:justify-self-center" aria-label="Views">
+            {views.map((v, i) => (
+              <span key={v}>
                 <button
-                  key={v}
                   onClick={() => setView(v)}
                   aria-current={v === view ? 'page' : undefined}
-                  className={`transition-colors ${v === view ? 'text-fg' : 'text-faint hover:text-muted'}`}
+                  className={`transition-colors ${v === view ? 'text-fg underline decoration-1 underline-offset-[3px]' : 'text-faint hover:text-fg'}`}
                 >
                   {v}
                 </button>
-              ))}
-            </nav>
-          </Chamfer>
-        </div>
+                {i < views.length - 1 && <span className="text-faint">, </span>}
+              </span>
+            ))}
+          </nav>
+          <div className="flex items-baseline justify-end gap-4">
+            {session && (
+              <span
+                className="hidden text-faint sm:inline"
+                title={session.backend === 'simulated' ? 'Real local gateway with a simulated provider' : session.backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : 'Connected to apps/gateway'}
+              >
+                <span className={session.backend === 'live' ? 'text-fg' : ''}>●</span> {backendLabel[session.backend]}
+              </span>
+            )}
+            <button onClick={() => setView('Eval')} className="text-fg hover:underline">
+              Run eval ↗
+            </button>
+          </div>
+        </header>
 
-        <div className="mt-3 flex items-baseline justify-between px-1 font-mono text-[11px] uppercase tracking-[0.2em] text-faint">
-          <span className="text-muted">LeakShield</span>
-          <span>gateway console</span>
-        </div>
+        <main className="flex flex-1 flex-col gap-3">
+          {view === 'Chat' && (
+            <>
+              <Masthead title="LeakShield©">
+                A gateway that lets your AI work on data it never sees. Every prompt passes seven checks; the model only
+                ever receives tokens.
+              </Masthead>
+              <div className="grid grid-cols-1 gap-3 lg:h-[760px] lg:grid-cols-2">
+                <ChatPanel
+                  user={user}
+                  backend={session?.backend ?? null}
+                  ready={!!session}
+                  turns={turns}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  onSend={send}
+                  onReset={resetChat}
+                />
+                <Inspector
+                  cards={cards}
+                  index={cardIndex}
+                  example={!showingLive}
+                  activeUser={activeUser}
+                  onPick={pick}
+                  onPickUser={setActiveUser}
+                />
+              </div>
+            </>
+          )}
+          {view === 'Incidents' && <IncidentsView />}
+          {view === 'Overview' && <OverviewView />}
+          {view === 'Approvals' && <ApprovalsView />}
+          {view === 'Eval' && <EvalView />}
+        </main>
 
-        {view === 'Chat' ? (
-          <main className="mt-3 grid flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-            <ChatPanel
-              user={user}
-              backend={session?.backend ?? null}
-              ready={!!session}
-              turns={turns}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onSend={send}
-              onReset={resetChat}
-            />
-            <Inspector
-              exchange={cards[cardIndex]}
-              index={cardIndex}
-              count={cards.length}
-              activeUser={activeUser}
-              onPrev={() => step(-1)}
-              onNext={() => step(1)}
-              onPickUser={setActiveUser}
-            />
-          </main>
-        ) : (
-          <main className="mt-3 flex-1 pb-6">
-            {view === 'Incidents' && <IncidentsView />}
-            {view === 'Overview' && <OverviewView />}
-            {view === 'Approvals' && <ApprovalsView />}
-            {view === 'Eval' && <EvalView />}
-          </main>
-        )}
-
-        <footer className="relative mt-3 flex min-h-14 items-start border-t border-line pt-4 pr-28">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
-            policy v1 · provider {session?.backend === 'simulated' ? 'simulated' : session?.backend === 'mock' ? 'mock' : 'gateway configured'} · audit metadata only
-          </p>
-          <GlowButton label="Run eval" onClick={() => setView('Eval')} />
+        <footer className="mt-3 grid grid-cols-1 gap-y-1 pt-3 text-[11px] text-faint sm:grid-cols-3">
+          <span>Policy v1 · provider {session?.backend === 'simulated' ? 'simulated' : session?.backend === 'mock' ? 'mock' : 'gateway configured'}</span>
+          <span className="sm:justify-self-center">Audit stores metadata only</span>
+          <span className="sm:justify-self-end">TeamElara · CyberCUP 6.0</span>
         </footer>
       </div>
     </div>
@@ -177,60 +186,83 @@ export default function App() {
 }
 
 function Inspector({
-  exchange,
+  cards,
   index,
-  count,
+  example,
   activeUser,
-  onPrev,
-  onNext,
+  onPick,
   onPickUser,
 }: {
-  exchange: Exchange
+  cards: Exchange[]
   index: number
-  count: number
+  example: boolean
   activeUser: string
-  onPrev: () => void
-  onNext: () => void
+  onPick: (i: number) => void
   onPickUser: (id: string) => void
 }) {
+  const behind = Math.min(2, cards.length - 1)
   return (
-    <Chamfer className="min-h-[560px] min-w-0">
-      <div className="flex h-full flex-col gap-6 p-6 pb-14 sm:flex-row sm:items-center sm:p-8 sm:pb-16">
-        <div className="flex flex-1 items-center justify-center py-6 sm:py-0">
-          <PayloadCard exchange={exchange} />
-        </div>
-
-        <aside className="flex flex-wrap items-center justify-between gap-4 sm:h-full sm:flex-col sm:flex-nowrap sm:justify-between">
-          <div className="flex gap-2 sm:flex-col" role="radiogroup" aria-label="Signed-in demo user">
-            {users.map((u) => (
-              <button
-                key={u.id}
-                role="radio"
-                aria-checked={u.id === activeUser}
-                title={`${u.name} · ${u.role}`}
-                onClick={() => onPickUser(u.id)}
-                className={`grid h-9 w-9 place-items-center rounded-full border font-mono text-[10px] transition ${
-                  u.id === activeUser
-                    ? 'border-fg bg-fg text-void'
-                    : 'border-line text-muted hover:border-line-strong hover:text-fg'
-                }`}
-              >
-                {initials(u.name)}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-2 sm:flex-col">
-            <ArrowButton dir="next" onClick={onNext} />
-            <ArrowButton dir="prev" onClick={onPrev} />
-          </div>
-
-          <p className="font-mono text-[11px] text-faint">
-            <span className="text-fg">{pad2(index + 1)}</span> / {pad2(count)}
-          </p>
-        </aside>
+    <section className="ink flex min-h-[640px] min-w-0 flex-col px-5 py-5 sm:px-8 sm:py-6">
+      <div className="grid grid-cols-2 items-baseline text-[12px] sm:grid-cols-3">
+        <span>Inspector</span>
+        <span className="hidden text-faint sm:block sm:justify-self-center">{example ? 'Example requests' : 'This conversation'}</span>
+        <span className="justify-self-end font-mono text-[11px] text-faint">
+          <span className="text-fg">{pad2(index + 1)}</span> / {pad2(cards.length)}
+        </span>
       </div>
-    </Chamfer>
+
+      <div className="mt-6 grid grid-cols-2 gap-x-6">
+        <p className="text-[13px]">Signed in as</p>
+        <div role="radiogroup" aria-label="Signed-in demo user" className="flex flex-col items-start">
+          {users.map((u) => (
+            <button
+              key={u.id}
+              role="radio"
+              aria-checked={u.id === activeUser}
+              onClick={() => onPickUser(u.id)}
+              className={`text-left text-[clamp(20px,2vw,26px)] leading-[1.08] tracking-[-0.035em] transition-colors ${
+                u.id === activeUser ? 'text-fg' : 'text-faint hover:text-muted'
+              }`}
+            >
+              {u.name}
+              {u.id === activeUser && (
+                <span className="ml-2 align-top font-mono text-[10px] tracking-normal text-muted">{u.role}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-1 items-center justify-center py-8">
+        <div className="relative w-full max-w-[340px]">
+          {/* Earlier cards fan out behind the selected one. */}
+          {behind >= 2 && <div aria-hidden="true" className="absolute inset-0 -translate-x-5 translate-y-5 -rotate-2 bg-fg/25" />}
+          {behind >= 1 && <div aria-hidden="true" className="absolute inset-0 -translate-x-2.5 translate-y-2.5 -rotate-1 bg-fg/55" />}
+          <div key={`${example}-${index}`} className="relative animate-deal">
+            <PayloadCard exchange={cards[index]} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <ArrowButton dir="prev" onClick={() => onPick(index - 1)} />
+        <div className="flex flex-wrap justify-center gap-1.5" role="group" aria-label="Choose request">
+          {cards.slice(-12).map((_, j) => {
+            const i = cards.length - Math.min(12, cards.length) + j
+            return (
+              <button
+                key={i}
+                onClick={() => onPick(i)}
+                aria-label={`Request ${i + 1}`}
+                aria-pressed={i === index}
+                className={`h-3 w-3 rounded-full transition-colors ${i === index ? 'bg-fg' : 'bg-fg/25 hover:bg-fg/50'}`}
+              />
+            )
+          })}
+        </div>
+        <ArrowButton dir="next" onClick={() => onPick(index + 1)} />
+      </div>
+    </section>
   )
 }
 
@@ -239,26 +271,12 @@ function ArrowButton({ dir, onClick }: { dir: 'next' | 'prev'; onClick: () => vo
     <button
       onClick={onClick}
       aria-label={dir === 'next' ? 'Next card' : 'Previous card'}
-      className="grid h-6 w-9 place-items-center rounded-full border border-line-strong text-muted transition hover:border-fg hover:text-fg"
+      className="grid h-8 w-12 place-items-center rounded-full border border-line-strong text-muted transition hover:border-fg hover:text-fg"
     >
       <svg width="14" height="8" viewBox="0 0 14 8" fill="none" aria-hidden="true">
-        <path
-          d={dir === 'next' ? 'M0 4h12M9 1l3 3-3 3' : 'M14 4H2M5 1L2 4l3 3'}
-          stroke="currentColor"
-          strokeWidth="1.2"
-        />
+        <path d={dir === 'next' ? 'M0 4h12M9 1l3 3-3 3' : 'M14 4H2M5 1L2 4l3 3'} stroke="currentColor" strokeWidth="1.2" />
       </svg>
     </button>
   )
 }
 
-function GlowButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="group absolute -top-12 right-0 grid h-24 w-24 place-items-center rounded-full border border-white/40 bg-void font-mono text-[10px] uppercase tracking-[0.18em] text-fg shadow-[0_0_24px_rgba(255,255,255,0.25),inset_0_0_18px_rgba(255,255,255,0.18)] transition hover:shadow-[0_0_40px_rgba(255,255,255,0.45),inset_0_0_24px_rgba(255,255,255,0.3)]"
-    >
-      {label}
-    </button>
-  )
-}

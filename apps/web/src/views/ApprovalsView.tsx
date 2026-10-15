@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, decideApproval, listApprovals } from '../api/client'
 import type { Approval } from '../api/contract'
-import { Chamfer } from '../components/Chamfer'
+import { Masthead } from '../components/Masthead'
 import { useAdmin } from '../lib/useAdmin'
 
 function useNow(ms = 1000) {
@@ -67,25 +67,21 @@ export function ApprovalsView() {
   const past = items.filter((a) => !pending.includes(a))
 
   return (
-    <Chamfer className="min-w-0">
-      <div className="flex flex-col">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-6 py-4 sm:px-8">
-          <h2 className="text-[15px] text-fg">Approvals</h2>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-            {error ? `error: ${error}` : `${pending.length} pending${admin?.backend === 'mock' ? ' · mock' : admin?.backend === 'simulated' ? ' · simulated provider' : ''}`}
-          </span>
-        </div>
+    <div className="flex flex-col gap-3">
+      <Masthead title="Approvals" count={pending.length}>
+        Requests that would send a confidential document to the external model wait here for up to 10 minutes. The request
+        itself is held encrypted in gateway memory; this list shows metadata only.
+        <span className="mt-2 block text-[12px] text-faint">
+          {error ? `Error: ${error}` : `${pending.length} pending${admin?.backend === 'mock' ? ' · mock' : admin?.backend === 'simulated' ? ' · simulated provider' : ''}`}
+        </span>
+      </Masthead>
+      <section className="sheet min-w-0">
+        <div className="space-y-6 px-5 py-6 sm:px-8">
 
-        <div className="space-y-6 px-6 py-6 sm:px-8">
-          <p className="max-w-[70ch] text-[13px] leading-relaxed text-muted">
-            Requests that would send a confidential document to the external model wait here for up to 10 minutes. The request
-            itself is held encrypted in gateway memory; this list shows metadata only.
-          </p>
-
-          {notice && <p className="rounded-[4px] border border-line px-4 py-3 text-[13px] text-fg" role="status">{notice}</p>}
+          {notice && <p className="border-l-2 border-fg py-1.5 pl-4 text-[13px] text-fg" role="status">{notice}</p>}
 
           {pending.length === 0 ? (
-            <div className="rounded-[4px] border border-dashed border-line px-6 py-10 text-center">
+            <div className="border border-dashed border-line-strong px-6 py-10 text-center">
               <p className="text-[14px] text-muted">Nothing waiting for approval.</p>
               <p className="mt-1 text-[12px] text-faint">
                 To create one, sign in as Meera in Chat and ask: “Summarise the Project Garuda roadmap”.
@@ -97,10 +93,10 @@ export function ApprovalsView() {
                 const left = Date.parse(a.expires_at) - now
                 const total = Date.parse(a.expires_at) - Date.parse(a.created_at)
                 return (
-                  <li key={a.approval_id} className="rounded-[6px] border border-line-strong p-5">
+                  <li key={a.approval_id} className="ink p-5 sm:p-6">
                     <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
                       <div className="min-w-0 flex-1 space-y-1.5">
-                        <p className="text-[14px] text-fg">{a.reason}</p>
+                        <p className="text-[15px] tracking-[-0.01em] text-fg">{a.reason}</p>
                         <p className="font-mono text-[11px] text-muted">
                           {a.user_pseudo} · docs {a.doc_ids.join(', ')}
                         </p>
@@ -109,8 +105,8 @@ export function ApprovalsView() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono text-[22px] leading-none tabular-nums text-fg">{countdown(left)}</p>
-                        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-faint">until expiry</p>
+                        <p className="display text-[44px] tabular-nums text-fg">{countdown(left)}</p>
+                        <p className="mt-2 text-[11px] text-faint">until expiry</p>
                       </div>
                     </div>
                     <div className="mt-4 h-px w-full bg-line">
@@ -120,7 +116,7 @@ export function ApprovalsView() {
                       <button
                         disabled={busy === a.approval_id}
                         onClick={() => decide(a, 'approve')}
-                        className="rounded-full bg-fg px-4 py-1.5 text-[13px] text-void transition hover:bg-white disabled:opacity-40"
+                        className="rounded-full bg-fg px-4 py-1.5 text-[13px] text-void transition hover:bg-fg/80 disabled:opacity-40"
                       >
                         Approve
                       </button>
@@ -140,14 +136,14 @@ export function ApprovalsView() {
 
           {past.length > 0 && (
             <div>
-              <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">History</h3>
-              <ul className="divide-y divide-white/[0.05]">
+              <h3 className="mb-2 text-[13px] text-fg">History</h3>
+              <ul className="divide-y divide-line border-t border-line">
                 {past.map((a) => (
                   <li key={a.approval_id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-[13px]">
                     <span className="font-mono text-[11px] text-muted">{new Date(a.created_at).toLocaleTimeString('en-GB')}</span>
                     <span className="font-mono text-[11px] text-muted">{a.user_pseudo}</span>
                     <span className="text-muted">{a.doc_ids.join(', ')}</span>
-                    <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-fg">
+                    <span className="ml-auto text-[12px] capitalize text-fg">
                       {a.status === 'pending' ? 'expired' : a.status}
                     </span>
                   </li>
@@ -156,7 +152,7 @@ export function ApprovalsView() {
             </div>
           )}
         </div>
-      </div>
-    </Chamfer>
+      </section>
+    </div>
   )
 }

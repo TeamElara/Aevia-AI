@@ -1,36 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  --color-void: #030303;
-  --color-panel: #0a0a0a;
-  --color-line: rgba(255, 255, 255, 0.16);
-  --color-line-strong: rgba(255, 255, 255, 0.32);
-  --color-fg: #f2f2f2;
-  --color-muted: #8c8c8c;
-  --color-faint: #5a5a5a;
+  --color-paper: #e6e6e3;
+  --color-void: #fbfbfa;
+  --color-line: rgba(10, 10, 10, 0.12);
+  --color-line-strong: rgba(10, 10, 10, 0.3);
+  --color-fg: #0a0a0a;
+  --color-muted: #555555;
+  --color-faint: #747474;
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  --animate-twinkle: twinkle 4s ease-in-out infinite;
-  --animate-float: float 7s ease-in-out infinite;
+  --animate-deal: deal 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.15; }
-    50% { opacity: 0.9; }
+  @keyframes deal {
+    from { opacity: 0; transform: translate(16px, -12px) rotate(1.5deg); }
+    to { opacity: 1; transform: none; }
   }
-  @keyframes float {
-    0%, 100% { transform: perspective(1400px) rotateY(-16deg) rotateX(4deg) translateY(0); }
-    50% { transform: perspective(1400px) rotateY(-12deg) rotateX(2deg) translateY(-8px); }
-  }
+}
+
+/* Surfaces. Each one re-declares the colour tokens, so every utility inside it
+   (text-fg, border-line, bg-fg/70, …) follows the surface it sits on. */
+.sheet {
+  --color-void: #fbfbfa;
+  --color-line: rgba(10, 10, 10, 0.12);
+  --color-line-strong: rgba(10, 10, 10, 0.3);
+  --color-fg: #0a0a0a;
+  --color-muted: #555555;
+  --color-faint: #747474;
+  background: var(--color-void);
+  color: var(--color-fg);
+}
+
+.ink {
+  --color-void: #060606;
+  --color-line: rgba(255, 255, 255, 0.14);
+  --color-line-strong: rgba(255, 255, 255, 0.32);
+  --color-fg: #f4f4f2;
+  --color-muted: #a3a3a3;
+  --color-faint: #767676;
+  background: var(--color-void);
+  color: var(--color-fg);
+}
+
+/* Big, tightly tracked headline type. */
+.display {
+  font-weight: 500;
+  letter-spacing: -0.065em;
+  line-height: 0.86;
 }
 
 body {
-  @apply bg-void text-fg font-sans antialiased;
+  @apply bg-paper text-fg font-sans antialiased;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-twinkle,
-  .animate-float {
+  .animate-deal {
     animation: none;
   }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getStats, subscribeEvents } from '../api/client'
 import { actionLabel, type Action, type Stats } from '../api/contract'
-import { Chamfer } from '../components/Chamfer'
+import { Masthead } from '../components/Masthead'
 import { BarList, ColumnChart, StatTile } from '../components/charts'
 import { ms } from '../lib/format'
 import { useAdmin } from '../lib/useAdmin'
@@ -55,10 +55,10 @@ export function OverviewView() {
     .map(([k, v]) => ({ key: k, label: actionLabel[k].toLowerCase(), value: v }))
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {/* Filters scope everything below them. */}
-      <div className="flex flex-wrap items-center gap-3 px-1">
-        <div className="flex gap-1 rounded-full border border-line p-0.5 text-[12px]" role="group" aria-label="Time window">
+      <Masthead title="Overview">
+        <div className="flex gap-1 rounded-full border border-line-strong p-0.5 text-[12px]" role="group" aria-label="Time window">
           {WINDOWS.map(([label, m]) => (
             <button
               key={m}
@@ -70,15 +70,19 @@ export function OverviewView() {
             </button>
           ))}
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-          {error ? `error: ${error}` : `policy v${stats?.policy_version ?? '–'}${admin?.backend === 'mock' ? ' · mock data' : ''}`}
-        </span>
-      </div>
+        <p className="mt-3 text-[12px] text-faint">
+          {error ? `Error: ${error}` : `Policy v${stats?.policy_version ?? '–'}${admin?.backend === 'mock' ? ' · mock data' : ''}`}
+        </p>
+      </Masthead>
 
-      <div className={`space-y-3 transition-opacity ${loading && stats ? 'opacity-60' : ''}`}>
-        <Chamfer>
-          <div className="grid grid-cols-2 gap-6 p-6 sm:p-8 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-            <StatTile hero label="Requests" value={stats ? stats.requests.toLocaleString('en-IN') : '–'} sub={`last ${windowMin} min`} />
+      <div className={`flex flex-col gap-3 transition-opacity ${loading && stats ? 'opacity-60' : ''}`}>
+        <section className="ink grid grid-cols-1 gap-x-6 gap-y-8 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1fr_3fr]">
+          <div>
+            <p className="text-[15px]">Stats &amp; facts</p>
+            <p className="mt-1 text-[12px] text-faint">Last {windowMin} minutes</p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+            <StatTile label="Requests" value={stats ? stats.requests.toLocaleString('en-IN') : '–'} sub="through the gateway" />
             <StatTile label="Blocked" value={stats ? `${stats.blocked_pct}%` : '–'} sub="provider not called" />
             <StatTile label="Masked" value={stats ? `${stats.masked_pct}%` : '–'} sub="values sent as tokens" />
             <StatTile
@@ -87,12 +91,12 @@ export function OverviewView() {
               sub={stats?.overhead_ms_p95 != null ? `p50 · p95 ${ms(stats.overhead_ms_p95)} · excl. LLM` : 'p50 · excl. LLM'}
             />
           </div>
-        </Chamfer>
+        </section>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.6fr_1fr]">
-          <Chamfer className="min-w-0">
-            <div className="p-6 sm:p-8">
-              <h3 className="text-[14px] text-fg">Incidents per 5 minutes</h3>
+          <section className="sheet min-w-0">
+            <div className="px-5 py-6 sm:p-8">
+              <h3 className="text-[15px] font-medium tracking-[-0.01em] text-fg">Incidents per 5 minutes</h3>
               <p className="mb-5 text-[12px] text-faint">Any request whose action was not allow</p>
               {per5.length ? (
                 <ColumnChart data={per5} label="Incidents per 5 minutes" valueLabel="incidents" />
@@ -100,19 +104,19 @@ export function OverviewView() {
                 <p className="py-12 text-center text-[13px] text-faint">No requests in this window.</p>
               )}
             </div>
-          </Chamfer>
-          <Chamfer className="min-w-0">
-            <div className="space-y-7 p-6 sm:p-8">
+          </section>
+          <section className="sheet min-w-0">
+            <div className="space-y-8 px-5 py-6 sm:p-8">
               <div>
-                <h3 className="mb-4 text-[14px] text-fg">Findings by category</h3>
+                <h3 className="mb-4 text-[15px] font-medium tracking-[-0.01em] text-fg">Findings by category</h3>
                 <BarList data={categories} label="Findings by category" />
               </div>
               <div>
-                <h3 className="mb-4 text-[14px] text-fg">Requests by action</h3>
+                <h3 className="mb-4 text-[15px] font-medium tracking-[-0.01em] text-fg">Requests by action</h3>
                 <BarList data={actions} label="Requests by action" />
               </div>
             </div>
-          </Chamfer>
+          </section>
         </div>
       </div>
     </div>

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Backend } from '../api/client'
 import { actionLabel, answerText, isStop, type ChatResponse } from '../api/contract'
-import { ms } from '../lib/format'
+import { backendLabel, ms } from '../lib/format'
 import { pipeline, starters, type DemoUser } from '../data/demo'
-import { Chamfer } from './Chamfer'
 import { ActionBadge } from './PayloadCard'
 import { replaceSecrets } from '../lib/secrets'
 
@@ -43,27 +42,26 @@ export function ChatPanel({
   }, [turns.length, lastStatus])
 
   return (
-    <Chamfer className="flex min-h-[560px] min-w-0 flex-col lg:min-h-0">
-      <div className="flex h-full min-h-[560px] flex-col lg:min-h-0">
-        <div className="flex items-center gap-3 border-b border-line px-6 py-3.5 sm:px-8">
-          <p className="text-[13px] text-fg">{user.name}</p>
+    <section className="sheet flex min-h-[560px] min-w-0 flex-col lg:min-h-0">
+        <div className="flex items-center gap-3 border-b border-line px-5 py-4 sm:px-8">
+          <p className="text-[13px] font-medium tracking-[-0.01em] text-fg">{user.name}</p>
           <p className="text-[12px] text-faint">{user.role}</p>
           {backend && (
             <span
-              className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-faint"
+              className="ml-auto text-[12px] text-faint"
               title={backend === 'simulated' ? 'Real local gateway with a simulated provider' : backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : 'Connected to apps/gateway'}
             >
-              {backend === 'simulated' ? '● simulated provider' : backend === 'mock' ? '● mock gateway' : '● live gateway'}
+              <span className={backend === 'live' ? 'text-fg' : ''}>●</span> {backendLabel[backend]}
             </span>
           )}
           {turns.length > 0 && (
-            <button onClick={onReset} className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted hover:text-fg">
+            <button onClick={onReset} className="text-[12px] text-fg underline decoration-1 underline-offset-[3px] hover:text-muted">
               New chat
             </button>
           )}
         </div>
 
-        <div ref={threadRef} className="flex-1 space-y-6 overflow-y-auto px-6 py-6 sm:px-8 lg:max-h-[calc(100vh-290px)]">
+        <div ref={threadRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-6 sm:px-8">
           {turns.length === 0 ? (
             <EmptyState onPick={onSend} disabled={!ready} />
           ) : (
@@ -81,36 +79,39 @@ export function ChatPanel({
         </div>
 
         <Composer onSend={onSend} disabled={!ready || busy} />
-      </div>
-    </Chamfer>
+    </section>
   )
 }
 
 function EmptyState({ onPick, disabled }: { onPick: (t: string) => void; disabled: boolean }) {
   return (
-    <div className="flex h-full flex-col justify-between gap-8">
-      <h1 className="max-w-[17ch] text-[clamp(26px,2.8vw,40px)] font-normal leading-[1.12] tracking-[-0.01em]">
-        A gateway that lets your AI work on data it never sees.
-      </h1>
-      <ol className="self-end pr-[10%] font-mono text-[10px] leading-[1.7] text-faint">
-        {pipeline.map((p) => (
-          <li key={p}>{p}</li>
-        ))}
-      </ol>
-      <div>
-        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Try</p>
-        <div className="flex flex-wrap gap-2">
-          {starters.map((s) => (
-            <button
-              key={s}
-              disabled={disabled}
-              onClick={() => onPick(s)}
-              className="max-w-full truncate rounded-full border border-line px-3 py-1.5 text-left text-[12.5px] text-muted transition hover:border-line-strong hover:text-fg disabled:opacity-40"
-            >
-              {s}
-            </button>
+    <div className="flex h-full flex-col justify-between gap-10">
+      <div className="grid grid-cols-2 gap-x-6">
+        <p className="text-[13px] text-fg">Pipeline</p>
+        <ol className="font-mono text-[11px] leading-[1.75] text-muted">
+          {pipeline.map((p) => (
+            <li key={p}>{p}</li>
           ))}
-        </div>
+        </ol>
+      </div>
+      <div>
+        <p className="mb-2 text-[13px] text-fg">Try</p>
+        <ul className="border-t border-line">
+          {starters.map((s) => (
+            <li key={s} className="border-b border-line">
+              <button
+                disabled={disabled}
+                onClick={() => onPick(s)}
+                className="group flex w-full items-baseline gap-4 py-2.5 text-left text-[14px] text-muted transition hover:text-fg disabled:opacity-40"
+              >
+                <span className="min-w-0 flex-1 truncate">{s}</span>
+                <span className="text-faint transition group-hover:translate-x-0.5 group-hover:text-fg" aria-hidden="true">
+                  ↗
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   )
@@ -135,13 +136,13 @@ function TurnView({
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-[4px] border border-line px-3.5 py-2.5 text-[14px] leading-relaxed text-fg">
+        <p className="max-w-[85%] whitespace-pre-wrap break-words bg-fg px-3.5 py-2.5 text-[14px] leading-relaxed text-void">
           {turn.prompt}
         </p>
       </div>
 
       {turn.status === 'pending' && (
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
+        <p className="text-[12px] text-faint">
           Inspecting<span className="animate-pulse">…</span>
         </p>
       )}
@@ -151,12 +152,12 @@ function TurnView({
       {r && (
         <button
           onClick={onSelect}
-          className={`block w-full rounded-[4px] border-l-2 py-1 pl-3.5 text-left transition ${
+          className={`block w-full border-l-2 py-1 pl-3.5 text-left transition ${
             selected ? 'border-fg' : 'border-transparent hover:border-line-strong'
           }`}
         >
           {/* Plain text only: answers are never rendered as HTML. */}
-          <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-fg/90">{answerText(r)}</p>
+          <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-fg">{answerText(r)}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <ActionBadge label={actionLabel[r.action]} stop={isStop(r.action)} />
             {backend === 'mock' && <span className="font-mono text-[10px] tracking-wider text-faint">MOCK</span>}
@@ -200,7 +201,7 @@ function Composer({ onSend, disabled }: { onSend: (t: string) => void; disabled:
   }
   return (
     <div className="border-t border-line p-4 sm:px-6">
-      <div className="flex items-end gap-3 rounded-[6px] border border-line bg-black/40 px-3.5 py-2.5 focus-within:border-line-strong">
+      <div className="flex items-end gap-3 border border-line-strong bg-void px-3.5 py-2.5 focus-within:border-fg">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -214,7 +215,7 @@ function Composer({ onSend, disabled }: { onSend: (t: string) => void; disabled:
           onClick={submit}
           disabled={disabled || !text.trim()}
           aria-label="Send"
-          className="grid h-8 w-11 shrink-0 place-items-center rounded-full border border-line-strong text-muted transition hover:border-fg hover:text-fg disabled:opacity-30"
+          className="grid h-8 w-12 shrink-0 place-items-center rounded-full bg-fg text-void transition hover:bg-fg/80 disabled:opacity-25"
         >
           <svg width="14" height="8" viewBox="0 0 14 8" fill="none" aria-hidden="true">
             <path d="M0 4h12M9 1l3 3-3 3" stroke="currentColor" strokeWidth="1.2" />

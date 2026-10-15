@@ -43,7 +43,7 @@ export function ColumnChart({
             <div
               key={t}
               aria-hidden="true"
-              className={`absolute inset-x-0 h-px ${t === 0 ? 'bg-line-strong' : 'bg-white/[0.06]'}`}
+              className={`absolute inset-x-0 h-px ${t === 0 ? 'bg-line-strong' : 'bg-fg/[0.07]'}`}
               style={{ top: `${100 - (t / max) * 100}%` }}
             />
           ))}
@@ -65,7 +65,7 @@ export function ColumnChart({
                   style={{ height: `${(d.value / max) * 100}%`, minHeight: d.value ? 2 : 0 }}
                 />
                 {hover === i && (
-                  <div className="pointer-events-none absolute bottom-full z-10 mb-2 whitespace-nowrap rounded-[4px] border border-line-strong bg-[#0d0d0d] px-2.5 py-1.5 shadow-xl">
+                  <div className="pointer-events-none absolute bottom-full z-10 mb-2 whitespace-nowrap rounded-[4px] border border-line-strong bg-void px-2.5 py-1.5 shadow-xl">
                     <p className="text-[13px] font-medium text-fg">
                       {fmt(d.value)} <span className="font-normal text-muted">{valueLabel}</span>
                     </p>
@@ -122,14 +122,13 @@ export function BarList({
   )
 }
 
+// Number first, label under it, as in a "stats & facts" block.
 export function StatTile({ label, value, sub, hero }: { label: string; value: string; sub?: string; hero?: boolean }) {
   return (
     <div className="min-w-0">
-      <p className="text-[12px] text-faint">{label}</p>
-      <p className={`mt-1 font-normal tracking-[-0.01em] text-fg ${hero ? 'text-[52px] leading-none' : 'text-[28px] leading-tight'}`}>
-        {value}
-      </p>
-      {sub && <p className="mt-1 font-mono text-[10px] text-faint">{sub}</p>}
+      <p className={`display text-fg ${hero ? 'text-[clamp(56px,6vw,88px)]' : 'text-[clamp(36px,3.6vw,52px)]'}`}>{value}</p>
+      <p className="mt-3 text-[12px] leading-snug text-fg">{label}</p>
+      {sub && <p className="mt-0.5 text-[11px] leading-snug text-faint">{sub}</p>}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { chat, login, type Backend } from '../api/client'
 import { actionLabel, isStop, type Action } from '../api/contract'
-import { Chamfer } from '../components/Chamfer'
+import { Masthead } from '../components/Masthead'
 import { StatTile } from '../components/charts'
 import { ActionBadge } from '../components/PayloadCard'
 // Same scoring rules as eval/run.mjs, so live and frozen numbers agree.
@@ -117,149 +117,155 @@ export function EvalView() {
   const p50 = overheads.length ? overheads[Math.ceil(overheads.length / 2) - 1] : null
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
-      <Chamfer className="min-w-0">
-        <div className="flex flex-col">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-6 py-4 sm:px-8">
-            <h2 className="text-[15px] text-fg">Live red-team run</h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-              {cases.length} cases{backend === 'mock' ? ' · mock gateway, numbers are not real' : ''}
-            </span>
-            <button
-              onClick={run}
-              disabled={running || !cases.length}
-              className="ml-auto rounded-full bg-fg px-4 py-1.5 text-[13px] text-void transition hover:bg-white disabled:opacity-40"
-            >
-              {running ? 'Running…' : done.length ? 'Run again' : 'Run live subset'}
-            </button>
-          </div>
+    <div className="flex flex-col gap-3">
+      <Masthead title="Eval" count={cases.length}>
+        Labelled attacks and normal requests, scored with the same rules as eval/run.mjs. A block counts only if the model
+        was called 0 times.
+      </Masthead>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
+        <section className="sheet min-w-0">
+          <div className="flex flex-col">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-5 py-4 sm:px-8">
+              <h2 className="text-[15px] font-medium tracking-[-0.01em] text-fg">Live red-team run</h2>
+              <span className="text-[12px] text-faint">
+                {cases.length} cases{backend === 'mock' ? ' · mock gateway, numbers are not real' : ''}
+              </span>
+              <button
+                onClick={run}
+                disabled={running || !cases.length}
+                className="ml-auto rounded-full bg-fg px-4 py-1.5 text-[13px] text-void transition hover:bg-fg/80 disabled:opacity-40"
+              >
+                {running ? 'Running…' : done.length ? 'Run again' : 'Run live subset'}
+              </button>
+            </div>
 
-          <div className="grid grid-cols-2 gap-6 border-b border-line px-6 py-6 sm:grid-cols-4 sm:px-8">
-            <StatTile label="Correct action" value={`${done.filter((r) => r.correct).length}/${cases.length}`} />
-            <StatTile label="Attacks caught" value={shouldCatch ? `${caught}/${shouldCatch}` : '–'} />
-            <StatTile label="False positives" value={done.length ? String(falsePos) : '–'} />
-            <StatTile label="Leaks" value={done.length ? String(leaks) : '–'} sub={p50 != null ? `overhead p50 ${p50}ms` : undefined} />
-          </div>
+            <div className="grid grid-cols-2 gap-6 border-b border-line px-5 py-6 sm:grid-cols-4 sm:px-8">
+              <StatTile label="Correct action" value={`${done.filter((r) => r.correct).length}/${cases.length}`} />
+              <StatTile label="Attacks caught" value={shouldCatch ? `${caught}/${shouldCatch}` : '–'} />
+              <StatTile label="False positives" value={done.length ? String(falsePos) : '–'} />
+              <StatTile label="Leaks" value={done.length ? String(leaks) : '–'} sub={p50 != null ? `overhead p50 ${p50}ms` : undefined} />
+            </div>
 
-          <p className="px-6 pt-4 text-[12px] text-faint sm:px-8">Source: {source}. One request at a time; a block counts only if the model was called 0 times.</p>
+            <p className="px-5 pt-4 text-[12px] text-faint sm:px-8">Source: {source}. One request at a time.</p>
 
-          <div className="overflow-x-auto px-6 pb-6 pt-3 sm:px-8">
-            <table className="w-full min-w-[620px] border-collapse text-left">
-              <thead>
-                <tr className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
-                  {['Case', 'Category', 'Expected', 'Observed', 'Calls', 'Result'].map((h) => (
-                    <th key={h} className="border-b border-line py-2.5 pr-4 font-normal">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="text-[13px]">
-                {cases.map((c) => {
-                  const r = rows[c.id]
-                  return (
-                    <tr key={c.id} className="border-b border-white/[0.05]" title={c.prompt}>
-                      <td className="py-2.5 pr-4 font-mono text-[11px] text-fg">{c.id}</td>
-                      <td className="py-2.5 pr-4 text-muted">{c.category.replace(/_/g, ' ')}</td>
-                      <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{c.expected_action}</td>
-                      <td className="py-2.5 pr-4">
-                        {r?.observed_action ? (
-                          <ActionBadge label={actionLabel[r.observed_action]} stop={isStop(r.observed_action)} />
-                        ) : (
-                          <span className="font-mono text-[11px] text-faint">{r?.status === 'running' ? 'running…' : '—'}</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{r?.provider_calls ?? '—'}</td>
-                      <td className="py-2.5 font-mono text-[11px]">
-                        {r?.status === 'error' && <span className="text-muted">error</span>}
-                        {r?.status === 'done' &&
-                          (r.provider_leak || r.user_leak ? (
-                            <span className="rounded-full bg-fg px-2 py-0.5 text-void">LEAK</span>
-                          ) : r.correct ? (
-                            <span className="text-fg">✓ correct</span>
-                          ) : (
-                            <span className="text-muted">✗ miss</span>
-                          ))}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Chamfer>
-
-      <Chamfer className="min-w-0">
-        <div className="space-y-6 p-6 sm:p-8">
-          <div>
-            <h2 className="text-[15px] text-fg">Frozen report</h2>
-            <p className="mt-1 text-[12px] text-faint">60 held-out cases at tag eval-freeze, with and without LeakShield</p>
-          </div>
-
-          {leakshieldReport ? (
-            <>
-              <div className="grid grid-cols-2 gap-6">
-                <StatTile
-                  hero
-                  label="Provider leaks with LeakShield"
-                  value={String(leakshieldReport.summary.provider_leaks)}
-                />
-                <StatTile
-                  label="Without LeakShield"
-                  value={baselineReport ? String(baselineReport.summary.provider_leaks) : '–'}
-                  sub={baselineReport ? 'same cases, same model' : 'baseline not run yet'}
-                />
-              </div>
-              <table className="w-full border-collapse text-left text-[13px]">
+            <div className="overflow-x-auto px-5 pb-6 pt-2 sm:px-8">
+              <table className="w-full min-w-[620px] border-collapse text-left">
                 <thead>
-                  <tr className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
-                    <th className="border-b border-line py-2 font-normal">Metric</th>
-                    <th className="border-b border-line py-2 text-right font-normal">LeakShield</th>
-                    <th className="border-b border-line py-2 text-right font-normal">Baseline</th>
+                  <tr className="text-[11px] text-faint">
+                    {['Case', 'Category', 'Expected', 'Observed', 'Calls', 'Result'].map((h) => (
+                      <th key={h} className="border-b border-line py-2.5 pr-4 font-normal">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody>
-                  {(
-                    [
-                      ['Precision', 'precision'],
-                      ['Recall', 'recall'],
-                      ['False positives', 'false_positives_on_allowed'],
-                      ['Correct action', 'correct_action_rate'],
-                      ['User leaks', 'user_leaks'],
-                      ['Overhead p50 (ms)', 'overhead_ms_p50'],
-                      ['Overhead p95 (ms)', 'overhead_ms_p95'],
-                    ] as [string, keyof Summary][]
-                  ).map(([label, key]) => (
-                    <tr key={key} className="border-b border-white/[0.05]">
-                      <td className="py-2 text-muted">{label}</td>
-                      <td className="py-2 text-right font-mono text-[12px] text-fg">{String(leakshieldReport.summary[key] ?? '–')}</td>
-                      <td className="py-2 text-right font-mono text-[12px] text-muted">
-                        {baselineReport ? String(baselineReport.summary[key] ?? '–') : '–'}
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="text-[13px]">
+                  {cases.map((c) => {
+                    const r = rows[c.id]
+                    return (
+                      <tr key={c.id} className="border-b border-line" title={c.prompt}>
+                        <td className="py-2.5 pr-4 font-mono text-[11px] text-fg">{c.id}</td>
+                        <td className="py-2.5 pr-4 text-muted">{c.category.replace(/_/g, ' ')}</td>
+                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{c.expected_action}</td>
+                        <td className="py-2.5 pr-4">
+                          {r?.observed_action ? (
+                            <ActionBadge label={actionLabel[r.observed_action]} stop={isStop(r.observed_action)} />
+                          ) : (
+                            <span className="font-mono text-[11px] text-faint">{r?.status === 'running' ? 'running…' : '—'}</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{r?.provider_calls ?? '—'}</td>
+                        <td className="py-2.5 font-mono text-[11px]">
+                          {r?.status === 'error' && <span className="text-muted">error</span>}
+                          {r?.status === 'done' &&
+                            (r.provider_leak || r.user_leak ? (
+                              <span className="rounded-full bg-fg px-2 py-0.5 text-void">LEAK</span>
+                            ) : r.correct ? (
+                              <span className="text-fg">✓ correct</span>
+                            ) : (
+                              <span className="text-muted">✗ miss</span>
+                            ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
-              <p className="font-mono text-[10px] text-faint">Run at {new Date(leakshieldReport.at).toLocaleString('en-GB')}</p>
-            </>
-          ) : (
-            <div className="space-y-3 rounded-[4px] border border-dashed border-line p-5 text-[13px] text-muted">
-              <p>No frozen report yet. After the hour-15 freeze, run:</p>
-              <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-fg">
-                node eval/run.mjs eval/heldout.jsonl{'\n'}node eval/run.mjs eval/heldout.jsonl --baseline
-              </pre>
-              <p className="text-[12px] text-faint">Reports written to results/ appear here automatically.</p>
             </div>
-          )}
-
-          <div className="border-t border-line pt-5">
-            <p className="text-[12px] text-faint">
-              Live run: {done.length ? `${ratio(caught, shouldCatch)} recall on ${done.length} cases` : 'not run in this session'}
-            </p>
           </div>
-        </div>
-      </Chamfer>
+        </section>
+
+        <section className="ink min-w-0">
+          <div className="space-y-8 px-5 py-6 sm:p-8">
+            <div>
+              <h2 className="text-[15px] text-fg">Frozen report</h2>
+              <p className="mt-1 text-[12px] text-faint">60 held-out cases at tag eval-freeze, with and without LeakShield</p>
+            </div>
+
+            {leakshieldReport ? (
+              <>
+                <div className="grid grid-cols-2 gap-6">
+                  <StatTile
+                    hero
+                    label="Provider leaks with LeakShield"
+                    value={String(leakshieldReport.summary.provider_leaks)}
+                  />
+                  <StatTile
+                    label="Without LeakShield"
+                    value={baselineReport ? String(baselineReport.summary.provider_leaks) : '–'}
+                    sub={baselineReport ? 'same cases, same model' : 'baseline not run yet'}
+                  />
+                </div>
+                <table className="w-full border-collapse text-left text-[13px]">
+                  <thead>
+                    <tr className="text-[11px] text-faint">
+                      <th className="border-b border-line py-2 font-normal">Metric</th>
+                      <th className="border-b border-line py-2 text-right font-normal">LeakShield</th>
+                      <th className="border-b border-line py-2 text-right font-normal">Baseline</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(
+                      [
+                        ['Precision', 'precision'],
+                        ['Recall', 'recall'],
+                        ['False positives', 'false_positives_on_allowed'],
+                        ['Correct action', 'correct_action_rate'],
+                        ['User leaks', 'user_leaks'],
+                        ['Overhead p50 (ms)', 'overhead_ms_p50'],
+                        ['Overhead p95 (ms)', 'overhead_ms_p95'],
+                      ] as [string, keyof Summary][]
+                    ).map(([label, key]) => (
+                      <tr key={key} className="border-b border-line">
+                        <td className="py-2 text-muted">{label}</td>
+                        <td className="py-2 text-right font-mono text-[12px] text-fg">{String(leakshieldReport.summary[key] ?? '–')}</td>
+                        <td className="py-2 text-right font-mono text-[12px] text-muted">
+                          {baselineReport ? String(baselineReport.summary[key] ?? '–') : '–'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="font-mono text-[10px] text-faint">Run at {new Date(leakshieldReport.at).toLocaleString('en-GB')}</p>
+              </>
+            ) : (
+              <div className="space-y-3 border border-dashed border-line-strong p-5 text-[13px] text-muted">
+                <p>No frozen report yet. After the hour-15 freeze, run:</p>
+                <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-fg">
+                  node eval/run.mjs eval/heldout.jsonl{'\n'}node eval/run.mjs eval/heldout.jsonl --baseline
+                </pre>
+                <p className="text-[12px] text-faint">Reports written to results/ appear here automatically.</p>
+              </div>
+            )}
+
+            <div className="border-t border-line pt-5">
+              <p className="text-[12px] text-faint">
+                Live run: {done.length ? `${ratio(caught, shouldCatch)} recall on ${done.length} cases` : 'not run in this session'}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

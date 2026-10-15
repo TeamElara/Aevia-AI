@@ -1,3 +1,5 @@
+import type { Backend } from '../api/client'
+
 export const initials = (name: string) =>
   name
     .split(' ')
@@ -14,3 +16,5 @@ export const ms = (n: number | null | undefined) =>
 
 // Pseudonymous ids are long HMAC hex strings; the head is enough to tell users apart.
 export const shortId = (id: string) => (id.length > 12 ? `${id.slice(0, 10)}…` : id)
+
+export const backendLabel: Record<Backend, string> = { live: 'live gateway', simulated: 'simulated provider', mock: 'mock gateway' }

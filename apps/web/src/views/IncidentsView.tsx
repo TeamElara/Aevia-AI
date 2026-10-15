@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { subscribeEvents } from '../api/client'
 import { actionLabel, isStop, type AuditEvent } from '../api/contract'
-import { Chamfer } from '../components/Chamfer'
+import { Masthead } from '../components/Masthead'
 import { ActionBadge } from '../components/PayloadCard'
 import { ms, shortId } from '../lib/format'
 import { useAdmin } from '../lib/useAdmin'
@@ -44,15 +44,19 @@ export function IncidentsView() {
     .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts))
 
   return (
-    <Chamfer className="min-w-0">
-      <div className="flex flex-col">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-6 py-4 sm:px-8">
-          <h2 className="text-[15px] text-fg">Live incidents</h2>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+    <div className="flex flex-col gap-3">
+      <Masthead title="Incidents" count={rows.length}>
+        Every request the gateway stopped or changed, as it happens. Metadata only: pseudonymous user ids, categories and
+        rule ids. No prompt text or values are ever stored or shown.
+      </Masthead>
+      <section className="sheet min-w-0">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-5 py-4 sm:px-8">
+          <h2 className="text-[15px] font-medium tracking-[-0.01em] text-fg">Live stream</h2>
+          <span className="text-[12px] text-faint">
             <span className={status === 'open' ? 'text-fg' : ''}>●</span>{' '}
             {error ? `error: ${error}` : status === 'open' ? `streaming${admin?.backend === 'mock' ? ' · mock' : ''}` : status}
           </span>
-          <div className="ml-auto flex gap-1 rounded-full border border-line p-0.5 text-[12px]" role="group" aria-label="Filter">
+          <div className="ml-auto flex gap-1 rounded-full border border-line-strong p-0.5 text-[12px]" role="group" aria-label="Filter">
             {[
               ['Incidents', true],
               ['All requests', false],
@@ -69,14 +73,10 @@ export function IncidentsView() {
           </div>
         </div>
 
-        <p className="px-6 pt-4 text-[12px] text-faint sm:px-8">
-          Metadata only: pseudonymous user ids, categories and rule ids. No prompt text or values are ever stored or shown.
-        </p>
-
-        <div className="overflow-x-auto px-6 pb-6 pt-3 sm:px-8">
+        <div className="overflow-x-auto px-5 pb-6 pt-2 sm:px-8">
           <table className="w-full min-w-[600px] border-collapse text-left">
             <thead>
-              <tr className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
+              <tr className="text-[11px] text-faint">
                 {['Time', 'User', 'Stage', 'Categories', 'Rule', 'Action', 'Via', 'Total'].map((h) => (
                   <th
                     key={h}
@@ -100,7 +100,7 @@ export function IncidentsView() {
               {rows.map((e) => (
                 <tr
                   key={e.request_id}
-                  className={`border-b border-white/[0.05] transition-colors duration-[2000ms] ${fresh.has(e.request_id) ? 'bg-white/[0.07]' : ''}`}
+                  className={`border-b border-line transition-colors duration-[2000ms] ${fresh.has(e.request_id) ? 'bg-fg/[0.07]' : ''}`}
                 >
                   <td className="py-2.5 pr-4 font-mono text-[11px] text-muted tabular-nums">
                     {new Date(e.ts).toLocaleTimeString('en-GB')}
@@ -124,7 +124,7 @@ export function IncidentsView() {
             </tbody>
           </table>
         </div>
-      </div>
-    </Chamfer>
+      </section>
+    </div>
   )
 }
