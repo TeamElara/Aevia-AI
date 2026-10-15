@@ -73,8 +73,30 @@ Response `200`:
 
 Errors: `401` bad or missing token, `400` empty message, `503` provider down after retries. Body: `{ "error": "<short message>" }`, with no prompt text.
 
+## Eval mode (used by `eval/run.mjs`)
+
+Only when the gateway is started with `EVAL_MODE=1`. Without it, the gateway ignores both headers below.
+
+**`X-Eval-Capture: 1`** on `POST /api/chat` adds an `eval` object to the response:
+
+```json
+"eval": {
+  "provider_calls": 1,
+  "provider_payload": "<every message the provider received for this request, joined with \\n>"
+}
+```
+
+- `provider_payload` is `null` when the provider was not called.
+- The runner checks it for leaks, keeps only booleans, and discards it. The gateway must never log or persist it.
+
+**`X-LeakShield-Mode: passthrough`** runs the **baseline**:
+- Authentication still applies.
+- The prompt goes to the same model unmasked, with naive RAG: the same `$text` search but **no ACL filter**, no quarantine, no outbound scan and no response checks.
+- Combine it with `X-Eval-Capture: 1` so the runner can count the baseline's leaks.
+
+**Canaries.** Every canary marker the gateway plants starts with `LS-CANARY-`. If one appears in a delivered `answer`, the runner counts a user leak.
+
 ## Still to agree
 
 - `GET /api/events`: SSE stream of `AuditEvent` for the Incidents view (hour 9)
 - `GET /api/approvals`, `POST /api/approvals/:id/approve|reject` (hour 12)
-- Eval mode: provider call counter + captured-payload booleans per request (hour 9)
