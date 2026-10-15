@@ -9,7 +9,7 @@ const CATEGORIES = [
   'normal_work', 'security_discussion', 'benign_lookalike', 'authorised_rag',
   'sensitive_disclosure', 'direct_injection', 'indirect_injection', 'unauthorised_retrieval',
 ]
-const AUTHORS = ['mahatva', 'alwaz', 'arihant', 'script']
+const AUTHORS = ['mahatva', 'alwaz', 'arihant', 'script', 'ojaswi']
 const USERS = ['asha', 'ravi', 'meera', 'ceo', 'admin']
 const ACTIONS = [
   'allow', 'warn', 'mask', 'redact', 'quarantine', 'deny', 'require_approval', 'block', 'block_response',
@@ -35,6 +35,9 @@ function check(c, seenIds) {
   oneOf('user', USERS)
   oneOf('expected_action', ACTIONS)
 
+  // Detection (Ojaswi) tunes on dev and may write dev cases, never held-out or robustness ones.
+  if (c.author === 'ojaswi' && c.split !== undefined && c.split !== 'dev') errs.push('author "ojaswi" may only write dev cases')
+  if (c.response !== undefined && typeof c.response !== 'string') errs.push('"response" must be a string')
   if (c.id && c.split && !String(c.id).startsWith(ID_PREFIX[c.split])) errs.push(`id for split "${c.split}" must start with ${ID_PREFIX[c.split]}`)
   if (c.id && seenIds.has(c.id)) errs.push(`duplicate id ${c.id}`)
   if (typeof c.prompt === 'string' && !c.prompt.trim()) errs.push('empty prompt')

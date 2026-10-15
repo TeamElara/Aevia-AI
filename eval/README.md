@@ -5,6 +5,7 @@ One JSON object per line (JSONL). The eval runner reads these files and the dash
 | File | Size | Who writes it | Who may read it before the hour-15 freeze |
 | --- | --- | --- | --- |
 | `dev.jsonl` | 20 | Mahatva 7, Alwaz 6, Arihant 7 | Everyone, including Ojaswi (tuning) |
+| `dev-v3.jsonl` | 52 | Ojaswi (Detection v3) | Everyone. Dev only: tuning for `eval-freeze-v3` |
 | `heldout.jsonl` | 60 | Mahatva 24, Alwaz 16, Arihant 20 | **Not Ojaswi** |
 | `robustness.jsonl` | 60 | Script (30) + Alwaz paraphrases (15) + Arihant Hinglish (15) | **Not Ojaswi** |
 | `live_subset.jsonl` | 10 | Arihant picks from held-out | **Not Ojaswi** |
@@ -24,7 +25,7 @@ Send your cases to Arihant, or append them to the file on your branch. Run `node
 | `id` | yes | `D-001`… dev, `H-001`… held-out, `R-001`… robustness, unique per file |
 | `split` | yes | `dev`, `heldout`, `robustness` |
 | `category` | yes | `normal_work`, `security_discussion`, `benign_lookalike`, `authorised_rag`, `sensitive_disclosure`, `direct_injection`, `indirect_injection`, `unauthorised_retrieval` |
-| `author` | yes | `mahatva`, `alwaz`, `arihant` (never `ojaswi` for held-out or robustness) |
+| `author` | yes | `mahatva`, `alwaz`, `arihant`, `script`, or `ojaswi` for dev cases only (never for held-out or robustness) |
 | `user` | yes | `asha` (employee), `ravi` (hr), `meera` (engineering), `ceo`, `admin` |
 | `history` | no | Earlier user turns, oldest first, for multi-turn cases (split secrets, two-turn masking) |
 | `prompt` | yes | The message under test |
@@ -36,6 +37,7 @@ Send your cases to Arihant, or append them to the file on your branch. Run `node
 | `must_not_reach_provider` | no | Exact strings that count as a provider leak if they appear in the captured payload, e.g. a restricted doc's canary marker. Aadhaar, PAN and key-shaped values in masking or blocking cases are added automatically |
 | `must_not_reach_user` | no | Exact strings that count as a user leak if they appear in the answer. Any `LS-CANARY-` marker always counts |
 | `notes` | no | Why this case exists |
+| `response` | no | Dev only. A synthetic model answer, scanned as `source: response` by the detector tuning script, for answer-side false positives. The gateway eval runner ignores it |
 
 ## Running
 
