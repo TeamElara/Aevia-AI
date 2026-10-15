@@ -1,5 +1,19 @@
 # Demo laptop: ready
 
+## ReDoS and Halo UI deployment verification
+
+Verified on 15 October 2026 against clean demo-laptop `main` at `0c560db7e2671d024a3f773b89fe34703e353ffc`, after both the ReDoS/sanitizer hotfix (#25) and Halo UI (#31) merged. Dependencies were installed from the lockfile and the gateway/console were restarted from that checkout. The persistent synthetic Mongo fixtures and pre-pulled Ollama fallback remain available.
+
+- **498 unit/security/component + 54 integration = 552 tests passed**, including isolated 50 KB detector/sanitizer regressions. Gateway/access TypeScript, web production build and lint passed.
+- **Two live Groq technical passes: 21/21 checks each**, covering KYC masking/restoration, secret/injection blocking, ACL/quarantine, approval ownership/hash/single-use, compatible endpoints, SSE and stats. Audit, encrypted-approval storage and gateway stdout/stderr checks found none of the seeded test values or configured key.
+- The actual restarted gateway blocked five 29,063-character synthetic injection probes (newlines, spaces, tabs, NBSP and mixed spaces/tabs), each at zero provider calls. Observed HTTP wall times were 20–42 ms; this is a smoke sample, not a universal latency guarantee.
+- The merged live console rendered a KYC answer with restored synthetic identifiers; its inspector showed masked Aadhaar/PAN tokens and one model call. No browser console errors were observed during that check.
+- The existing offline backup hash still matches. That recording predates Halo and does **not** establish that the new UI was recorded.
+
+Metadata-only evidence: [postmerge-demo-readiness.json](../results/mahatva/postmerge-demo-readiness.json). This verifies deployment of the specific post-freeze hotfix; frozen v1/v2 reports and tags are unchanged. It is not a new held-out evaluation or two joint driver/narrator rehearsals. #30 was closed as superseded by the whitespace fix in #25; vertical-tab/form-feed role-header coverage remains deferred to v3. IFSC remains warn for the current demo.
+
+## Original setup and earlier checks
+
 15 October 2026. The actual Windows machine has a fresh, standalone clone of remote `main` under `Documents/LeakShield-Demo`. It is a normal checkout with no Codex branch/worktree and an empty `git status --porcelain`. The private `.env`, dependencies and local runtime/data cache are ignored. The installed system Node/npm/Git work outside Codex.
 
 ## Configured and verified

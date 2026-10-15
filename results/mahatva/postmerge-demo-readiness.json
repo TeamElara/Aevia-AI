@@ -1,0 +1,290 @@
+{
+  "at": "2026-10-15T16:22:28.441Z",
+  "source_commit": "0c560db7e2671d024a3f773b89fe34703e353ffc",
+  "passed": true,
+  "clean_main": true,
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "classifier_backend": "none",
+  "baseline_disabled": true,
+  "unit_security_component_tests": {
+    "passed": 498,
+    "failed": 0
+  },
+  "integration_tests": {
+    "passed": 54,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "access_typecheck": "passed",
+  "web_build": "passed",
+  "web_lint": "passed",
+  "technical_passes": [
+    {
+      "pass": 1,
+      "checks": [
+        {
+          "check": "kyc_mask_restore_full_outbound",
+          "passed": true
+        },
+        {
+          "check": "same_conversation_token_reuse",
+          "passed": true
+        },
+        {
+          "check": "credential_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "placeholder_replacement",
+          "passed": true
+        },
+        {
+          "check": "injection_english_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "injection_hinglish_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "injection_base64_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "salary_explicit_deny",
+          "passed": true
+        },
+        {
+          "check": "impersonation_explicit_deny",
+          "passed": true
+        },
+        {
+          "check": "ravi_authorised_salary",
+          "passed": true
+        },
+        {
+          "check": "poisoned_attachment_quarantine",
+          "passed": true
+        },
+        {
+          "check": "garuda_external_pause",
+          "passed": true
+        },
+        {
+          "check": "approval_hash_mismatch_rejected",
+          "passed": true
+        },
+        {
+          "check": "approval_wrong_owner_rejected",
+          "passed": true
+        },
+        {
+          "check": "approved_answer_original_owner",
+          "passed": true
+        },
+        {
+          "check": "approval_single_use",
+          "passed": true
+        },
+        {
+          "check": "compatible_scan",
+          "passed": true
+        },
+        {
+          "check": "compatible_completions",
+          "passed": true
+        },
+        {
+          "check": "admin_stats_and_access",
+          "passed": true
+        },
+        {
+          "check": "five_seeded_values_exercised",
+          "passed": true
+        },
+        {
+          "check": "authenticated_sse_metadata",
+          "passed": true
+        }
+      ],
+      "duration_ms": 4414
+    },
+    {
+      "pass": 2,
+      "checks": [
+        {
+          "check": "kyc_mask_restore_full_outbound",
+          "passed": true
+        },
+        {
+          "check": "same_conversation_token_reuse",
+          "passed": true
+        },
+        {
+          "check": "credential_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "placeholder_replacement",
+          "passed": true
+        },
+        {
+          "check": "injection_english_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "injection_hinglish_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "injection_base64_zero_calls",
+          "passed": true
+        },
+        {
+          "check": "salary_explicit_deny",
+          "passed": true
+        },
+        {
+          "check": "impersonation_explicit_deny",
+          "passed": true
+        },
+        {
+          "check": "ravi_authorised_salary",
+          "passed": true
+        },
+        {
+          "check": "poisoned_attachment_quarantine",
+          "passed": true
+        },
+        {
+          "check": "garuda_external_pause",
+          "passed": true
+        },
+        {
+          "check": "approval_hash_mismatch_rejected",
+          "passed": true
+        },
+        {
+          "check": "approval_wrong_owner_rejected",
+          "passed": true
+        },
+        {
+          "check": "approved_answer_original_owner",
+          "passed": true
+        },
+        {
+          "check": "approval_single_use",
+          "passed": true
+        },
+        {
+          "check": "compatible_scan",
+          "passed": true
+        },
+        {
+          "check": "compatible_completions",
+          "passed": true
+        },
+        {
+          "check": "admin_stats_and_access",
+          "passed": true
+        },
+        {
+          "check": "five_seeded_values_exercised",
+          "passed": true
+        },
+        {
+          "check": "authenticated_sse_metadata",
+          "passed": true
+        }
+      ],
+      "duration_ms": 4341
+    }
+  ],
+  "privacy": {
+    "audited_events": 402,
+    "approval_records": 2,
+    "surfaces": [
+      {
+        "name": "audit",
+        "leak_labels": []
+      },
+      {
+        "name": "approvals",
+        "leak_labels": []
+      },
+      {
+        "name": "gateway_log",
+        "leak_labels": []
+      },
+      {
+        "name": "gateway_stderr",
+        "leak_labels": []
+      }
+    ],
+    "seeded_documents": 10,
+    "quarantined_sources": 2
+  },
+  "redos_http": {
+    "at": "2026-10-15T16:23:31.913Z",
+    "source_commit": "0c560db7e2671d024a3f773b89fe34703e353ffc",
+    "passed": true,
+    "rows": [
+      {
+        "family": "newlines",
+        "input_chars": 29063,
+        "http_status": 200,
+        "action": "block",
+        "provider_calls": 0,
+        "wall_ms": 42
+      },
+      {
+        "family": "spaces",
+        "input_chars": 29063,
+        "http_status": 200,
+        "action": "block",
+        "provider_calls": 0,
+        "wall_ms": 20
+      },
+      {
+        "family": "tabs",
+        "input_chars": 29063,
+        "http_status": 200,
+        "action": "block",
+        "provider_calls": 0,
+        "wall_ms": 22
+      },
+      {
+        "family": "nbsp",
+        "input_chars": 29063,
+        "http_status": 200,
+        "action": "block",
+        "provider_calls": 0,
+        "wall_ms": 37
+      },
+      {
+        "family": "spaces_tabs",
+        "input_chars": 29063,
+        "http_status": 200,
+        "action": "block",
+        "provider_calls": 0,
+        "wall_ms": 21
+      }
+    ],
+    "scope": "Post-merge demo-laptop HTTP smoke on the real production gateway with synthetic prompts within the 30,000-character request limit; no provider calls. Wall times are observed samples, not a general latency SLA or a new frozen evaluation."
+  },
+  "browser": {
+    "provider_calls": 1,
+    "inspector_masked_tokens": true,
+    "kyc_action": "mask",
+    "user_restored_values": true,
+    "mode": "live gateway",
+    "observed_console_errors": 0,
+    "checked": true,
+    "ui": "Merged Halo console"
+  },
+  "offline_backup_hash_matches": true,
+  "backup_scope": "Existing backup integrity verified; recording predates the Halo UI and is not a new-UI recording.",
+  "scope": "Post-freeze deployment/readiness verification on prepared Windows demo laptop after PRs #25 and #31. Not a new frozen evaluation, universal ReDoS guarantee, or joint driver/narrator rehearsal.",
+  "remaining": "Blind v3 commitment is PR #32, cases private and unrun. IFSC policy unchanged. PR #30 closed as superseded; vertical-tab/form-feed header coverage remains deferred to v3."
+}
