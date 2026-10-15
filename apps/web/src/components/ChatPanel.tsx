@@ -5,7 +5,7 @@ import { replaceSecrets } from '../lib/secrets'
 import { toneOf, type Tone } from '../lib/tone'
 import { ActionBadge } from './PayloadCard'
 import { reducedMotion } from '../lib/motion'
-import { Arrow, Icon, Magnetic, Orb, Tokens } from './ui'
+import { Arrow, BrandMark, Icon, Magnetic, Orb, Tokens, Wordmark } from './ui'
 import { HandButterfly } from './HandButterfly'
 import { BarIntro } from './BarIntro'
 import { Markdown } from './Markdown'
@@ -89,6 +89,7 @@ export function ChatPanel({
         </header>
         <div className="home-hero">
           <div className="home-copy">
+            <div className="hero-brand"><BrandMark size={52} /><Wordmark className="text-[24px]" /></div>
             <h1 className="home-title"><span className="hero-title-line">AI WITHOUT</span><span className="hero-title-line">THE EXPOSURE.</span></h1>
             <p className="home-description">Ask freely. Private values stay protected.<br />Your ideas are what reach the model.</p>
             <button className="hero-cta" onClick={() => setFocusRequest(n => n + 1)} disabled={!ready}>Start a conversation <Arrow /></button>

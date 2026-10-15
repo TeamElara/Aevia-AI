@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { users } from '../data/demo'
 import { reducedMotion } from '../lib/motion'
 import { Avatar } from './Sidebar'
-import { Icon, Modal, Orb } from './ui'
+import { BrandMark, Icon, Modal } from './ui'
 
 const how = [
   'Pick a person below. Each one is a demo account with its own role.',
@@ -37,7 +37,7 @@ export function SignIn({
     <Modal open={open} onClose={onClose} label="Sign in">
       <div className="flex items-start justify-between gap-4 px-6 pt-6">
         <div>
-          <Orb tone="idle" size={30} />
+          <BrandMark size={40} tone="idle" />
           <h2 className="mt-4 font-serif text-[30px] leading-tight">Who’s chatting?</h2>
           <p className="mt-1 text-[13.5px] text-faint">Sign in as one of the demo people. No password needed.</p>
         </div>
