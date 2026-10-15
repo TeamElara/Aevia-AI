@@ -66,6 +66,29 @@ export function chat(
   return request<ChatResponse>('POST', '/api/chat', req, token, opts.evalCapture ? { 'X-Eval-Capture': '1' } : {})
 }
 
+export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+export const UPLOAD_TYPES = 'image/png,image/jpeg,image/webp,application/pdf'
+
+const fileData = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(new ApiError('UNREADABLE_FILE'))
+    reader.readAsDataURL(file)
+  })
+
+// A photo or PDF goes to the gateway, which reads and cleans it before anything reaches a model.
+export async function chatWithFile(backend: Backend, token: string, req: ChatRequest, file: File): Promise<ChatResponse> {
+  if (backend === 'mock') throw new ApiError('ATTACHMENTS_NEED_GATEWAY')
+  if (file.size > MAX_UPLOAD_BYTES) throw new ApiError('FILE_TOO_LARGE', 413)
+  const message = req.message.trim()
+  return request<ChatResponse>('POST', '/api/chat/attachment', {
+    ...(message ? { message } : {}),
+    conversation_id: req.conversation_id ?? null,
+    file: { name: file.name, data: await fileData(file) },
+  }, token)
+}
+
 // ------------------------------------------------------------- dashboards (admin)
 
 export function subscribeEvents(

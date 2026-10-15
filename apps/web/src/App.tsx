@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { chat, login, pollApprovalResult, type Backend } from './api/client'
+import { chat, chatWithFile, login, pollApprovalResult, type Backend } from './api/client'
 import { actionLabel, answerText, isStop } from './api/contract'
 import { ChatPanel, type Turn } from './components/ChatPanel'
 import { PayloadCard, type Exchange } from './components/PayloadCard'
@@ -136,13 +136,14 @@ export default function App() {
     setActiveUser(id)
   }
 
-  async function send(text: string) {
+  async function send(text: string, file?: File) {
     if (!session) return
     const generation = chatGeneration.current
     const id = crypto.randomUUID()
-    setTurns((ts) => [...ts, { id, prompt: text, status: 'pending' }])
+    setTurns((ts) => [...ts, { id, prompt: text, status: 'pending', ...(file ? { file: { name: file.name, size: file.size } } : {}) }])
     try {
-      const res = await chat(session.backend, session.token, { conversation_id: conversationId, message: text })
+      const req = { conversation_id: conversationId, message: text }
+      const res = file ? await chatWithFile(session.backend, session.token, req, file) : await chat(session.backend, session.token, req)
       if (generation !== chatGeneration.current) return
       setConversationId(res.conversation_id)
       setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'done', response: res } : t)))

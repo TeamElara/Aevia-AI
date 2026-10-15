@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import type { Backend } from '../api/client'
 import { actionLabel, answerText, isStop, type ChatResponse } from '../api/contract'
 import { starters, type DemoUser } from '../data/demo'
 import { replaceSecrets } from '../lib/secrets'
@@ -9,13 +8,32 @@ import { reducedMotion } from '../lib/motion'
 import { Arrow, Icon, Magnetic, Orb, Tokens } from './ui'
 import { HandButterfly } from './HandButterfly'
 import { Markdown } from './Markdown'
+import { AttachmentCard, FileChip } from './Attachment'
+import { MAX_UPLOAD_BYTES, UPLOAD_TYPES, type Backend } from '../api/client'
 
 export type Turn = {
   id: string
   prompt: string
   status: 'pending' | 'done' | 'error'
+  /** A photo or PDF sent with the message; only its name and size are kept here. */
+  file?: { name: string; size: number }
   response?: ChatResponse
   error?: string
+}
+
+// Gateway codes for file uploads, as sentences.
+const UPLOAD_ERRORS: Record<string, string> = {
+  UNSUPPORTED_FILE: 'That file type is not supported. Send a PNG, JPEG or WebP photo, or a PDF.',
+  FILE_TOO_LARGE: 'That file is larger than 8 MB.',
+  PAYLOAD_TOO_LARGE: 'That file is larger than 8 MB.',
+  TOO_MANY_PAGES: 'That PDF has more than 20 pages.',
+  TOO_MANY_SCANNED_PAGES: 'That PDF has more than 5 scanned pages.',
+  NO_TEXT_FOUND: 'No readable text was found in that file.',
+  UNREADABLE_FILE: 'That file could not be read. It may be damaged or password-protected.',
+  ATTACHMENT_BUSY: 'The gateway is reading other files. Try again in a moment.',
+  OCR_TIMEOUT: 'Reading that file took too long. Try a clearer or smaller image.',
+  ATTACHMENTS_UNAVAILABLE: 'This gateway does not accept files yet.',
+  ATTACHMENTS_NEED_GATEWAY: 'Files need the live gateway; the offline demo cannot read them.',
 }
 
 const greeting = () => {
@@ -45,7 +63,7 @@ export function ChatPanel({
   selectedId: string | null
   tone: Tone
   pulseKey?: string
-  onSend: (text: string) => void
+  onSend: (text: string, file?: File) => void
   onInspect: (id: string) => void
   onShowExamples: () => void
   actingPosts?: ReactNode
@@ -141,9 +159,14 @@ function TurnView({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <p className="max-w-[85%] origin-bottom-right animate-pop whitespace-pre-wrap break-words rounded-[20px] rounded-br-[6px] border border-line-2 bg-surface/90 px-4 py-2.5 text-[15px] leading-relaxed text-fg shadow-[var(--shadow)] backdrop-blur">
-          <Tokens text={turn.prompt} />
-        </p>
+        <div className="flex max-w-[85%] flex-col items-end gap-2">
+          {turn.file && <FileChip name={turn.file.name} size={turn.file.size} />}
+          {turn.prompt && (
+            <p className="origin-bottom-right animate-pop whitespace-pre-wrap break-words rounded-[20px] rounded-br-[6px] border border-line-2 bg-surface/90 px-4 py-2.5 text-[15px] leading-relaxed text-fg shadow-[var(--shadow)] backdrop-blur">
+              <Tokens text={turn.prompt} />
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -164,11 +187,11 @@ function TurnView({
                   <i key={i} style={{ ['--d' as string]: i }} />
                 ))}
               </span>
-              <span className="sheen sheen-fast">Running the checks</span>
+              <span className="sheen sheen-fast">{turn.file ? 'Reading the file on the gateway' : 'Running the checks'}</span>
             </p>
           )}
 
-          {turn.status === 'error' && <p className="text-[15px] text-muted">Gateway error: {turn.error}</p>}
+          {turn.status === 'error' && <p className="text-[15px] text-muted">{UPLOAD_ERRORS[turn.error ?? ''] ?? `Gateway error: ${turn.error}`}</p>}
 
           {r && (
             <>
@@ -189,6 +212,7 @@ function TurnView({
                   {r.provider_calls} model {r.provider_calls === 1 ? 'call' : 'calls'}
                 </span>
               </div>
+              {r.attachment && <AttachmentCard attachment={r.attachment} />}
             </>
           )}
 
@@ -242,11 +266,24 @@ function useTypewriter(active: boolean) {
   return shown
 }
 
-function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (t: string) => void; disabled: boolean; busy: boolean; big?: boolean; focusRequest?: number }) {
+function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (t: string, file?: File) => void; disabled: boolean; busy: boolean; big?: boolean; focusRequest?: number }) {
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
   const [launches, setLaunches] = useState(0)
+  const [file, setFile] = useState<File | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [dragging, setDragging] = useState(false)
   const box = useRef<HTMLTextAreaElement>(null)
+  const picker = useRef<HTMLInputElement>(null)
+  // The type and size are checked again on the gateway; this only saves a wasted upload.
+  const choose = (picked: File | undefined) => {
+    if (!picked) return
+    if (!UPLOAD_TYPES.split(',').includes(picked.type)) return setFileError('Choose a PNG, JPEG or WebP photo, or a PDF.')
+    if (picked.size > MAX_UPLOAD_BYTES) return setFileError('That file is larger than 8 MB.')
+    setFileError(null)
+    setFile(picked)
+    box.current?.focus()
+  }
   useEffect(() => {
     const input = box.current
     const panel = input?.closest<HTMLElement>('.composer')
@@ -296,9 +333,12 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
   const hint = useTypewriter(!text && !focused)
   const submit = () => {
     const t = text.trim()
-    if (!t || disabled) return
-    onSend(t)
+    if ((!t && !file) || disabled) return
+    onSend(t, file ?? undefined)
     setText('')
+    setFile(null)
+    setFileError(null)
+    if (picker.current) picker.current.value = ''
     setLaunches((n) => n + 1)
   }
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -311,10 +351,19 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
   return (
     <div
       onClick={() => box.current?.focus()}
+      onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragging(true) } }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]) }}
       data-busy={busy ? 'true' : undefined}
-      className={`composer ${big ? 'composer-large' : ''} cursor-text rounded-[24px] border border-line bg-surface/90 p-2 pl-5 text-left shadow-[var(--shadow-lg)] backdrop-blur-xl transition-[border-color] duration-300 focus-within:border-transparent`}
+      className={`composer ${big ? 'composer-large' : ''} cursor-text rounded-[24px] border bg-surface/90 p-2 pl-5 text-left shadow-[var(--shadow-lg)] backdrop-blur-xl transition-[border-color] duration-300 focus-within:border-transparent ${dragging ? 'border-accent' : 'border-line'}`}
     >
       {big && <span className="composer-arrival" aria-hidden="true" />}
+      {(file || fileError) && (
+        <div className="flex flex-wrap items-center gap-2 pb-1 pr-2 pt-1">
+          {file && <FileChip name={file.name} size={file.size} onRemove={() => { setFile(null); if (picker.current) picker.current.value = '' }} />}
+          {fileError && <span role="alert" className="text-[12.5px] text-muted">{fileError}</span>}
+        </div>
+      )}
       <div className="relative flex items-end gap-3">
         {!text && (
           <span aria-hidden="true" className="pointer-events-none absolute left-0 top-2 text-[15.5px] leading-relaxed text-faint">
@@ -333,10 +382,21 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
           aria-label="Message"
           className="max-h-48 min-w-0 flex-1 resize-none self-center bg-transparent py-2 text-[15.5px] leading-relaxed text-fg focus:outline-none"
         />
+        <input ref={picker} type="file" accept={UPLOAD_TYPES} className="hidden" onChange={(e) => choose(e.target.files?.[0])} tabIndex={-1} aria-hidden="true" />
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); picker.current?.click() }}
+          disabled={disabled}
+          aria-label="Attach a photo or PDF"
+          title="Attach a photo or PDF. It is read on the gateway and sensitive values are hidden."
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-30"
+        >
+          <Icon name="clip" className="h-[19px] w-[19px]" />
+        </button>
         <Magnetic strength={0.3}>
           <button
             onClick={submit}
-            disabled={disabled || !text.trim()}
+            disabled={disabled || (!text.trim() && !file)}
             aria-label="Send"
             className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-fg text-void shadow-[0_6px_20px_-6px_var(--tone)] transition duration-300 [transition-timing-function:var(--ease-spring)] hover:scale-110 active:scale-90 disabled:scale-90 disabled:opacity-20 disabled:shadow-none"
           >
