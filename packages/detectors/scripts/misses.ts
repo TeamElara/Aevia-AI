@@ -55,7 +55,7 @@ if (corpus) {
 
 const cases = files.flatMap((f) => parseJsonl(readFileSync(f, 'utf8')));
 const results = cases.map((c) => runCase(c, docs));
-const report = missesReport(cases, results, { tag: git('rev-parse', '--short', TAG), files });
+const report = missesReport(cases, results, { tag: git('rev-parse', '--short', `${TAG}^{commit}`), tagName: TAG, files });
 
 const out = valueOf('--out');
 if (out) {

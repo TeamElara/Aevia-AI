@@ -44,3 +44,8 @@ describe('misses report', () => {
     for (const c of CASES) expect(report).not.toContain(c.prompt);
   });
 });
+
+it('reports the selected versioned freeze instead of hardcoding the old tag', () => {
+  const report = missesReport([], [], { tag: 'abc1234', tagName: 'eval-freeze-v2', files: [] });
+  expect(report).toContain('Frozen tag `eval-freeze-v2` (abc1234)');
+});
