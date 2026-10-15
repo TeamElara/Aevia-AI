@@ -7,7 +7,8 @@ import { once } from 'node:events';
 import request from 'supertest';
 import { resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { createCanvas } from '@napi-rs/canvas';
+import { readFileSync } from 'node:fs';
+import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { seedDatabase } from '../../seed/seed.js';
 import { loadAccessAdapter } from '../../apps/gateway/src/access-adapter.js';
 import { createApp } from '../../apps/gateway/src/app.js';
@@ -55,12 +56,21 @@ const login = async (user: string) => (await base.post('/api/auth/login').send({
 const upload = (token: string, name: string, data: Buffer, message?: string) =>
   base.post('/api/chat/attachment').set('Authorization', `Bearer ${token}`).send({ ...(message ? { message } : {}), file: { name, data: data.toString('base64') } });
 
-function photo(lines: string[], format: 'png' | 'jpeg' = 'png') {
+function photo(lines: string[]) {
   const surface = createCanvas(1100, 80 + lines.length * 56); const g = surface.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0, 0, surface.width, surface.height);
   g.fillStyle = '#000'; g.font = '34px sans-serif';
   lines.forEach((line, i) => g.fillText(line, 40, 70 + i * 56));
-  return format === 'png' ? surface.toBuffer('image/png') : surface.toBuffer('image/jpeg', 92);
+  return surface.toBuffer('image/png');
+}
+
+// Photos with text are committed PNGs (see tests/fixtures/ocr/render.ts): canvas text depends on
+// the fonts on each machine and did not render readably on Windows.
+const fixture = (name: string) => readFileSync(resolve('tests/fixtures/ocr', name));
+async function asJpeg(png: Buffer) {
+  const image = await loadImage(png); const surface = createCanvas(image.width, image.height);
+  surface.getContext('2d').drawImage(image, 0, 0);
+  return { jpeg: surface.toBuffer('image/jpeg', 92), width: image.width, height: image.height };
 }
 
 /** A minimal PDF built by hand: one page per entry, each either text lines or a JPEG scan. */
@@ -104,7 +114,7 @@ function assertCleanRequest(body: string) {
 
 test('a photo of a KYC form is read offline, cleaned and completed without stopping', async () => {
   const token = await login('asha'); const before = sent.length;
-  const res = await upload(token, 'kyc-photo.png', photo(LINES), 'Fill in a KYC covering letter from this form').expect(200);
+  const res = await upload(token, 'kyc-photo.png', fixture('kyc-photo.png'), 'Fill in a KYC covering letter from this form').expect(200);
   assert.notEqual(res.body.action, 'block'); assert.equal(res.body.provider_calls, 1); assert.equal(sent.length, before + 1);
   assertCleanRequest(sent.at(-1)!);
   assert.match(sent.at(-1)!, /\[SECRET_[A-Z2-9]{4}\]/);
@@ -131,8 +141,8 @@ test('a text PDF is read without OCR and the original values never reach the mod
 
 test('a scanned PDF page is rendered, read by OCR and returned with black bars', async () => {
   const token = await login('asha');
-  const scan = photo(LINES, 'jpeg'); const width = 1100, height = 80 + LINES.length * 56;
-  const res = await upload(token, 'scan.pdf', pdf([{ text: ['Covering note for the attached scan.', 'Please process this KYC form today.'] }, { jpeg: scan, width, height }])).expect(200);
+  const scan = await asJpeg(fixture('kyc-photo.png'));
+  const res = await upload(token, 'scan.pdf', pdf([{ text: ['Covering note for the attached scan.', 'Please process this KYC form today.'] }, scan])).expect(200);
   assert.equal(res.body.provider_calls, 1); assertCleanRequest(sent.at(-1)!);
   const a = res.body.attachment;
   assert.equal(a.pages, 2); assert.equal(a.ocr_pages, 1);
@@ -173,7 +183,7 @@ test('OCR spacing errors are undone so a glued PAN and a misgrouped Aadhaar are 
 
 test('a photo with a PAN glued to its label never sends the PAN to the model', async () => {
   const token = await login('asha');
-  const res = await upload(token, 'glued.png', photo(['PANABCPE1234F', 'Aadhaar 2345 67890124'])).expect(200);
+  const res = await upload(token, 'glued.png', fixture('glued-pan.png')).expect(200);
   assertCleanRequest(sent.at(-1)!);
   assert.ok(res.body.attachment.found.PAN >= 1);
 }, 120_000);
