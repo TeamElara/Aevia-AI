@@ -1,5 +1,7 @@
 # Aevia AI / LeakShield
 
+Final real-provider evidence, frozen results and known misses: [Mahatva final checks](docs/MAHATVA_FINAL.md). Groq, Windows Ollama/fp32 inference and Docker on a clean Linux runner are now verified; see that report for the exact scope.
+
 CyberCUP 6.0 · CC6-AI03 · an inspection gateway between workplace applications and an LLM.
 
 The team implementations are integrated: **Mahatva's gateway**, **Ojaswi's detectors**, **Alwaz's retrieval/encrypted approval queue**, and **Arihant's console/evaluator**. See [team assignments](docs/TEAM.md), [plan](docs/PLAN.md), [console API](docs/API.md) and [gateway hand-off](docs/MAHATVA_HANDOFF.md).
@@ -60,7 +62,7 @@ docker compose up --build
 
 Mongo and the gateway bind to loopback on the host. The gateway runs as the unprivileged `node` user. Container evaluation capture is disabled. Ollama can run separately on the host and is accessed through `host.docker.internal`; pull the selected model there first. The console currently runs using its existing Vite command above; a web production image belongs to its owner.
 
-Docker and Ollama were not installed on the development host used for this implementation, so container startup and real local-model inference are **not yet verified**. The Compose file is validated structurally in the repository checks. Never describe simulated integration tests as real model measurements.
+Docker/WSL are not installed on the Windows development host. Actual container build/start and local-model inference passed on a clean GitHub Ubuntu runner; actual native Windows Ollama inference passed separately. See the final checks above. Simulated integration tests remain distinct from these real model measurements.
 
 ## API
 
@@ -99,4 +101,4 @@ Ojaswi's detector branch and Alwaz's access branch are included with their autho
 
 ## Limits
 
-This is a single-process hackathon gateway: restart discards conversations and pending in-memory state; horizontal scaling needs shared secure session storage. Scanner timeouts cannot interrupt synchronous code that blocks Node's event loop, so detector implementations must bound their computation. Canaries/fingerprints are extra checks, not proof against paraphrased leaks. Document-derived PII is irreversibly redacted. Real-provider latency, precision/recall and baseline leak reduction still require live inference and frozen evaluation. LLM generation in integration tests is simulated; real Groq/Ollama and Windows fp32 inference remain unverified.
+This is a single-process hackathon gateway: restart discards conversations and pending in-memory state; horizontal scaling needs shared secure session storage. Scanner timeouts cannot interrupt synchronous code that blocks Node's event loop, so detector implementations must bound their computation. Canaries/fingerprints are extra checks, not proof against paraphrased leaks. Document-derived PII is irreversibly redacted. Frozen real-Groq results retain an IFSC policy mismatch, false positives and Hinglish misses; do not claim zero leakage or universal accuracy. LLM generation in automated integration tests is simulated; separate actual-provider evidence is linked above.

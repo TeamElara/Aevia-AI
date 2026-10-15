@@ -1,5 +1,7 @@
 # Mahatva gateway hand-off
 
+Final live-provider and frozen-evaluation status is in `MAHATVA_FINAL.md`; it supersedes the remaining-check list recorded below at the earlier integration checkpoint.
+
 The team branches are integrated with their authorship preserved. Canonical install/test commands use the root npm workspace and `package-lock.json`; legacy per-folder/pnpm locks are not used by CI.
 
 ## Detector boundary

@@ -1,0 +1,54 @@
+{
+  "at": "2026-10-15T10:19:28.838Z",
+  "platform": "win32/x64",
+  "node": "v26.3.0",
+  "source_commit": "772a7aff556663a45a8f0904137e0932cd65b177",
+  "provider": "real Windows Ollama qwen2.5:0.5b",
+  "checks": {
+    "real_inference": true,
+    "masking": true,
+    "secret_zero_calls": true,
+    "employee_acl": true,
+    "hr_acl": true,
+    "scan": true,
+    "compatible_completion": true
+  },
+  "rows": [
+    {
+      "id": "normal",
+      "action": "allow",
+      "provider_calls": 1,
+      "answer_nonempty": true,
+      "wall_ms": 2901.1745
+    },
+    {
+      "id": "mask",
+      "action": "mask",
+      "provider_calls": 1,
+      "answer_nonempty": true,
+      "wall_ms": 1068.7042000000001
+    },
+    {
+      "id": "secret",
+      "action": "block",
+      "provider_calls": 0,
+      "answer_nonempty": false,
+      "wall_ms": 17.8075000000008
+    },
+    {
+      "id": "employee-acl",
+      "action": "deny",
+      "provider_calls": 0,
+      "answer_nonempty": false,
+      "wall_ms": 22.881600000000617
+    },
+    {
+      "id": "hr-acl",
+      "action": "allow",
+      "provider_calls": 1,
+      "answer_nonempty": true,
+      "wall_ms": 1270.9363000000003
+    }
+  ],
+  "scope": "Authored development smoke cases through the actual production HTTP server, real provider and temporary seeded Mongo; not frozen accuracy."
+}

@@ -135,16 +135,34 @@ export function createApp(options: Options) {
     res.status(200).set({ 'Content-Type': 'text/event-stream', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' }).flushHeaders();
     res.write(': connected\n\n');
     let initialising = true; const pending: AuditEvent[] = [];
+    const closed = () => res.destroyed || res.writableEnded;
+    const frame = (event: AuditEvent) => `event: audit\ndata: ${JSON.stringify(event)}\n\n`;
     const send = (event: AuditEvent) => {
+      if (closed()) return;
       // Slow consumers are disconnected, rather than accumulating unbounded incident buffers.
-      if (!res.write(`event: audit\ndata: ${JSON.stringify(event)}\n\n`)) res.end();
+      if (!res.write(frame(event))) res.end();
     };
+    // A bounded history replay can exceed the socket's high-water mark even for a fast reader.
+    // Drain that snapshot before continuing; a closed/timed-out client never gets another write.
+    const replay = async (event: AuditEvent): Promise<boolean> => {
+      if (closed()) return false;
+      if (res.write(frame(event))) return true;
+      return new Promise(resolve => {
+        const finish = (ready: boolean) => { clearTimeout(timer); res.off('drain', drained); res.off('close', disconnected); resolve(ready); };
+        const drained = () => finish(!closed());
+        const disconnected = () => finish(false);
+        const timer = setTimeout(() => { finish(false); if (!closed()) res.end(); }, 5000);
+        res.once('drain', drained); res.once('close', disconnected);
+        if (closed()) disconnected();
+      });
+    };
+    res.on('error', () => { if (!closed()) res.end(); });
     const listener = (event: AuditEvent) => {
       if (initialising) { if (pending.length >= 100) res.end(); else pending.push(event); }
       else send(event);
     };
     options.audit.events.on('audit', listener);
-    const heartbeat = setInterval(() => { if (!res.write(': heartbeat\n\n')) res.end(); }, 15_000);
+    const heartbeat = setInterval(() => { if (!closed() && !res.write(': heartbeat\n\n')) res.end(); }, 15_000);
     const expiry = setTimeout(() => res.end(), 5 * 60_000); // Reconnect revalidates JWT expiry.
     res.on('close', () => { clearInterval(heartbeat); clearTimeout(expiry); options.audit.events.off('audit', listener); });
     try {
@@ -152,8 +170,8 @@ export function createApp(options: Options) {
       if (res.destroyed || res.writableEnded) return;
       const key = (e: AuditEvent) => `${e.request_id}:${e.stage}:${e.ts.toISOString()}`;
       const seen = new Set(recent.map(key));
-      for (const event of recent.reverse()) send(event);
-      for (const event of pending) if (!seen.has(key(event))) send(event);
+      for (const event of recent.reverse()) if (!await replay(event)) return;
+      for (const event of pending) if (!seen.has(key(event)) && !await replay(event)) return;
       initialising = false;
     } catch { res.end(); }
   });
