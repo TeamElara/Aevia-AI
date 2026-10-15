@@ -718,95 +718,92 @@ textarea { caret-color: var(--color-fg); }
 .covering-post { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-radius: 12px; padding: 10px 12px; background: var(--color-surface-2); color: var(--color-fg); font-size: 12px; }
 @media (max-width: 400px) { .assign-post-modal { padding: 18px; } .post-list > li > .btn { min-height: 40px; } }
 
-/* ---------------------------------------------------------------------------------------------
-   Beam composer. The message is a beam of mint light: it runs into the gateway's lens on the
-   left, a highlight circles the field, and a send fires a pulse down the beam and fans out into
-   strands from the send button. Colours are theme tokens; motion stops under reduced motion.
-   --------------------------------------------------------------------------------------------- */
-:root { --beam: #0e9f74; --beam-2: #6fe3bd; --beam-ink: #032a1d; --beam-glow: rgb(14 159 116 / .26); }
-:root[data-theme="dark"] { --beam: #4ff0b9; --beam-2: #c3ffe9; --beam-ink: #032a1d; --beam-glow: rgb(79 240 185 / .34); }
+/* ------------------------------------------------------------------
+   Bar intro. Once per page load, in the theme's accent: an orb lights up,
+   a ray runs into it and fans out, then the light folds into a seam that
+   opens into the message bar.
+------------------------------------------------------------------- */
+/* Same colours as the Halo orb: the panel's verdict tone and its pale partner. */
+.bar-intro {
+  position: relative; --t0: 300ms;
+  --intro-ray: var(--tone); --intro-hi: var(--tone-2); --intro-core: #ffffff;
+  --intro-glow: color-mix(in srgb, var(--tone-2) 60%, transparent);
+}
+:root[data-theme="dark"] .bar-intro { --intro-ray: color-mix(in srgb, var(--tone-2) 80%, white); --intro-glow: color-mix(in srgb, var(--tone-2) 55%, transparent); }
+/* On the dark theme the orb is lit from inside instead of shaded. */
+:root[data-theme="dark"] .intro-orb {
+  background: radial-gradient(circle at 36% 32%, #fff 0 14%, transparent 40%), radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--tone-2) 60%, white), var(--tone-2) 55%, color-mix(in srgb, var(--tone-2) 55%, var(--tone)) 90%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone-2) 50%, transparent), 0 0 20px 5px var(--intro-glow), 0 0 80px 26px var(--intro-glow);
+}
+.bar-intro[data-stage="wait"] .composer { clip-path: inset(50% 0 round 20px); opacity: 0; }
+.bar-intro[data-stage="play"] .composer {
+  animation: bar-open 800ms calc(var(--t0) + 2250ms) var(--ease-spring) backwards, bar-glow 1600ms calc(var(--t0) + 2250ms) ease-out backwards;
+}
+.bar-intro[data-stage="play"] .composer > :not(.composer-arrival) { animation: intro-rise 650ms calc(var(--t0) + 2650ms) var(--ease-soft) backwards; }
 
-.composer.beam, .home-workspace .composer.beam {
-  overflow: visible; padding-left: 62px; border-radius: 24px;
-  border-color: color-mix(in srgb, var(--beam) 32%, var(--color-line));
-  background: color-mix(in srgb, var(--color-surface) 94%, var(--beam) 6%);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--beam) 10%, transparent), 0 18px 48px -26px var(--beam-glow), 0 2px 10px -6px rgb(0 0 0 / .18);
-  transition: box-shadow .5s var(--ease-soft), border-color .5s var(--ease-soft), background .5s var(--ease-soft);
+.intro { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.intro-orb {
+  position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--intro-core) 0 10%, transparent 34%), radial-gradient(circle at 50% 65%, var(--intro-hi), var(--tone) 72%);
+  box-shadow: inset 0 -6px 14px color-mix(in srgb, var(--tone) 60%, black), 0 0 18px 4px var(--intro-glow), 0 0 70px 22px var(--intro-glow);
+  animation: orb-life 2350ms var(--t0) var(--ease-soft) both;
 }
-.composer-large.beam { padding-left: 70px; }
-.composer.beam::before { display: none; }
-.composer.beam:focus-within, .home-workspace .composer.beam:focus-within, .composer.beam[data-dragging="true"] {
-  border-color: color-mix(in srgb, var(--beam) 70%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--beam) 14%, transparent), 0 22px 60px -22px var(--beam-glow), 0 0 40px -12px var(--beam-glow);
+.intro-orb::before {
+  content: ''; position: absolute; inset: -90px; border-radius: 50%;
+  background: radial-gradient(circle, transparent 11%, var(--intro-glow) 16%, transparent 62%);
+  animation: lens-breathe 1.6s ease-in-out infinite;
 }
-
-/* A highlight that travels around the border, faster on focus and while a reply is checked. */
-.beam-ring {
-  position: absolute; inset: -1px; z-index: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; opacity: .5;
-  background: conic-gradient(from var(--angle), transparent 0 64%, color-mix(in srgb, var(--beam) 60%, transparent) 76%, var(--beam-2) 84%, var(--beam) 88%, transparent 96%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
-  animation: beam-spin 7s linear infinite; transition: opacity .5s;
+.intro-orb::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%; border: 1.5px solid var(--intro-ray); opacity: 0;
+  animation: orb-ring 1000ms calc(var(--t0) + 1120ms) ease-out both;
 }
-.composer.beam:focus-within .beam-ring { opacity: 1; animation-duration: 3.2s; }
-.composer.beam[data-busy="true"] .beam-ring { opacity: 1; animation-duration: 1.1s; }
-
-/* The lens: a glowing orb with a slow halo, breathing faster while busy. */
-.beam-lens {
-  position: absolute; z-index: 1; left: 20px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle at 42% 38%, #fff 0 16%, var(--beam-2) 34%, var(--beam) 62%, color-mix(in srgb, var(--beam) 0%, transparent) 72%);
-  box-shadow: 0 0 14px 2px var(--beam-glow), 0 0 44px 12px var(--beam-glow);
-  animation: lens-breathe 4.2s ease-in-out infinite;
+.intro-ray {
+  position: absolute; left: 0; right: 50%; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 3px; transform-origin: left;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--intro-ray) 70%, transparent) 45%, var(--intro-ray) 85%, var(--intro-hi));
+  box-shadow: 0 0 12px 1px var(--intro-glow);
+  animation: ray-in 820ms calc(var(--t0) + 320ms) cubic-bezier(.65, 0, .35, 1) both, intro-out 380ms calc(var(--t0) + 1850ms) ease-in forwards;
 }
-.composer-large .beam-lens { left: 24px; width: 28px; height: 28px; margin-top: -14px; }
-.beam-lens::before, .beam-lens::after {
-  content: ''; position: absolute; inset: -9px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--beam) 55%, transparent);
-  opacity: 0; animation: lens-halo 3.6s ease-out infinite;
+.intro-strands {
+  position: absolute; left: 50%; right: 0; top: -10%; width: 50%; height: 120%; overflow: visible;
+  animation: intro-out 420ms calc(var(--t0) + 1850ms) ease-in forwards;
 }
-.beam-lens::after { animation-delay: 1.8s; }
-.composer.beam:focus-within .beam-lens { animation-duration: 2.6s; }
-.composer.beam[data-busy="true"] .beam-lens { animation: lens-busy .9s ease-in-out infinite; }
-.beam-flash { position: absolute; inset: -4px; border-radius: 50%; background: radial-gradient(circle, var(--beam-2), transparent 70%); animation: lens-flash .9s .45s var(--ease-soft) both; }
-
-/* The beam: a thin line arriving from the left into the lens (large composer on wide screens). */
-.beam-track {
-  position: absolute; z-index: 0; right: calc(100% - 34px); top: 50%; width: min(22vw, 300px); height: 1.5px; margin-top: -.75px; pointer-events: none;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--beam) 75%, transparent) 70%, var(--beam-2));
-  -webkit-mask: linear-gradient(90deg, transparent, #000 35%); mask: linear-gradient(90deg, transparent, #000 35%);
-  animation: beam-shimmer 5s ease-in-out infinite;
+.intro-strands path {
+  fill: none; stroke: var(--intro-ray); stroke-width: 1.8; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 4px var(--intro-glow));
+  animation: strand-draw 780ms var(--ease-soft) both;
 }
-.composer:not(.composer-large) .beam-track { width: 0; }
-.beam-pulse, .beam-spark { position: absolute; top: 50%; border-radius: 99px; pointer-events: none; }
-.beam-pulse { height: 4px; width: 90px; margin-top: -2px; background: linear-gradient(90deg, transparent, var(--beam-2), #fff); box-shadow: 0 0 12px 2px var(--beam-glow); animation: beam-shot .55s cubic-bezier(.55, 0, .25, 1) both; }
-.beam-spark { height: 3px; width: 18px; margin-top: -1.5px; background: linear-gradient(90deg, transparent, var(--beam-2)); animation: beam-spark .5s cubic-bezier(.4, 0, .2, 1) both; }
-
-/* Strands: the beam fans out from the send button once a message leaves. */
-.beam-strands { position: absolute; z-index: 0; right: -168px; top: 50%; width: 200px; height: 120px; margin-top: -60px; overflow: visible; pointer-events: none; }
-.composer-large .beam-strands { top: auto; bottom: -32px; }
-.beam-strands path {
-  fill: none; stroke: var(--beam); stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 260; opacity: 0;
-  filter: drop-shadow(0 0 4px var(--beam-glow));
-  animation: strand-draw 1.25s cubic-bezier(.3, 0, .2, 1) both; animation-delay: calc(.12s + var(--i) * 45ms);
+.intro-seam {
+  position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 3px; transform: scaleX(0);
+  background: linear-gradient(90deg, transparent, var(--intro-ray) 15%, var(--intro-hi) 50%, var(--intro-ray) 85%, transparent);
+  box-shadow: 0 0 16px 2px var(--intro-glow);
+  animation: seam 950ms calc(var(--t0) + 1950ms) var(--ease-spring) both;
 }
 
-/* The send button: a small mint orb. */
-.beam-send { background: radial-gradient(circle at 34% 28%, var(--beam-2), var(--beam) 70%); color: var(--beam-ink); box-shadow: 0 0 0 1px color-mix(in srgb, var(--beam) 40%, transparent), 0 8px 22px -6px var(--beam-glow); }
-.beam-send:not(:disabled):hover { box-shadow: 0 0 0 1px var(--beam), 0 0 26px 2px var(--beam-glow); }
-.beam-send:disabled { background: color-mix(in srgb, var(--beam) 25%, var(--color-surface-2)); box-shadow: none; }
+@keyframes orb-life {
+  0% { transform: scale(0); opacity: 0; }
+  22% { transform: scale(1.18); opacity: 1; }
+  32%, 47% { transform: scale(1); }
+  52% { transform: scale(1.4); }
+  62%, 80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(5, .06); opacity: 0; }
+}
+@keyframes orb-ring { from { transform: scale(1); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
+@keyframes lens-breathe { 0%, 100% { transform: scale(.9); opacity: .75; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes ray-in { from { transform: scaleX(0); opacity: .4; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes strand-draw { from { stroke-dashoffset: 1; opacity: 0; } 15% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes intro-out { to { opacity: 0; } }
+@keyframes seam {
+  0% { transform: scaleX(0); opacity: 1; }
+  45% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes bar-open { from { clip-path: inset(calc(50% - 1px) 0 round 20px); } to { clip-path: inset(0 round 20px); } }
+@keyframes bar-glow {
+  from { border-color: var(--intro-ray); box-shadow: 0 0 0 1px var(--intro-ray), 0 0 0 6px color-mix(in srgb, var(--intro-ray) 12%, transparent), 0 0 60px -8px var(--intro-glow); }
+}
+@keyframes intro-rise { from { opacity: 0; transform: translateY(6px); filter: blur(4px); } }
 
-@keyframes beam-spin { to { --angle: 360deg; } }
-@keyframes lens-breathe { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.08); filter: brightness(1.15); } }
-@keyframes lens-busy { 0%, 100% { transform: scale(.92); } 50% { transform: scale(1.18); filter: brightness(1.3); } }
-@keyframes lens-halo { 0% { opacity: .6; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.9); } }
-@keyframes lens-flash { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(3.2); } }
-@keyframes beam-shimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
-@keyframes beam-shot { from { left: -90px; opacity: 0; } 25% { opacity: 1; } to { left: calc(100% - 40px); opacity: 1; } }
-@keyframes beam-spark { from { left: 35%; opacity: 0; } 30% { opacity: 1; } to { left: calc(100% - 18px); opacity: 0; } }
-@keyframes strand-draw { 0% { stroke-dashoffset: 260; opacity: 0; } 15% { opacity: .9; } 60% { stroke-dashoffset: 0; opacity: .85; } 100% { stroke-dashoffset: -260; opacity: 0; } }
-
-@media (max-width: 1023px) { .beam-track, .beam-strands { display: none; } }
-@media (max-width: 767px) { .composer.beam, .home-workspace .composer.beam, .composer-large.beam { padding-left: 52px; } .beam-lens, .composer-large .beam-lens { left: 16px; } }
 @media (prefers-reduced-motion: reduce) {
-  .beam-ring, .beam-lens, .beam-lens::before, .beam-lens::after, .beam-track, .beam-pulse, .beam-spark, .beam-flash, .beam-strands path { animation: none !important; }
-  .beam-pulse, .beam-spark, .beam-flash, .beam-strands { display: none; }
-  .beam-ring { opacity: .7; }
+  .bar-intro[data-stage] .composer, .bar-intro[data-stage] .composer > * { animation: none; clip-path: none; opacity: 1; }
+  .intro { display: none; }
 }
