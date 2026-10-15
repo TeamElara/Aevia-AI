@@ -68,6 +68,6 @@ s=slide('Integration limits and next gates')
 text(s,'Ready: access modules, approval backend, seed, fixtures, Node classifier spike and reproducible tests.',.75,1.9,11.8,1.2,27,GREEN)
 text(s,'Team integration: real gateway scans and vault, UI wiring, audit privacy, Groq/Ollama baseline and frozen evaluation.',.75,3.5,11.8,1.3,25)
 text(s,'Approved content reaches Groq. Fingerprints catch copying, not paraphrases. Team Groq settings still need account verification.',.75,5.25,11.8,1.1,23,MUTED)
-s.notes_slide.notes_text_frame.text='Groq policy source: https://console.groq.com/docs/your-data . Team-specific ZDR and rate limits have not been verified. Publishing is separately blocked by absent Git credentials on this Mac.'
+s.notes_slide.notes_text_frame.text='Groq policy source: https://console.groq.com/docs/your-data . Team-specific ZDR and rate limits have not been verified. Implementation published for review: https://github.com/TeamElara/Aevia-AI/pull/1 .'
 p.save(root/'docs/Alwaz-LeakShield.pptx')
 print('Created 8 editable slides')
