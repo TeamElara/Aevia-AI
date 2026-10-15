@@ -18,3 +18,4 @@ Step 5 benign check: the entropy fallback gives 0 hits on the 110 benign prompts
 | 6. Mutations (leet, fullwidth, zero-width, ROT13, emoji) + normaliser fixes | 28 | 1 at warn only | 0 | 4/4 caught, 0 false |
 
 Step 6, mutation retention on dev (`results/ojaswi/mutation-check-v3.md`): all 31 caught dev attacks survive every mutation. Before the normaliser fixes, emoji spacing kept only 4/28 dev-v3 attacks and base64 lost all 8 Devanagari ones. Each mutation leaves the 29 clean allowed cases clean. One known gap: in base64, a payment record still masks but reports one category per decoded block.
+| 7. Role headers after \v, \f, NEL (Arihant's report) | 28 | 1 at warn only | 0 | 4/4 caught, 0 false |
