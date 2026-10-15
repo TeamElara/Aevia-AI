@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "tune": "tsx scripts/tune.ts",
-    "bench": "tsx scripts/bench.ts"
+    "bench": "tsx scripts/bench.ts",
+    "misses": "tsx scripts/misses.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
