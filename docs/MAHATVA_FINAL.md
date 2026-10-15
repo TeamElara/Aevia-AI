@@ -2,6 +2,19 @@
 
 15 October 2026. Frozen inference source: `eval-freeze^{commit}` = `772a7aff556663a45a8f0904137e0932cd65b177`.
 
+## Final demo handoff, 19:01 IST
+
+All machine-side items in Mahatva's final checklist are handled. See [FINAL-DEMO-READINESS.md](FINAL-DEMO-READINESS.md) for the remaining human rehearsal requirement and [DEMO.md](DEMO.md) for the current script.
+
+- Post-freeze KYC reliability: 10/10 real Groq 120b requests; separate evidence, original frozen v1/v2 reports unchanged.
+- Fresh standalone Windows `main` checkout, seeded Mongo, ready local Ollama fallback, actually timed provider switches, final provider Groq 120b and classifier `none`.
+- [Five-minute backup](DEMO-VIDEO.md) published outside Git source history, with a verified offline copy on the actual Desktop. Edited screenshots and synthetic narration, not a continuous joint rehearsal recording.
+- Two additional automated technical rehearsal passes on the clean demo checkout: 21/21 checks each. Audit/approvals/log privacy checks found no seeded values or configured key; authenticated SSE and backup hash also passed. `results/mahatva/final-demo-readiness.json`.
+- Optional v2 benchmark already exists under `results/freeze-v2-groq`; no redundant run. Keep v1 **12 → 1** as the headline and v2 separately labelled, with its prior-exposure caveat.
+- Authenticated Groq Personal organization inspection: global and inference ZDR **disabled**; organization base model limits recorded in [GROQ-ACCOUNT-CHECK.md](GROQ-ACCOUNT-CHECK.md). No settings changed; project/key association is not independently proved.
+
+The joint Arihant/Ojaswi runs and physical projector check still need those participants/hardware. Automated HTTP checks do not establish stage timing, narration or their presence. No new product features were added. Entries below preserve the earlier frozen evidence and account-access history.
+
 ## Completed
 
 - Production gateway, detector boundaries, privacy/audit, approvals, compatible completion/scan APIs, evaluation capture and isolated baseline.

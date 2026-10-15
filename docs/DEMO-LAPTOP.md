@@ -12,6 +12,8 @@
 - Actually changed `LLM_PROVIDER=ollama`, restarted the production gateway and obtained a real model answer. Authorized local Garuda used one call without external approval, as expected.
 - Switched back to Groq. Garuda paused at zero calls, admin approval validated the hash, and the answer returned to Meera after one call.
 - Final state: Groq 120b running; no source changes; console reachable. The API key is local and is not committed or included in evidence.
+- Final technical rehearsal: two automated HTTP passes, 21/21 checks each, plus audit/approval/log privacy and backup-hash checks. See `results/mahatva/final-demo-readiness.json`; this is not two joint driver/narrator rehearsals.
+- Backup MP4 is also on the actual Windows Desktop as `LeakShield-Backup-5min.mp4`, outside Git. Its hash matches the published release; see `docs/DEMO-VIDEO.md`.
 
 ## Observed switch time
 
