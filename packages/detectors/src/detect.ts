@@ -2,11 +2,11 @@ import { canary, confidential } from './confidential';
 import { detectInjection } from './injection';
 import { decodeBlocks, normalise, toOriginal } from './normalise';
 import { PII_DETECTORS } from './pii';
-import { secrets } from './secrets';
+import { entropySecrets, secrets } from './secrets';
 import { keepNonOverlapping } from './spans';
 import type { Category, Detector, DetectorContext, Finding, Hit, Via } from './types';
 
-const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECTORS];
+const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECTORS, entropySecrets];
 
 // When data findings overlap, the more specific / more dangerous category wins.
 const PRIORITY: Category[] = [

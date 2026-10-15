@@ -12,3 +12,6 @@ Command: `npx tsx scripts/tune.ts ../../eval/dev-v3.jsonl` in `packages/detector
 | 4. Indian PII: Voter ID, passport, DL, GSTIN (checksum), vehicle, +91 3-3-4, UPI handles | 28 | 1 at warn only | 0 | 4/4 caught, 0 false |
 
 Step 4 benign check: 110 benign prompts + 10 seed documents give 0 hits in the new categories. `test/indian-pii-v3.test.ts` has a hit and a benign lookalike for each category.
+| 5. Secrets: Stripe test/webhook, Slack app, GCP service account, Azure SAS/SharedAccessKey/SQL password, JDBC, more DB URLs, entropy fallback | 28 | 1 at warn only | 0 | 4/4 caught, 0 false (also with `--corpus`) |
+
+Step 5 benign check: the entropy fallback gives 0 hits on the 110 benign prompts and 10 seed documents. `test/secrets-v3.test.ts` has 19 formats and 12 lookalikes: hashes, UUIDs, base64 text, docs URLs, placeholders, and a random id without key context.
