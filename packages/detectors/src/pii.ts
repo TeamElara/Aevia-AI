@@ -9,7 +9,7 @@ function near(text: string, start: number, end: number, re: RegExp, radius = 40)
 const AADHAAR_CTX = /aadhaa?r|adhaa?r|\buid(ai)?\b|आधार/i;
 const VID_CTX = /\bvid\b|virtual\s*id/i;
 const PAN_CTX = /\bpan\b|permanent\s+account/i;
-const PHONE_CTX = /phone|mobile|\bmob\b|contact|call|whats\s*app|\bph\b|\btel\b|\+91|number|no\./i;
+const PHONE_CTX = /phone|mobile|\bmob\b|contact|call|whats\s*app|\bph\b|\btel\b|\+91|number|no\.|फ़ोन|फोन|मोबाइल|नंबर|नम्बर/i;
 const CARD_CTX = /card|credit|debit|\bcvv\b|expiry|visa|master|rupay/i;
 const BANK_CTX = /a\/c|\bacc(oun)?t\b|account\s*(no|number)|bank|khata/i;
 const UPI_CTX = /\bupi\b|gpay|google\s*pay|phone\s*pe|paytm|bhim/i;
@@ -17,7 +17,7 @@ const UPI_CTX = /\bupi\b|gpay|google\s*pay|phone\s*pe|paytm|bhim/i;
 // 12 digits, first 2-9, optional consistent separator between 4-digit groups.
 export const aadhaar: Detector = (text) => {
   const hits: Hit[] = [];
-  for (const m of text.matchAll(/(?<![\d])([2-9]\d{3})([ \-.]?)(\d{4})\2(\d{4})(?![\d])/g)) {
+  for (const m of text.matchAll(/(?<![\d])([2-9]\d{3})([ \-./_]?)(\d{4})\2(\d{4})(?![\d])/g)) {
     const digits = m[1] + m[3] + m[4];
     if (!verhoeffValid(digits)) continue;
     const start = m.index!;
@@ -59,13 +59,20 @@ export const pan: Detector = (text) => {
     if (upper) hits.push({ category: 'PAN', start, end, score: ctx ? 0.97 : 0.9, ruleId: ctx ? 'pii.pan.ctx' : 'pii.pan.format' });
     else if (ctx) hits.push({ category: 'PAN', start, end, score: 0.85, ruleId: 'pii.pan.lowercase_ctx' });
   }
+  // "A B C P V 1 2 3 4 K" / "ABCPV-1234-K": separators inside the PAN, only with PAN context.
+  for (const m of text.matchAll(/(?<![A-Za-z0-9])[A-Za-z](?:[ \-.]?[A-Za-z]){2}[ \-.]?[PCHFATBLJGpchfatbljg][ \-.]?[A-Za-z](?:[ \-.]?\d){4}[ \-.]?[A-Za-z](?![A-Za-z0-9])/g)) {
+    if (!/[ \-.]/.test(m[0])) continue;
+    const start = m.index!;
+    const end = start + m[0].length;
+    if (near(text, start, end, PAN_CTX)) hits.push({ category: 'PAN', start, end, score: 0.9, ruleId: 'pii.pan.separated_ctx' });
+  }
   return hits;
 };
 
 // Indian mobile: optional +91/91/0, then 10 digits starting 6-9, optionally split 5-5.
 export const phone: Detector = (text) => {
   const hits: Hit[] = [];
-  for (const m of text.matchAll(/(?<![\d+])(?:(?:\+|00)?91[ \-]?|0)?[6-9]\d{4}[ \-]?\d{5}(?!\d)/g)) {
+  for (const m of text.matchAll(/(?<![\d+])(?:(?:\+|00)?91[ \-]?|0)?[6-9]\d{4}[ \-.]?\d{5}(?!\d)/g)) {
     const start = m.index!;
     const end = start + m[0].length;
     const ctx = near(text, start, end, PHONE_CTX, 30);

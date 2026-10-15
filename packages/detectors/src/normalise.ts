@@ -18,7 +18,18 @@ const HOMOGLYPHS: Record<string, string> = {
   Α: 'A', Β: 'B', Ε: 'E', Ζ: 'Z', Η: 'H', Ι: 'I', Κ: 'K', Μ: 'M', Ν: 'N', Ο: 'O', Ρ: 'P', Τ: 'T', Υ: 'Y', Χ: 'X',
 };
 
-/** NFKC per character, drop invisible characters, map homoglyphs, join spread-out digit runs. */
+// Zero code points of the Indian and Arabic-Indic digit blocks; NFKC leaves these alone.
+const DIGIT_ZEROS = [0x0660, 0x06f0, 0x0966, 0x09e6, 0x0a66, 0x0ae6, 0x0b66, 0x0be6, 0x0c66, 0x0ce6, 0x0d66];
+
+function asciiDigit(cp: number): string | null {
+  for (const z of DIGIT_ZEROS) if (cp >= z && cp <= z + 9) return String(cp - z);
+  return null;
+}
+
+/**
+ * NFKC per character, drop invisible characters, map homoglyphs and Indian-script digits,
+ * spell out number words, join spread-out digit runs.
+ */
 export function normalise(input: string): Mapped {
   const out: string[] = [];
   const map: number[] = [];
@@ -27,7 +38,7 @@ export function normalise(input: string): Mapped {
     const ch = String.fromCodePoint(cp);
     if (!INVISIBLE.test(ch)) {
       for (const c of ch.normalize('NFKC')) {
-        const h = HOMOGLYPHS[c] ?? c;
+        const h = asciiDigit(c.codePointAt(0)!) ?? HOMOGLYPHS[c] ?? c;
         for (let k = 0; k < h.length; k++) {
           out.push(h[k]);
           map.push(i);
@@ -36,7 +47,64 @@ export function normalise(input: string): Mapped {
     }
     i += ch.length;
   }
-  return joinSpreadDigits({ text: out.join(''), map });
+  return joinSpreadDigits(joinNumberWords({ text: out.join(''), map }));
+}
+
+const NUMBER_WORDS: Record<string, string> = {
+  zero: '0', oh: '0', one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8', nine: '9',
+  shunya: '0', shoonya: '0', ek: '1', do: '2', teen: '3', char: '4', chaar: '4', paanch: '5', panch: '5',
+  chhe: '6', chhah: '6', che: '6', saat: '7', aath: '8', nau: '9',
+};
+const NUMBER_WORD = Object.keys(NUMBER_WORDS).join('|');
+// 10+ number words in a row is a spelled-out phone/Aadhaar/card, not prose.
+const NUMBER_WORD_RUN = new RegExp(`\\b(?:${NUMBER_WORD})(?:[\\s,\\-]+(?:${NUMBER_WORD})){9,18}\\b`, 'gi');
+
+// "nine eight seven six five four three two one zero" -> "9876543210"
+function joinNumberWords(m: Mapped): Mapped {
+  const runs = [...m.text.matchAll(NUMBER_WORD_RUN)];
+  if (runs.length === 0) return m;
+  const out: string[] = [];
+  const map: number[] = [];
+  let pos = 0;
+  for (const r of runs) {
+    for (; pos < r.index!; pos++) {
+      out.push(m.text[pos]);
+      map.push(m.map[pos]);
+    }
+    for (const w of r[0].matchAll(/[A-Za-z]+/g)) {
+      out.push(NUMBER_WORDS[w[0].toLowerCase()]);
+      map.push(m.map[r.index! + w.index!]);
+    }
+    pos = r.index! + r[0].length;
+  }
+  for (; pos < m.text.length; pos++) {
+    out.push(m.text[pos]);
+    map.push(m.map[pos]);
+  }
+  return { text: out.join(''), map };
+}
+
+/**
+ * For injection matching only: undo words split by separators or spaces.
+ * "i.g.n.o.r.e" / "ig-nore" -> "ignore"; "i g n o r e" -> "ignore".
+ */
+export function collapseSplitWords(m: Mapped): Mapped {
+  const drop = new Set<number>();
+  for (const s of m.text.matchAll(/(?<=[\p{L}\p{M}])[.\-_*·•~|/]+(?=\p{L})/gu)) {
+    for (let k = 0; k < s[0].length; k++) drop.add(s.index! + k);
+  }
+  for (const s of m.text.matchAll(/(?<![\p{L}\p{M}])\p{L}(?: \p{L}){3,}(?![\p{L}\p{M}])/gu)) {
+    for (let k = 0; k < s[0].length; k++) if (s[0][k] === ' ') drop.add(s.index! + k);
+  }
+  if (drop.size === 0) return m;
+  const out: string[] = [];
+  const map: number[] = [];
+  for (let i = 0; i < m.text.length; i++) {
+    if (drop.has(i)) continue;
+    out.push(m.text[i]);
+    map.push(m.map[i]);
+  }
+  return { text: out.join(''), map };
 }
 
 // "2 3 4 5 . 6 7 8 9 - 0 1 2 4" -> "234567890124".
@@ -74,11 +142,18 @@ export function leetFold(text: string): string {
   return out;
 }
 
-/** Map a span in normalised text back to the original. */
+/** Map a span in normalised text back to the original. Works for reversed maps too. */
 export function toOriginal(map: number[], start: number, end: number, original: string): { start: number; end: number } {
   if (start >= map.length) return { start: original.length, end: original.length };
-  const s = map[start];
-  const last = map[Math.max(start, end - 1)];
+  const a = map[start];
+  const b = map[Math.max(start, end - 1)];
+  const s = Math.min(a, b);
+  let last = Math.max(a, b);
+  // A spelled-out digit maps to its word's first letter; extend to the end of that word so masking
+  // "…one five" doesn't leave "ive" behind. Regex spans already end at word boundaries, so this is a no-op for them.
+  if (/\p{L}/u.test(original[last] ?? '')) {
+    while (last + 1 < original.length && /\p{L}/u.test(original[last + 1])) last++;
+  }
   // Include the full code point at the last position.
   const cp = original.codePointAt(last);
   const width = cp !== undefined && cp > 0xffff ? 2 : 1;
