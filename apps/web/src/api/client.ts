@@ -68,17 +68,44 @@ export function subscribeEvents(
     onStatus('open')
     return mockSubscribe(onEvent)
   }
-  const es = new EventSource(`/api/events?token=${encodeURIComponent(token)}`)
-  es.onopen = () => onStatus('open')
-  es.onerror = () => onStatus('error')
-  es.onmessage = (m) => {
-    try {
-      onEvent(JSON.parse(m.data))
-    } catch {
-      /* ignore malformed frames */
+  // Header authentication keeps admin JWTs out of request URLs and proxy access logs.
+  const controller = new AbortController()
+  const { signal } = controller
+  void (async () => {
+    while (!signal.aborted) {
+      try {
+        const res = await fetch('/api/events', { headers: { Authorization: `Bearer ${token}` }, signal })
+        if (!res.ok || !res.body) { onStatus('error'); if (res.status === 401 || res.status === 403) return; throw new Error('Stream unavailable') }
+        onStatus('open')
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        try {
+          while (!signal.aborted) {
+            const { value, done } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n')
+            if (buffer.length > 1_000_000) throw new Error('Stream frame too large')
+            let end: number
+            while ((end = buffer.indexOf('\n\n')) !== -1) {
+              const frame = buffer.slice(0, end)
+              buffer = buffer.slice(end + 2)
+              const data = frame.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n')
+              if (data) { try { onEvent(JSON.parse(data)) } catch { /* ignore malformed frames */ } }
+            }
+          }
+        } finally { await reader.cancel().catch(() => {}) }
+      } catch { if (signal.aborted) return }
+      if (signal.aborted) return
+      onStatus('error')
+      await new Promise<void>(resolve => {
+        const finish = () => { clearTimeout(timer); signal.removeEventListener('abort', finish); resolve() }
+        const timer = setTimeout(finish, 2000)
+        signal.addEventListener('abort', finish, { once: true })
+      })
     }
-  }
-  return () => es.close()
+  })()
+  return () => controller.abort()
 }
 
 export function getStats(backend: Backend, token: string, windowMinutes = 60): Promise<Stats> {

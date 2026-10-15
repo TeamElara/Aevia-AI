@@ -1,7 +1,10 @@
-.DS_Store
 node_modules/
-dist/
 .env
 .env.*
 !.env.example
+coverage/
+dist/
+tmp/
 *.log
+.DS_Store
+seed/tokens.json

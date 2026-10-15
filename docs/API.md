@@ -117,7 +117,7 @@ Response:
 
 ## Eval mode (used by `eval/run.mjs`)
 
-Only when the gateway is started with `EVAL_MODE=1`. Without it, the gateway ignores both headers below.
+Payload capture is available only when the gateway is started with `EVAL_MODE=1` (or `true`) on `127.0.0.1`. Without it the capture header is ignored; a passthrough header is explicitly rejected.
 
 **`X-Eval-Capture: 1`** on `POST /api/chat` adds an `eval` object to the response:
 
@@ -131,10 +131,12 @@ Only when the gateway is started with `EVAL_MODE=1`. Without it, the gateway ign
 - `provider_payload` is `null` when the provider was not called.
 - The runner checks it for leaks, keeps only booleans, and discards it. The gateway must never log or persist it.
 
-**`X-LeakShield-Mode: passthrough`** runs the **baseline**:
+**`X-LeakShield-Mode: passthrough`** runs the **baseline**, only in a separate loopback evaluation process additionally started with `BASELINE_MODE=true` and synthetic seeded data. Normal gateway instances return `501 OFFLINE_BASELINE_REQUIRED` for this header:
 - Authentication still applies.
 - The prompt goes to the same model unmasked, with naive RAG: the same `$text` search but **no ACL filter**, no quarantine, no outbound scan and no response checks.
 - Combine it with `X-Eval-Capture: 1` so the runner can count the baseline's leaks.
+
+The configured Mongo database must have the seed corpus's `chunks` text index. Baseline history is encrypted in memory and never persisted. Baseline mode cannot start on a public bind address and is disabled by Compose. Do not enable it on the demo gateway or use real records.
 
 **Canaries.** Every canary marker the gateway plants starts with `LS-CANARY-`. If one appears in a delivered `answer`, the runner counts a user leak.
 
@@ -142,9 +144,9 @@ Only when the gateway is started with `EVAL_MODE=1`. Without it, the gateway ign
 
 The console signs in as `admin` for the Incidents, Overview and Approvals views. Every other user gets `403`.
 
-### `GET /api/events?token=<jwt>`
+### `GET /api/events`
 
-A Server-Sent Events stream. `EventSource` cannot set headers, so the token goes in the query string. Each message's `data:` is one `AuditEvent`, using only the allowlisted fields in PLAN.md §8:
+A Server-Sent Events stream authenticated with `Authorization: Bearer <jwt>`. The console uses streaming `fetch`, keeping admin tokens out of URLs. Each `audit` event's `data:` is one `AuditEvent`, using only the allowlisted fields in PLAN.md §8:
 
 ```json
 {
