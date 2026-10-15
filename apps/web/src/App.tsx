@@ -1,42 +1,93 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { chat, login, type Backend } from './api/client'
+import { actionLabel, isStop } from './api/contract'
 import { Chamfer } from './components/Chamfer'
+import { ChatPanel, type Turn } from './components/ChatPanel'
+import { PayloadCard, type Exchange } from './components/PayloadCard'
 import { Starfield } from './components/Starfield'
-import { pipeline, scenes, users, type Scene } from './data/demo'
+import { exampleExchanges, users } from './data/demo'
+import { initials, pad2 } from './lib/format'
 
 const views = ['Chat', 'Incidents', 'Overview', 'Approvals', 'Eval'] as const
 type View = (typeof views)[number]
 
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+type Session = { token: string; backend: Backend }
+
+const NOT_SENT = 'Nothing. The request stopped before the model.'
 
 export default function App() {
   const [view, setView] = useState<View>('Chat')
-  const [sceneIndex, setSceneIndex] = useState(0)
   const [activeUser, setActiveUser] = useState('asha')
+  const [session, setSession] = useState<Session | null>(null)
+  const [turns, setTurns] = useState<Turn[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [exampleIndex, setExampleIndex] = useState(0)
 
-  const scene = scenes[sceneIndex]
-  const go = (step: number) => {
-    const next = (sceneIndex + step + scenes.length) % scenes.length
-    setSceneIndex(next)
-    setActiveUser(scenes[next].user)
+  // Switching user is a new identity: new token, new conversation, new vault.
+  useEffect(() => {
+    let cancelled = false
+    setSession(null)
+    resetChat()
+    login(activeUser)
+      .then((r) => !cancelled && setSession({ token: r.token, backend: r.backend }))
+      .catch(() => !cancelled && setSession(null))
+    return () => {
+      cancelled = true
+    }
+  }, [activeUser])
+
+  function resetChat() {
+    setTurns([])
+    setConversationId(null)
+    setSelectedId(null)
   }
-  const pickUser = (id: string) => {
-    setActiveUser(id)
-    const i = scenes.findIndex((s) => s.user === id)
-    if (i >= 0) setSceneIndex(i)
+
+  async function send(text: string) {
+    if (!session) return
+    const id = crypto.randomUUID()
+    setTurns((ts) => [...ts, { id, prompt: text, status: 'pending' }])
+    try {
+      const res = await chat(session.backend, session.token, { conversation_id: conversationId, message: text })
+      setConversationId(res.conversation_id)
+      setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'done', response: res } : t)))
+      setSelectedId(id)
+    } catch (e) {
+      setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'error', error: (e as Error).message } : t)))
+    }
   }
+
+  // The card shows the selected reply; before the first reply it cycles examples.
+  const done = turns.filter((t) => t.status === 'done' && t.response)
+  const live: Exchange[] = done.map((t) => ({
+    user: activeUser,
+    label: actionLabel[t.response!.action],
+    stop: isStop(t.response!.action),
+    typed: t.prompt,
+    sent: t.response!.sent_to_model ?? NOT_SENT,
+    reply: t.response!.answer,
+    providerCalls: t.response!.provider_calls,
+    stages: Object.entries(t.response!.stage_ms),
+    tag: session?.backend === 'mock' ? 'mock' : undefined,
+  }))
+  const showingLive = live.length > 0
+  const cards = showingLive ? live : exampleExchanges
+  const selectedIndex = done.findIndex((t) => t.id === selectedId)
+  const cardIndex = showingLive ? (selectedIndex === -1 ? cards.length - 1 : selectedIndex) : exampleIndex
+
+  const step = (delta: number) => {
+    const next = (cardIndex + delta + cards.length) % cards.length
+    if (showingLive) setSelectedId(done[next].id)
+    else setExampleIndex(next)
+  }
+
+  const user = users.find((u) => u.id === activeUser)!
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <Starfield />
 
       <div className="relative mx-auto flex min-h-screen max-w-[1440px] flex-col px-4 pb-4 sm:px-6 sm:pb-6">
-        {/* Notched nav tab, hanging from the top edge */}
         <div className="flex justify-center">
           <Chamfer corners={{ tl: 0, tr: 0, br: 12, bl: 12 }} className="px-5 py-2.5">
             <nav className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-[13px]">
@@ -44,6 +95,7 @@ export default function App() {
                 <button
                   key={v}
                   onClick={() => setView(v)}
+                  aria-current={v === view ? 'page' : undefined}
                   className={`transition-colors ${v === view ? 'text-fg' : 'text-faint hover:text-muted'}`}
                 >
                   {v}
@@ -60,14 +112,24 @@ export default function App() {
 
         {view === 'Chat' ? (
           <main className="mt-3 grid flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-            <LeftPanel />
-            <RightPanel
-              scene={scene}
-              sceneIndex={sceneIndex}
+            <ChatPanel
+              user={user}
+              backend={session?.backend ?? null}
+              ready={!!session}
+              turns={turns}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onSend={send}
+              onReset={resetChat}
+            />
+            <Inspector
+              exchange={cards[cardIndex]}
+              index={cardIndex}
+              count={cards.length}
               activeUser={activeUser}
-              onPrev={() => go(-1)}
-              onNext={() => go(1)}
-              onPickUser={pickUser}
+              onPrev={() => step(-1)}
+              onNext={() => step(1)}
+              onPickUser={setActiveUser}
             />
           </main>
         ) : (
@@ -92,64 +154,43 @@ export default function App() {
   )
 }
 
-function LeftPanel() {
-  return (
-    <Chamfer className="min-h-[420px] lg:min-h-0">
-      <div className="flex h-full flex-col justify-between gap-10 p-7 sm:p-10">
-        <h1 className="max-w-[17ch] text-[clamp(28px,3.2vw,46px)] font-normal leading-[1.12] tracking-[-0.01em]">
-          A gateway that lets your AI work on data it never sees.
-        </h1>
-
-        <ol className="self-center font-mono text-[10px] leading-[1.7] text-faint sm:self-end sm:pr-[18%]">
-          {pipeline.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ol>
-
-        <p className="max-w-[36ch] text-[15px] leading-relaxed text-muted">
-          Every prompt passes seven checkpoints. Sensitive values leave as tokens and come back
-          restored, only for the person who typed them.
-        </p>
-      </div>
-    </Chamfer>
-  )
-}
-
-function RightPanel({
-  scene,
-  sceneIndex,
+function Inspector({
+  exchange,
+  index,
+  count,
   activeUser,
   onPrev,
   onNext,
   onPickUser,
 }: {
-  scene: Scene
-  sceneIndex: number
+  exchange: Exchange
+  index: number
+  count: number
   activeUser: string
   onPrev: () => void
   onNext: () => void
   onPickUser: (id: string) => void
 }) {
   return (
-    <Chamfer className="min-h-[560px]">
+    <Chamfer className="min-h-[560px] min-w-0">
       <div className="flex h-full flex-col gap-6 p-6 pb-14 sm:flex-row sm:items-center sm:p-8 sm:pb-16">
         <div className="flex flex-1 items-center justify-center py-6 sm:py-0">
-          <PayloadCard scene={scene} />
+          <PayloadCard exchange={exchange} />
         </div>
 
         <aside className="flex flex-wrap items-center justify-between gap-4 sm:h-full sm:flex-col sm:flex-nowrap sm:justify-between">
-          <div className="flex gap-2 sm:flex-col" role="listbox" aria-label="Demo user">
+          <div className="flex gap-2 sm:flex-col" role="radiogroup" aria-label="Signed-in demo user">
             {users.map((u) => (
               <button
                 key={u.id}
-                role="option"
-                aria-selected={u.id === activeUser}
+                role="radio"
+                aria-checked={u.id === activeUser}
                 title={`${u.name} · ${u.role}`}
                 onClick={() => onPickUser(u.id)}
                 className={`grid h-9 w-9 place-items-center rounded-full border font-mono text-[10px] transition ${
                   u.id === activeUser
                     ? 'border-fg bg-fg text-void'
-                    : 'border-line text-muted grayscale hover:border-line-strong hover:text-fg'
+                    : 'border-line text-muted hover:border-line-strong hover:text-fg'
                 }`}
               >
                 {initials(u.name)}
@@ -163,8 +204,7 @@ function RightPanel({
           </div>
 
           <p className="font-mono text-[11px] text-faint">
-            <span className="text-fg">{String(sceneIndex + 1).padStart(2, '0')}</span> /{' '}
-            {String(scenes.length).padStart(2, '0')}
+            <span className="text-fg">{pad2(index + 1)}</span> / {pad2(count)}
           </p>
         </aside>
       </div>
@@ -172,63 +212,11 @@ function RightPanel({
   )
 }
 
-function PayloadCard({ scene }: { scene: Scene }) {
-  const user = users.find((u) => u.id === scene.user)!
-  return (
-    <div className="w-full max-w-[340px] animate-float [transform-style:preserve-3d]">
-      <div className="overflow-hidden rounded-[6px] border border-line-strong bg-gradient-to-b from-[#151515] to-[#070707] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.03)]">
-        <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-[#2a2a2a] font-mono text-[10px] text-fg">
-            {initials(user.name)}
-          </span>
-          <div className="leading-tight">
-            <p className="text-[13px] text-fg">{user.name}</p>
-            <p className="text-[11px] text-faint">{user.role}</p>
-          </div>
-          <span
-            className={`ml-auto rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-wider ${
-              scene.action === 'BLOCKED' ? 'border-fg bg-fg text-void' : 'border-line-strong text-fg'
-            }`}
-          >
-            {scene.action}
-          </span>
-        </div>
-
-        <div className="space-y-4 px-4 py-5">
-          <Field label="User typed" text={scene.typed} />
-          <Field label="Sent to model" text={scene.sent} strong />
-          <Field label="User sees" text={scene.reply} />
-        </div>
-
-        <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-line px-4 py-3 font-mono text-[10px] text-faint">
-          {scene.stages.map(([name, ms]) => (
-            <span key={name}>
-              {name} <span className="text-muted">{ms}ms</span>
-            </span>
-          ))}
-          <span className="ml-auto">
-            provider calls <span className="text-fg">{scene.providerCalls}</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Field({ label, text, strong }: { label: string; text: string; strong?: boolean }) {
-  return (
-    <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">{label}</p>
-      <p className={`mt-1 font-mono text-[12.5px] leading-relaxed ${strong ? 'text-fg' : 'text-muted'}`}>{text}</p>
-    </div>
-  )
-}
-
 function ArrowButton({ dir, onClick }: { dir: 'next' | 'prev'; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      aria-label={dir === 'next' ? 'Next example' : 'Previous example'}
+      aria-label={dir === 'next' ? 'Next card' : 'Previous card'}
       className="grid h-6 w-9 place-items-center rounded-full border border-line-strong text-muted transition hover:border-fg hover:text-fg"
     >
       <svg width="14" height="8" viewBox="0 0 14 8" fill="none" aria-hidden="true">
