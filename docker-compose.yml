@@ -1,0 +1,36 @@
+services:
+  mongo:
+    image: mongo:8.0
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      MONGODB_URI: mongodb://mongo:27017
+      OLLAMA_URL: http://host.docker.internal:11434/v1
+      EVAL_MODE: "false"
+    ports:
+      - "127.0.0.1:3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+volumes:
+  mongo-data:
