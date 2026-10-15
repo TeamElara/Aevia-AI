@@ -10,11 +10,12 @@ import type { OfflineBaseline } from './baseline.js';
 import { PolicyStore } from './policy.js';
 import type { ApprovalBridge } from './approval-bridge.js';
 import type { Delegations } from './delegation.js';
+import { MAX_FILE_BYTES, type Attachments } from './attachments.js';
 
 const messages = z.array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().min(1).max(30_000) }).strict()).min(1).max(20);
 const chatSchema = z.object({ prompt: z.string().min(1).max(30_000), conversation_id: z.uuid().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict();
 const completionSchema = z.object({ model: z.string().min(1).max(100).default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
-interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated' | 'groq' | 'ollama'; delegations?: Delegations; }
+interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated' | 'groq' | 'ollama'; delegations?: Delegations; attachments?: Attachments; }
 const identity = (res: Response): User => res.locals.user as User;
 const admin = (res: Response): void => { if (!identity(res).groups.includes('admin')) throw new GatewayError('FORBIDDEN', 403); };
 const consoleStages = (stages: Record<string, number>) => {
@@ -75,6 +76,33 @@ export function createApp(options: Options) {
     if (++budget.count > 60) { res.setHeader('Retry-After', String(Math.max(1, Math.ceil((budget.reset - now) / 1000)))); return res.status(429).json({ error: { code: 'RATE_LIMITED' } }); }
     next();
   });
+  // The console's view of a pipeline result: matched text and payloads never leave the gateway.
+  const present = (result: Awaited<ReturnType<Gateway['run']>>, req: Request) => {
+    const { findings, approval, captured_payload, ...rest } = result;
+    return { ...rest, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
+      stage_ms: consoleStages(result.stage_ms),
+      findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })),
+      rule_ids: [...new Set(findings.map(f => f.ruleId))], ...(approval ? { approval_id: approval.id } : {}),
+      ...(options.evalMode && req.headers['x-eval-capture'] === '1' ? { eval: { provider_external: options.gateway.external, provider_calls: result.provider_calls, provider_payload: captured_payload?.map(m => m.content).join('\n') ?? null } } : {}),
+    };
+  };
+  // A photo or PDF with the message. It is read and cleaned inside the gateway, then sent through
+  // the same pipeline as typed text. Registered before the small JSON parser so it can take a file.
+  app.post('/api/chat/attachment', express.json({ limit: '12mb', strict: true }), async (req, res) => {
+    if (!options.attachments) throw new GatewayError('ATTACHMENTS_UNAVAILABLE', 501);
+    const body = z.object({
+      message: z.string().max(4000).optional(), conversation_id: z.uuid().nullable().optional(),
+      file: z.object({ name: z.string().min(1).max(200), data: z.base64() }).strict(),
+    }).strict().parse(req.body);
+    // The 12 MB body limit bounds the encoded file; the decoded size is checked here and again on read.
+    if (body.file.data.length > Math.ceil(MAX_FILE_BYTES / 3) * 4 + 4) throw new GatewayError('FILE_TOO_LARGE', 413);
+    const user = identity(res);
+    const { text, summary } = await options.attachments.prepare(user, body.file.name, Buffer.from(body.file.data, 'base64'));
+    const name = body.file.name.replace(/[^\w .()-]+/g, '_').slice(0, 80);
+    const content = `${body.message?.trim() || 'Summarise this document.'}\n\n--- Attached file: ${name} ---\n${text}`;
+    const result = await options.gateway.run(user, { messages: [{ role: 'user', content }], conversationId: body.conversation_id ?? undefined });
+    res.json({ ...present(result, req), attachment: summary });
+  });
   app.use(express.json({ limit: '256kb', strict: true }));
   const chat = async (req: Request, res: Response) => {
     const body = chatSchema.parse(req.body);
@@ -90,13 +118,7 @@ export function createApp(options: Options) {
     const result = mode === 'passthrough'
       ? await options.baseline!.run(identity(res), body.message, body.conversation_id ?? undefined, body.attached_doc ?? undefined)
       : await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id, attachedDoc: body.attached_doc ?? undefined });
-    const { findings, approval, captured_payload, ...rest } = result;
-    res.json({ ...rest, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
-      stage_ms: consoleStages(result.stage_ms),
-      findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })),
-      rule_ids: [...new Set(findings.map(f => f.ruleId))], ...(approval ? { approval_id: approval.id } : {}),
-      ...(options.evalMode && req.headers['x-eval-capture'] === '1' ? { eval: { provider_external: options.gateway.external, provider_calls: result.provider_calls, provider_payload: captured_payload?.map(m => m.content).join('\n') ?? null } } : {}),
-    });
+    res.json(present(result, req));
   });
   app.post('/v1/scan', async (req, res) => {
     const body = z.object({ text: z.string().min(1).max(30_000), history: z.array(z.string().max(30_000)).max(20).default([]) }).strict().parse(req.body);
