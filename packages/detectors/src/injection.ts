@@ -47,6 +47,9 @@ const CROSS_USER =
 // Phrasings that signal talking ABOUT attacks rather than performing one.
 const META = /\b(?:what\s+is|what's|what\s+are|explain|why\s+(?:is|are|does)|how\s+(?:does|do|can|a|an|the|to\s+(?:detect|prevent|stop|write))|define|definition|example\s+of|examples\s+of|detect|prevent|defend|protect\s+against|is\s+called|kya\s+hota|kya\s+hai|samjhao|matlab)\b/i;
 const QUOTES = /["“”'‘’`]/g;
+// Describing what attacks do ("jailbreak prompts try to bypass…") rather than ordering the model.
+// The subject must be a third party, so "I want you to ignore…" is not softened.
+const DESCRIPTIVE = /\b(?:attackers?|hackers?|prompts?|jailbreaks?|injections?|they|people|someone|malicious\s+\w+|bad\s+actors?)\b[^.?!\n]{0,30}\b(?:try|tries|trying|attempt|attempts|attempting|use|uses|used|aim|aims)\s+to\s+$/i;
 
 const MAX_SPANS = 2000;
 
@@ -99,6 +102,7 @@ function damping(text: string, s: Span & { anchor?: number }): number {
   const win = text.slice(winStart, at);
   const sentenceStart = winStart + Math.max(win.lastIndexOf('\n'), win.lastIndexOf('. '), win.lastIndexOf('? ')) + 1;
   if (META.test(text.slice(Math.max(sentenceStart, at - 80), at)) || META.test(text.slice(s.end, s.end + 40))) levels++;
+  if (DESCRIPTIVE.test(text.slice(Math.max(sentenceStart, at - 60), at))) levels++;
   const before = text.slice(sentenceStart, at);
   const quotesBefore = (before.match(QUOTES) ?? []).length;
   if (quotesBefore % 2 === 1) levels++;

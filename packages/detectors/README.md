@@ -132,6 +132,8 @@ npm run typecheck
 npm run tune -- ../../eval/dev.jsonl   # threshold sweep, category recall, misses
 ```
 
+`test/benign-corpus.ts` holds 110 realistic prompts with no sensitive data and no attack: office work, Hinglish, code with `password`/`token` variables, IDs and numbers, security discussion, roleplay, trigger words, long text. `test/benign.test.ts` fails if any of them would trigger a warn or mask, so false positives can't creep back in. It was written independently of the held-out set.
+
 `npm run tune` refuses held-out, robustness and live-subset files, and any case whose `split` isn't `dev`. That is the team rule until the hour-15 freeze.
 
 Test keys are assembled at runtime in `test/fixtures.ts`, so secret scanners don't flag the repo. Aadhaar values in tests are synthetic numbers generated with `verhoeffCheckDigit`.
