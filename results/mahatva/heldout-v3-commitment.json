@@ -1,0 +1,26 @@
+{
+  "version": "blind-heldout-v3-sealed-draft",
+  "created_at_utc": "2026-10-15T16:03:19.187616+00:00",
+  "cases": 60,
+  "sha256": "d13724404e9b5c104f87469e80a0af69396756bd0a645e45e483f941cfd558e2",
+  "categories": {
+    "normal_work": 12,
+    "sensitive_disclosure": 12,
+    "security_discussion": 6,
+    "benign_lookalike": 6,
+    "direct_injection": 12,
+    "authorised_rag": 5,
+    "unauthorised_retrieval": 5,
+    "indirect_injection": 2
+  },
+  "author": "mahatva",
+  "synthetic": true,
+  "schema_valid": true,
+  "exact_public_prompt_duplicates": 0,
+  "detector_or_model_queries": 0,
+  "run_status": "not run; sequestered until v3 freeze",
+  "provider_contract": "external Groq; v3 intended IFSC mask; current policy unchanged",
+  "independence": "Blind to detector development through sequestering, not an independent external benchmark. Author has prior system knowledge; access fixtures reuse the public synthetic corpus.",
+  "release_gate": "Do not disclose prompts or run against a candidate used for tuning. After demo: agree v3 contract, freeze code/policy/thresholds before reveal and evaluate once; preserve draft-1 bytes and precommitted hash.",
+  "visibility": "Only this commitment is public. Case content stays outside Git/GitHub and the Vite workspace, under current-user Windows ACL."
+}
