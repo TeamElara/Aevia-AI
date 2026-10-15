@@ -4,7 +4,7 @@
 import { detectAll, detectSplitSecrets, injectionScore } from '../src';
 import type { Category, Finding } from '../src/types';
 
-// Format: eval/README.md. attached_doc is a corpus id (retrieval is Alwaz's side), so only text is scanned here.
+// Format: eval/README.md. attached_doc is a corpus id; pass the corpus texts (seed/corpus.js) to scan it as a document.
 export interface EvalCase {
   id: string;
   split?: string;
@@ -31,19 +31,23 @@ export interface CaseResult {
   foundData: string[];
   /** Data categories found at mask-level score in a case expected to be allowed. */
   falseData: string[];
+  /** The case attaches a document whose text wasn't supplied, so its expectations can't be measured here. */
+  docMissing: boolean;
 }
 
 const DATA_FLAG_SCORE = 0.6;
 
 const USERS = ['asha', 'ravi', 'meera', 'ceo', 'admin'];
 
-export function runCase(c: EvalCase): CaseResult {
+export function runCase(c: EvalCase, docs: Record<string, string> = {}): CaseResult {
   const ctx = { knownUsers: USERS, currentUser: c.user };
   const history = c.history ?? [];
+  const docText = c.attached_doc ? docs[c.attached_doc] : undefined;
   const findings: Finding[] = [
     ...detectAll(c.prompt, { ...ctx, source: 'prompt' }),
     ...history.flatMap((h) => detectAll(h, { ...ctx, source: 'history' })),
     ...detectSplitSecrets([...history, c.prompt]),
+    ...(docText ? detectAll(docText, { ...ctx, source: 'document' }) : []),
   ];
   const expected = (c.expected_categories ?? []).filter((e) => DETECTOR_CATEGORIES.has(e));
   const data = findings.filter((f) => f.category !== 'INJECTION');
@@ -58,6 +62,7 @@ export function runCase(c: EvalCase): CaseResult {
     expectedData: expected.filter((e) => e !== 'INJECTION'),
     foundData,
     falseData: c.expected_action === 'allow' ? maskLevel : [],
+    docMissing: Boolean(c.attached_doc) && docText === undefined,
   };
 }
 
@@ -75,6 +80,7 @@ export function sweep(results: CaseResult[], thresholds = [0.5, 0.55, 0.6, 0.65,
   return thresholds.map((t) => {
     let tp = 0, fp = 0, fn = 0, tn = 0;
     for (const r of results) {
+      if (r.docMissing) continue;
       const hit = r.injection >= t;
       if (r.expectedInjection && hit) tp++;
       else if (r.expectedInjection) fn++;
@@ -88,6 +94,7 @@ export function sweep(results: CaseResult[], thresholds = [0.5, 0.55, 0.6, 0.65,
 export function categoryRecall(results: CaseResult[]): Record<string, { expected: number; found: number }> {
   const out: Record<string, { expected: number; found: number }> = {};
   for (const r of results) {
+    if (r.docMissing) continue;
     for (const c of r.expectedData) {
       out[c] ??= { expected: 0, found: 0 };
       out[c].expected++;

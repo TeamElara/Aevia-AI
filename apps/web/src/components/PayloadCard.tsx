@@ -1,5 +1,5 @@
 import { users } from '../data/demo'
-import { initials } from '../lib/format'
+import { initials, ms } from '../lib/format'
 
 // One prompt/answer pair as the card shows it: what the user typed, what the
 // provider received, and what the user got back.
@@ -41,9 +41,9 @@ export function PayloadCard({ exchange }: { exchange: Exchange }) {
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-line px-4 py-3 font-mono text-[10px] text-faint">
-          {exchange.stages.map(([name, ms]) => (
+          {exchange.stages.map(([name, t]) => (
             <span key={name}>
-              {name} <span className="text-muted">{ms}ms</span>
+              {name} <span className="text-muted">{ms(t)}</span>
             </span>
           ))}
           <span className="ml-auto">

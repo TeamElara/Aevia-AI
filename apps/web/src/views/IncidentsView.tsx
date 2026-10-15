@@ -3,6 +3,7 @@ import { subscribeEvents } from '../api/client'
 import { actionLabel, isStop, type AuditEvent } from '../api/contract'
 import { Chamfer } from '../components/Chamfer'
 import { ActionBadge } from '../components/PayloadCard'
+import { ms, shortId } from '../lib/format'
 import { useAdmin } from '../lib/useAdmin'
 
 const MAX_ROWS = 200
@@ -104,7 +105,9 @@ export function IncidentsView() {
                   <td className="py-2.5 pr-4 font-mono text-[11px] text-muted tabular-nums">
                     {new Date(e.ts).toLocaleTimeString('en-GB')}
                   </td>
-                  <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{e.user_pseudo}</td>
+                  <td className="py-2.5 pr-4 font-mono text-[11px] text-muted" title={e.user_pseudo}>
+                    {shortId(e.user_pseudo)}
+                  </td>
                   <td className="hidden py-2.5 pr-4 text-muted lg:table-cell">{e.stage}</td>
                   <td className="py-2.5 pr-4 text-fg">{e.categories.join(', ') || '—'}</td>
                   <td className="max-w-[170px] truncate py-2.5 pr-4 font-mono text-[11px] text-muted" title={e.rule_ids.join(', ')}>
@@ -115,7 +118,7 @@ export function IncidentsView() {
                     <ActionBadge label={actionLabel[e.action]} stop={isStop(e.action)} />
                   </td>
                   <td className="hidden py-2.5 pr-4 font-mono text-[11px] text-muted lg:table-cell">{e.via.join(', ') || '—'}</td>
-                  <td className="hidden py-2.5 text-right font-mono text-[11px] text-muted tabular-nums lg:table-cell">{e.total_ms}ms</td>
+                  <td className="hidden py-2.5 text-right font-mono text-[11px] text-muted tabular-nums lg:table-cell">{ms(e.total_ms)}</td>
                 </tr>
               ))}
             </tbody>
