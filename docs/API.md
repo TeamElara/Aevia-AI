@@ -4,6 +4,15 @@ The contract between Mahatva's gateway (`apps/gateway`) and Arihant's console (`
 
 All paths are served by the gateway. In dev, Vite proxies `/api` and `/v1` to `GATEWAY_URL` (default `http://localhost:8080`).
 
+## Security warnings (post-freeze, optional)
+
+Types: `apps/web/src/api/security.ts`. Feature and reporting assumptions: [SECURITY-ESCALATION.md](SECURITY-ESCALATION.md). Existing authentication, CORS, strict body parsing and per-identity rate limits apply. The client's selected account token is used; no implicit admin login.
+
+- `GET /api/security/alerts?scope=assigned` returns `{enabled, can_review_all, scope, alerts, truncated?}`. When off, returns authenticated `{enabled:false, can_review_all:false, scope:"assigned", alerts:[]}`. Unknown query properties/scopes return 400.
+- `scope=oversight` is limited to explicitly configured reviewers (403 otherwise). Every scope excludes the reviewer's own activity. Assigned inboxes include only the recipient's warnings.
+- Each alert is `{id, subject_id, kind, level, attempts, created_at, window_start, window_end, acknowledged_at}`. `kind` is `prompt_manipulation`, `access_denied` or `credential_pasting`; `level` is 1–3. Counts are snapshots at notification time. No prompt, output, matched value or document title is returned. Lists contain the latest 100 records and indicate truncation.
+- `POST /api/security/alerts/:id/ack` with strict empty `{}` returns `{id, acknowledged_at}`. Authentication and recipient/reviewer permission are rechecked. Actor self-review, inaccessible IDs and stale IDs return 404; repeated authorized acknowledgement is idempotent. Off returns 404. Acknowledgement does not clear risk counts or grant/revoke access.
+
 ## `GET /api/health`
 
 No auth. Returns `200 { "ok": true }` when the gateway is up. The console checks this at login: with no gateway it falls back to its built-in mock and labels every reply MOCK.

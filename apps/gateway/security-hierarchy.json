@@ -1,0 +1,4 @@
+{
+  "managers": { "asha": "ravi", "ravi": "ceo", "meera": "ceo", "ceo": "admin" },
+  "security_reviewers": ["admin", "ceo"]
+}

@@ -11,11 +11,12 @@ import { PolicyStore } from './policy.js';
 import type { ApprovalBridge } from './approval-bridge.js';
 import type { Delegations } from './delegation.js';
 import { MAX_FILE_BYTES, type Attachments } from './attachments.js';
+import type { SecurityEscalation } from './security-escalation.js';
 
 const messages = z.array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().min(1).max(30_000) }).strict()).min(1).max(20);
 const chatSchema = z.object({ prompt: z.string().min(1).max(30_000), conversation_id: z.uuid().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict();
 const completionSchema = z.object({ model: z.string().min(1).max(100).default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
-interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated' | 'groq' | 'ollama'; delegations?: Delegations; attachments?: Attachments; }
+interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated' | 'groq' | 'ollama'; delegations?: Delegations; attachments?: Attachments; securityEscalation?: SecurityEscalation; }
 const identity = (res: Response): User => res.locals.user as User;
 const admin = (res: Response): void => { if (!identity(res).groups.includes('admin')) throw new GatewayError('FORBIDDEN', 403); };
 const consoleStages = (stages: Record<string, number>) => {
@@ -107,6 +108,17 @@ export function createApp(options: Options) {
     res.json({ ...present(result, req), attachment: summary });
   });
   app.use(express.json({ limit: '256kb', strict: true }));
+  app.get('/api/security/alerts', async (req, res) => {
+    const query = z.object({ scope: z.enum(['assigned', 'oversight']).default('assigned') }).strict().parse(req.query);
+    if (!options.securityEscalation) return res.json({ enabled: false, can_review_all: false, scope: 'assigned', alerts: [] });
+    res.json(await options.securityEscalation.list(identity(res), query.scope));
+  });
+  app.post('/api/security/alerts/:id/ack', async (req, res) => {
+    if (!options.securityEscalation) throw new GatewayError('SECURITY_ESCALATION_DISABLED', 404);
+    const params = z.object({ id: z.uuid() }).strict().parse(req.params);
+    z.object({}).strict().parse(req.body ?? {});
+    res.json(await options.securityEscalation.acknowledge(identity(res), params.id));
+  });
   const chat = async (req: Request, res: Response) => {
     const body = chatSchema.parse(req.body);
     const result = await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.prompt }], conversationId: body.conversation_id, approvalId: body.approval_id });

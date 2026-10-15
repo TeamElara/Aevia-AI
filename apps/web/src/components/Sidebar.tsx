@@ -14,6 +14,7 @@ const monitor: { id: View; icon: Parameters<typeof Icon>[0]['name']; sub: string
   { id: 'Overview', icon: 'chart', sub: 'Stats' },
   { id: 'Approvals', icon: 'clock', sub: 'Held requests' },
   { id: 'Eval', icon: 'check', sub: 'Red-team run' },
+  { id: 'Warnings', icon: 'shield', sub: 'Human review' },
 ]
 
 
@@ -41,6 +42,8 @@ export function Sidebar({
   onSignIn,
   posts,
   onAssign,
+  warningsEnabled = false,
+  warningCount = 0,
 }: {
   view: View
   tone: Tone
@@ -54,6 +57,8 @@ export function Sidebar({
   onSignIn: () => void
   posts: ActingPosts
   onAssign: () => void
+  warningsEnabled?: boolean
+  warningCount?: number
 }) {
   const [navRef, pill] = useSlider(view)
   const [hover, setHover] = useState<{ y: number; h: number } | null>(null)
@@ -97,11 +102,11 @@ export function Sidebar({
         <div>
           <p className="label mb-1.5 px-2.5">Monitor</p>
           <div className="space-y-0.5">
-            {monitor.map((m) => (
+            {monitor.filter(m => m.id !== 'Warnings' || warningsEnabled).map((m) => (
               <button key={m.id} className="nav-item" data-on={view === m.id} aria-current={view === m.id ? 'page' : undefined} onClick={() => onGo(m.id)}>
                 <Icon name={m.icon} />
                 <span className="flex-1">{m.id}</span>
-                <span className="text-[11.5px] text-faint">{m.sub}</span>
+                <span className="text-[11.5px] text-faint">{m.id === 'Warnings' && warningCount ? `${warningCount} new` : m.sub}</span>
               </button>
             ))}
           </div>

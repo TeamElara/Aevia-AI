@@ -1,4 +1,4 @@
-export const views = ['Chat', 'Incidents', 'Overview', 'Approvals', 'Eval'] as const
+export const views = ['Chat', 'Incidents', 'Overview', 'Approvals', 'Eval', 'Warnings'] as const
 export type View = (typeof views)[number]
 
 // One colour per demo person, so their avatar stays the same everywhere.

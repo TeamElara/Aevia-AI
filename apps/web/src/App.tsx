@@ -17,6 +17,8 @@ import { IncidentsView } from './views/IncidentsView'
 import { OverviewView } from './views/OverviewView'
 import { useActingPosts } from './lib/useActingPosts'
 import { AssignPostModal, CoveringBadge } from './components/ActingPosts'
+import { useSecurityAlerts } from './lib/useSecurityAlerts'
+import { SecurityAlertsView } from './views/SecurityAlertsView'
 
 type Session = { token: string; backend: Backend }
 
@@ -39,6 +41,7 @@ export default function App() {
   const [unreachable, setUnreachable] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const posts = useActingPosts(session)
+  const warnings = useSecurityAlerts(session)
 
   function go(next: View) {
     setNavOpen(false)
@@ -203,6 +206,8 @@ export default function App() {
         setSignInOpen(true)
       }}
       posts={posts}
+      warningsEnabled={warnings.data?.enabled}
+      warningCount={warnings.unread}
       onAssign={() => { setNavOpen(false); setAssignOpen(true) }}
     />
   )
@@ -212,6 +217,10 @@ export default function App() {
       <aside className="sticky top-0 z-20 hidden h-screen border-r border-line bg-paper/70 backdrop-blur-xl lg:block">{sidebar}</aside>
 
       <div className="flex min-w-0 flex-col">
+        {warnings.unread > 0 && <div role="status" className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 text-[13px] sm:px-8">
+          <span>{warnings.unread} security {warnings.unread === 1 ? 'warning needs' : 'warnings need'} your review.</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => go('Warnings')}>View warnings</button>
+        </div>}
         <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-line bg-paper/85 px-4 backdrop-blur-md lg:hidden">
           <button className="icon-btn" onClick={() => setNavOpen(true)} aria-label="Open menu">
             <Icon name="menu" />
@@ -245,6 +254,7 @@ export default function App() {
           {view === 'Overview' && <OverviewView />}
           {view === 'Approvals' && <ApprovalsView />}
           {view === 'Eval' && <EvalView />}
+          {view === 'Warnings' && <SecurityAlertsView warnings={warnings} />}
         </main>
         {view !== 'Chat' && (
           <footer className="mx-auto w-full max-w-[1180px] px-4 pb-8 text-[12px] text-faint sm:px-8 lg:px-12">

@@ -7,6 +7,7 @@ import { findingAction, PolicyStore, strictest } from './policy.js';
 import { sanitiseLinks, type FindLinks } from './sanitise.js';
 import { Scanner } from './scanner.js';
 import { ConversationVault, redact } from './vault.js';
+import type { SecurityEscalation } from './security-escalation.js';
 
 interface Dependencies {
   scanner: Scanner;
@@ -21,8 +22,9 @@ interface Dependencies {
   evalMode?: boolean;
   splitSecrets?: (messages: string[]) => Finding[];
   findLinks?: FindLinks;
+  securityEscalation?: SecurityEscalation;
 }
-export interface ChatInput { messages: Message[]; conversationId?: string; approvalId?: string; attachedDoc?: string; }
+export interface ChatInput { messages: Message[]; conversationId?: string; approvalId?: string; attachedDoc?: string; internalApprovalReplay?: boolean; }
 function permitted(chunk: Chunk, user: User): boolean {
   // Classification alone never grants access, including "public". Missing ACL is deny.
   return Array.isArray(chunk.allowed_groups) && Array.isArray(chunk.allowed_users)
@@ -43,6 +45,8 @@ export class Gateway {
     let sentToModel: string | null = null;
     let citations: ChatResult['citations'] = [];
     let version = 'unavailable';
+    let promptRisk: Finding[] = [];
+    let explicitAccessDenied = false;
     const time = async <T>(stage: string, task: () => Promise<T>): Promise<T> => {
       const before = performance.now();
       try { return await task(); }
@@ -60,6 +64,7 @@ export class Gateway {
       });
     };
     const result = async (action: Action, answer: string, reason: string, approval?: ChatResult['approval']): Promise<ChatResult> => {
+      if (!input.internalApprovalReplay) await this.deps.securityEscalation?.observe(user, { requestId, action, providerCalls, promptFindings: promptRisk, explicitAccessDenied });
       await log('complete', action);
       return {
         request_id: requestId, conversation_id: id, answer, action, reason,
@@ -134,6 +139,8 @@ export class Gateway {
         }
         messages = clean;
       });
+      // Freeze user-origin risk before documents and model responses enter the findings array.
+      promptRisk = findings.map(f => ({ ...f }));
       if (actions.includes('block')) return await result('block', '', 'Request blocked by the disclosure policy.');
       await log('prompt', strictest(actions));
 
@@ -142,7 +149,7 @@ export class Gateway {
       if (!Array.isArray(chunks) || chunks.length > 30) throw new GatewayError('RETRIEVAL_UNAVAILABLE');
       if (input.attachedDoc) {
         chunks = chunks.filter(c => c.doc_id === input.attachedDoc);
-        if (!chunks.length) return await result('deny', '', 'No documents you can access matched.');
+        if (!chunks.length) { explicitAccessDenied = true; return await result('deny', '', 'No documents you can access matched.'); }
       }
       const approvedChunks: Chunk[] = [];
       const quarantined = new Set<string>();
