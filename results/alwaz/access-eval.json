@@ -2,8 +2,8 @@
   "scope": "real local Mongo; injected deterministic provider and pass-through scan callbacks; access behavior only, not PII or frozen headline metrics",
   "cases": 37,
   "passed": 37,
-  "p50_ms": 0.304416999999944,
-  "p95_ms": 1.0052080000000387,
+  "p50_ms": 0.3980420000000322,
+  "p95_ms": 1.398290999999972,
   "rows": [
     {
       "id": "D-008",

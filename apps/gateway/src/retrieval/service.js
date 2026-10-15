@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createRetriever, assembleChunks } from './index.js';
+import { createRetriever, assembleChunks, quarantineHighScores } from './index.js';
 import { createApprovals } from '../approvals/index.js';
 
 /** Integration boundary: callbacks are required so missing scans cannot silently permit a provider call. */
@@ -14,6 +14,7 @@ export function createAccessService({ db, inspectOutbound, inspectResponse, prov
   };
   const canRead = (user, c) => c.allowed_users?.includes(user.id) || c.allowed_groups?.some(g => user.groups.includes(g));
   async function prepare(user, input) {
+    await quarantineHighScores(chunks, event => audit({ request_id: randomUUID(), ...event, provider_calls: 0 }));
     let found;
     if (input.attached_doc) {
       if (typeof input.attached_doc !== 'string') throw new TypeError('Invalid document ID');

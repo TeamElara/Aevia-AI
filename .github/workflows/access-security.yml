@@ -1,0 +1,23 @@
+name: Alwaz access security
+on:
+  push:
+    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'package.json', 'pnpm-lock.yaml', 'eval/**', '.github/workflows/access-security.yml']
+  pull_request:
+    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'package.json', 'pnpm-lock.yaml', 'eval/**', '.github/workflows/access-security.yml']
+permissions:
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.25.0'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm eval:validate

@@ -134,3 +134,16 @@ test('gateway scanner callbacks receive full history and document payload before
   assert.ok(captured.messages.some(m => m.content.includes('[TEST_VALUE_0]')));
   for (const value of values) assert.ok(!JSON.stringify(captured).includes(value));
 });
+
+test('a newly scored chunk quarantines every sibling before retrieval and emits metadata only', async () => {
+  const c = db.collection('chunks');
+  const first = await c.findOne({ _id: 'holidays:0' });
+  await c.insertOne({ ...first, _id: 'holidays:1', injection_score: 0.99 });
+  const events = [];
+  try {
+    const retrieve = createRetriever(c, { onQuarantine: async event => events.push(event) });
+    assert.deepEqual(await retrieve(users[0], 'holiday'), []);
+    assert.equal(await c.countDocuments({ document_id: 'holidays', quarantined: true }), 2);
+    assert.deepEqual(events, [{ action: 'quarantine', document_ids: ['holidays'] }]);
+  } finally { await c.deleteOne({ _id: 'holidays:1' }); await seedDatabase(db, { fingerprintKey: 'k'.repeat(32) }); }
+});

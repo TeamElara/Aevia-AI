@@ -7,6 +7,7 @@ export async function seedDatabase(db, { fingerprintKey = process.env.FINGERPRIN
   const fingerprint = createFingerprinter(fingerprintKey);
   const chunks = documents.flatMap(d => ingestDocument(d)).map(c => ({ ...c, fingerprints: ['restricted', 'confidential'].includes(c.classification) ? fingerprint.fingerprint(c.text) : [] }));
   const collection = db.collection('chunks');
+  await collection.createIndex({ injection_score: 1, quarantined: 1 });
   await collection.createIndex({ text: 'text', title: 'text' });
   await collection.createIndex({ allowed_groups: 1, quarantined: 1, external_llm: 1 });
   await collection.createIndex({ allowed_users: 1, quarantined: 1, external_llm: 1 });

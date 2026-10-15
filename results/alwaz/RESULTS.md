@@ -4,10 +4,10 @@
 
 | Check | Observed |
 | --- | --- |
-| Vitest security tests | 19 passed, 0 failed |
+| Vitest security tests | 20 passed, 0 failed |
 | Access fixture behavior | 37/37 expected access actions |
 | Seeded documents / quarantined | 10 / 2 |
-| Local access p50 / p95 | 0.298 ms / 1.025 ms |
+| Local access p50 / p95 | 0.398 ms / 1.398 ms |
 | Classifier fp32 warm p50 / p95 | 10.44 ms / 11.97 ms |
 | Classifier local int8 warm p50 / p95 | 6.35 ms / 7.96 ms |
 

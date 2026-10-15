@@ -2,7 +2,7 @@
 
 ## Entry points
 
-`apps/gateway/src/retrieval/index.js`: `createRetriever(collection)` returns `retrieve(user, query, options)`. Trusted principals are `{id, groups, roles}` resolved by JWT and current server-side memberships. Chunk fields match PLAN §7: `allowed_groups`, `allowed_users`, `external_llm` (`allow|approval|deny`). Mongo `$text` and ACLs apply before top-k. No admin document bypass. Missing ACLs deny access.
+`apps/gateway/src/retrieval/index.js`: `createRetriever(collection)` returns `retrieve(user, query, options)`. Trusted principals are `{id, groups, roles}` resolved by JWT and current server-side memberships. Chunk fields match PLAN §7: `allowed_groups`, `allowed_users`, `external_llm` (`allow|approval|deny`). Mongo `$text` and ACLs apply before top-k. No admin document bypass. `quarantineHighScores` promotes any newly scored chunk at or above 0.85 into whole-document quarantine before retrieval/assembly; its optional notification callback emits metadata for the gateway incident sink. The service forwards that event to its audit callback. Missing ACLs deny access.
 
 `assembleChunks(collection, user, chunks, options)` reloads ACLs and verifies content hashes. Defaults permit only external `allow`; `approved:true` additionally permits `approval`, never `deny`. `external:false` is for internal inspection/local providers. Do not construct cloud payloads directly from internal retrieval results.
 
@@ -31,3 +31,5 @@ The latest tests use Vitest and real MongoDB, including 37 access fixtures. Resu
 PLAN §10 also requires conversation-vault exact restoration, restoration-before-link sanitization, full PII/canary behavior and privacy across the team's audit/incident/log stores. Those modules are absent upstream, so those end-to-end checks remain integration dependencies rather than being marked passed. This branch tests provider-zero-call boundaries, unauthorized outbound exclusion, callback masking/history wiring, restricted-response blocking, scanner failure, and user/conversation approval isolation.
 
 See CLASSIFIER-DECISION.md for measured Node/int8 evidence, GROQ-ACCOUNT-CHECK.md for verified public policy and the remaining account verification, and results/alwaz/RESULTS.md for current scope and timings.
+
+Local verification: dependency installation, security tests and schema validation passed from a separate clean local Git clone. This is a same-machine clean-copy check, not the scheduled second-laptop rehearsal.

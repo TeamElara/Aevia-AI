@@ -52,7 +52,7 @@ text(s,'Ingest source → scan hidden carriers → quarantine whole document',.7
 text(s,'Comments, hidden CSS, white text, zero-width characters and alt/title attributes are checked before rendering.',.75,3.1,11.6,1.1,24)
 text(s,'Pending requests use AES-GCM in memory for ten minutes. Mongo stores metadata and request hash. Approval is single use and rechecks current permissions.',.75,4.7,11.6,1.5,24)
 s=slide('Measured access evidence','Real local MongoDB · simulated provider · development fixtures')
-table(s,['Measurement','Observed'],[['Vitest security suite','19 passed · 0 failed'],['Expected access actions',f"{r['passed']} / {r['cases']}"],['Synthetic corpus','10 documents · 2 quarantined'],['Local access p50 / p95',f"{r['p50_ms']:.3f} / {r['p95_ms']:.3f} ms"]])
+table(s,['Measurement','Observed'],[['Vitest security suite','20 passed · 0 failed'],['Expected access actions',f"{r['passed']} / {r['cases']}"],['Synthetic corpus','10 documents · 2 quarantined'],['Local access p50 / p95',f"{r['p50_ms']:.3f} / {r['p95_ms']:.3f} ms"]])
 text(s,'Excludes real detectors, model/network time and human approval wait. This is not the final frozen gateway evaluation.',.75,5.9,11.7,.9,19,MUTED)
 s.notes_slide.notes_text_frame.text='Source: results/alwaz/access-eval.json. Access-only fixtures are not detector precision/recall or full-team leak metrics.'
 s=slide('Classifier feasibility','Pinned ProtectAI DeBERTa model · local Node ONNX · English only')
