@@ -38,7 +38,7 @@ export async function createApprovalBridge(options: {
       const grantId = randomUUID();
       grants.set(grantId, { hash: ctx.requestHash, owner: user.id, conversation: ctx.conversationId, expires: Date.now() + 10_000 });
       try {
-        const result = await options.gateway().run(user, { messages: ctx.replayMessages ?? [], conversationId: ctx.conversationId, approvalId: grantId, attachedDoc: ctx.attachedDoc });
+        const result = await options.gateway().run(user, { messages: ctx.replayMessages ?? [], conversationId: ctx.conversationId, approvalId: grantId, attachedDoc: ctx.attachedDoc, internalApprovalReplay: true });
         if (['deny', 'require_approval'].includes(result.action) || (result.action === 'block' && result.provider_calls === 0)) throw new GatewayError('APPROVAL_REVALIDATION_FAILED', 409);
         completed.set(ctx.requestId, { ...result, request_id: ctx.requestId, captured_payload: undefined });
         return { request_id: ctx.requestId, status: 'completed' };

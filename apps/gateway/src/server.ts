@@ -20,6 +20,7 @@ import { createApprovalBridge } from './approval-bridge.js';
 import { Delegations } from './delegation.js';
 import { Attachments } from './attachments.js';
 import { loadRuntimeClassifier } from './classifier-adapter.js';
+import { loadSecurityHierarchy, SecurityEscalation } from './security-escalation.js';
 
 installConsolePrivacyFilter();
 async function start() {
@@ -48,11 +49,15 @@ async function start() {
   }
   const policies = new PolicyStore(config.POLICY_PATH);
   policies.snapshot();
+  const securityEscalation = config.SECURITY_ESCALATION_ENABLED
+    ? new SecurityEscalation(client.db(config.MONGODB_DB), audit, loadSecurityHierarchy(config.SECURITY_HIERARCHY_PATH)) : undefined;
+  if (securityEscalation && !principal) throw new GatewayError('SECURITY_ESCALATION_REQUIRES_DB_PRINCIPAL');
+  await securityEscalation?.initialise();
   const vault = new ConversationVault();
   const provider = new HttpProvider(config.LLM_PROVIDER === 'groq'
     ? { kind: 'groq', baseURL: 'https://api.groq.com/openai/v1', apiKey: config.GROQ_API_KEY, model: config.GROQ_MODEL! }
     : { kind: 'ollama', baseURL: config.OLLAMA_URL, model: config.OLLAMA_MODEL! });
-  const deps = { scanner: new Scanner(detect), provider, audit, policies, vault, retrieve, approvals: undefined as ApprovalService | undefined, restrictedOverlap, evalMode: config.EVAL_MODE, splitSecrets: detectorHelpers?.splitSecrets, findLinks: detectorHelpers?.findLinks };
+  const deps = { scanner: new Scanner(detect), provider, audit, policies, vault, retrieve, approvals: undefined as ApprovalService | undefined, restrictedOverlap, evalMode: config.EVAL_MODE, splitSecrets: detectorHelpers?.splitSecrets, findLinks: detectorHelpers?.findLinks, securityEscalation };
   let gateway: Gateway;
   const approvalBridge = config.APPROVALS_MODULE ? await createApprovalBridge({ db: client.db(config.MONGODB_DB), audit, policies, principal, modulePath: config.APPROVALS_MODULE, gateway: () => gateway }) : undefined;
   deps.approvals = approvalBridge?.service;
@@ -62,10 +67,10 @@ async function start() {
     const documents = await client.db(config.MONGODB_DB).collection('chunks').find(documentId ? { document_id: documentId } : { $text: { $search: query.slice(0, 4000) } }).sort({ _id: 1 }).limit(8).toArray();
     return documents.map(d => d.text as string);
   }) : undefined;
-  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER, delegations, attachments });
+  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER, delegations, attachments, securityEscalation });
   const server = app.listen(config.PORT, config.HOST, () => safeLog('STARTED', { port: config.PORT }));
   const stop = () => {
-    server.close(() => { vault.close(); policies.close(); baseline?.close(); approvalBridge?.close(); void attachments.close(); void classifier?.close(); void client.close().then(() => process.exit(0)); });
+    server.close(() => { vault.close(); policies.close(); baseline?.close(); approvalBridge?.close(); securityEscalation?.close(); void attachments.close(); void classifier?.close(); void client.close().then(() => process.exit(0)); });
     server.closeIdleConnections();
     setTimeout(() => process.exit(1), 10_000).unref();
   };

@@ -42,6 +42,10 @@ Groq's public policy distinguishes usage metadata from inference data and allows
 
 Percentiles identify the machine, source, model, sample count and measured scope. Instrumented-stage overhead excludes inference and uninstrumented audit/vault work; it is not total security overhead. Do not compare it directly with an older reference-host measurement. Previous Windows Ollama, fp32 and clean Linux Docker evidence is in docs/MAHATVA_FINAL.md; no new physical teammate/projector rehearsal or joint narration session is implied.
 
+## Post-freeze repeated-risk escalation
+
+An optional, default-off supervisor warning feature is documented in [SECURITY-ESCALATION.md](SECURITY-ESCALATION.md). It counts selected authenticated policy interventions over 15 minutes and routes metadata-only in-app warnings through a trusted hierarchy, with independent review of administrator activity. It does not detect all malicious intent, eliminate existing detector false positives/negatives, establish misconduct, suspend users or imply a disciplinary decision. Access-denial signals include missing references; credential pasting can be accidental. No prompt values are disclosed to managers. Delivery is in-app, with retry and at-least-once audit semantics; external notification services are not configured. Frozen reports, test datasets and IFSC policy are unchanged.
+
 ## Legal mapping
 
 The DPDP slide maps technical controls to Act sections 6(1), 8(5), 8(6) and 8(7). It does not establish compliance, lawful consent, breach-notification operations, complete erasure or cross-border-transfer compliance. Primary reference: https://www.indiacode.nic.in/bitstream/123456789/22037/1/a2023-22.pdf .
