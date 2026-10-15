@@ -33,6 +33,13 @@ function dedupeData(fs: Finding[]): Finding[] {
   return keepNonOverlapping(sorted);
 }
 
+/**
+ * Injection found in a model answer is capped below block: an answer that explains an attack quotes its
+ * phrasing (H-003, H-043), and the answer cannot override the gateway's own instructions. Canary, secret,
+ * PII and link checks on answers are unchanged, so a real leak in an answer still blocks or redacts.
+ */
+export const RESPONSE_INJECTION_CAP = 0.7;
+
 /** Larger inputs are refused rather than scanned; the gateway should block them. */
 export const MAX_SCAN_CHARS = 100_000;
 
@@ -71,7 +78,8 @@ export function detectAll(text: string, ctx: DetectorContext): Finding[] {
     }
   }
 
-  return [...dedupeData(data), ...injection].sort((a, b) => a.start - b.start || b.score - a.score);
+  const inj = ctx.source === 'response' ? injection.map((f) => (f.score > RESPONSE_INJECTION_CAP ? { ...f, score: RESPONSE_INJECTION_CAP } : f)) : injection;
+  return [...dedupeData(data), ...inj].sort((a, b) => a.start - b.start || b.score - a.score);
 }
 
 export type ScanResult =

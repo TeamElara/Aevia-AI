@@ -8,3 +8,4 @@ Command: `npx tsx scripts/tune.ts ../../eval/dev-v3.jsonl` in `packages/detector
 | --- | --- | --- | --- | --- |
 | Baseline (v2 rules + ReDoS hotfix #30) | 10 | 6 | 4 (D-147 UPI, D-148 EMAIL, D-149/D-150 SECRET) | 4/4 caught, 0 false |
 | 2. Hinglish, Devanagari, mixed-script and roleplay rules | 28 | 1 (D-146, answer-side, step 3) | 4 (step 3) | 4/4 caught, 0 false |
+| 3. Root causes H-003, H-030, H-041, H-043, H-045 | 28 | 1 at warn only (D-146: answer-side injection now 0.70, answer delivered and logged, not blocked) | 0 | 4/4 caught, 0 false |

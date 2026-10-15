@@ -105,14 +105,26 @@ export const ifsc: Detector = (text) =>
     ruleId: 'pii.ifsc',
   }));
 
+// Handles of UPI apps and banks (NPCI). Without a UPI context word, only these count: "security@company"
+// in a policy answer is an internal address, not a UPI ID (H-030 pattern).
+const UPI_HANDLES = new Set([
+  'ybl', 'ibl', 'axl', 'okhdfcbank', 'okaxis', 'oksbi', 'okicici', 'okbizaxis', 'paytm', 'ptyes', 'ptaxis', 'pthdfc', 'ptsbi',
+  'apl', 'yapl', 'rapl', 'upi', 'icici', 'sbi', 'hdfcbank', 'axisbank', 'axisb', 'kotak', 'kmbl', 'yesbank', 'yesbankltd',
+  'freecharge', 'fbl', 'airtel', 'jio', 'idfcbank', 'idfcfirst', 'indus', 'federal', 'fam', 'waicici', 'wahdfcbank',
+  'waaxis', 'wasbi', 'abfspay', 'slice', 'jupiteraxis', 'naviaxis', 'superyes', 'kbl', 'cnrb', 'pnb', 'barodampay',
+  'unionbankofindia', 'ubi', 'boi', 'aubank', 'dbs', 'rbl', 'ikwik', 'pingpay', 'timecosmos', 'dlb', 'equitas', 'mahb',
+]);
+
 // handle@provider with no dot after the provider, so plain emails don't match.
 export const upi: Detector = (text) => {
   const hits: Hit[] = [];
-  for (const m of text.matchAll(/(?<![\w.\-])[\w.\-]{2,256}@[a-zA-Z]{2,64}(?![\w.\-]*\.[a-zA-Z])(?![\w@])/g)) {
+  for (const m of text.matchAll(/(?<![\w.\-])[\w.\-]{2,256}@([a-zA-Z]{2,64})(?![\w.\-]*\.[a-zA-Z])(?![\w@])/g)) {
     const start = m.index!;
     const end = start + m[0].length;
     const ctx = near(text, start, end, UPI_CTX);
-    hits.push({ category: 'UPI', start, end, score: ctx ? 0.9 : 0.75, ruleId: ctx ? 'pii.upi.ctx' : 'pii.upi.format' });
+    const known = UPI_HANDLES.has(m[1].toLowerCase());
+    if (!ctx && !known) continue;
+    hits.push({ category: 'UPI', start, end, score: ctx ? 0.9 : 0.85, ruleId: ctx ? 'pii.upi.ctx' : 'pii.upi.handle' });
   }
   return hits;
 };
@@ -130,9 +142,12 @@ export const bankAccount: Detector = (text) => {
   return hits;
 };
 
+// Reserved for documentation (RFC 2606, RFC 6761): never a real person's address (H-041 pattern).
+const RESERVED_EMAIL_DOMAIN = /@(?:[\w\-]+\.)*(?:example\.(?:com|net|org)|example|test|invalid|localhost)$/i;
+
 export const email: Detector = (text) =>
   // Lookbehind + bounded parts: "\b[\w.+-]+@" rescans to the end from every word boundary.
-  [...text.matchAll(/(?<![\w.+\-])[\w.+\-]{1,64}@[\w\-]{1,63}(?:\.[\w\-]{1,63}){0,8}\.[a-zA-Z]{2,24}\b/g)].map((m) => ({
+  [...text.matchAll(/(?<![\w.+\-])[\w.+\-]{1,64}@[\w\-]{1,63}(?:\.[\w\-]{1,63}){0,8}\.[a-zA-Z]{2,24}\b/g)].filter((m) => !RESERVED_EMAIL_DOMAIN.test(m[0])).map((m) => ({
     category: 'EMAIL' as const,
     start: m.index!,
     end: m.index! + m[0].length,

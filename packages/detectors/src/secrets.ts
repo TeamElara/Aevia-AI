@@ -37,12 +37,16 @@ const RULES: SecretRule[] = [
   { id: 'secret.password_phrase', re: /\b(?:password|passwd|pwd|pin)\s+(?:is|hai|h|tha)\s*:?\s*(['"]?)([^\s'"]{4,})\1/gi, group: 2, score: 0.85 },
 ];
 
+const PLACEHOLDER_WORDS = new Set(['placeholder', 'dummy', 'example', 'sample', 'fake', 'changeme', 'redacted', 'todo', 'xxx', 'xxxx', 'notreal', 'replaceme', 'mock', 'stub']);
+
 // Values that look like code identifiers or placeholders, not real secrets.
 function looksLikePlaceholder(v: string): boolean {
   // identifier, member access or a call (the value may stop at a quote, leaving "input(" unclosed)
   if (/^[A-Za-z_$][\w$.]*(\(.*)?;?,?$/.test(v) && !/\d/.test(v)) return true;
   if (/^(x+|\*+|\.+|<.*>|\{.*\}|\$\{.*\}|changeme|password|your[_-]?\w*|example|dummy|test|null|undefined|none|true|false)$/i.test(v)) return true;
   if (/^process\.env|^os\.environ|^env\./i.test(v)) return true;
+  // A placeholder word as one part of a hyphenated value: "test-key-placeholder" (H-045), "dummy-key-for-tests".
+  if (v.split(/[-_.:/]+/).some((part) => PLACEHOLDER_WORDS.has(part.toLowerCase())) || /not[-_]?real|replace[-_]?me|change[-_]?me/i.test(v)) return true;
   return false;
 }
 
