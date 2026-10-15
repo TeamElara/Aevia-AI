@@ -56,6 +56,6 @@ The reference host under `retrieval/integration` is isolated from Mahatva’s ev
 
 `pnpm test:integration:report` deliberately refreshes the HTTP evidence. Normal tests do not rewrite committed reports. The shared evaluator’s full frozen/baseline run uses the assembled team cases but still needs a coordinated freeze and a real provider.
 
-For an explicitly configured real provider, export `ACCESS_PROVIDER=groq`, `GROQ_API_KEY` and `GROQ_MODEL` locally, or `ACCESS_PROVIDER=ollama`, `OLLAMA_MODEL` and optionally `OLLAMA_URL`. Then restart the loopback host. These transports are protocol-tested with injected responses; actual network/model behavior remains unverified. No key should be committed or pasted into chat.
+For an explicitly configured real provider, export `ACCESS_PROVIDER=groq`, `GROQ_API_KEY` and `GROQ_MODEL` locally, or `ACCESS_PROVIDER=ollama`, `OLLAMA_MODEL` and optionally `OLLAMA_URL`. Then restart the loopback host. These transports are protocol-tested with injected responses; the production HttpProvider has now completed real local Ollama verification (see `results/alwaz/OLLAMA-VERIFICATION.md`); Groq behavior remains unverified. No key should be committed or pasted into chat.
 
 The full merged application is now available via `npm run demo:gateway`, including production gateway audit/SSE/stats and the approval bridge. The isolated `demo:access` host above remains a reference. Prefer the merged demo for rehearsals.

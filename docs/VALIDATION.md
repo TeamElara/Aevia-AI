@@ -1,6 +1,6 @@
 # Validation record — 15 October 2026
 
-- Combined default Vitest: 410 passed; additional real-service integration suite: 21 passed across actual detector tests, standalone access tests and real HTTP integration tests.
+- Combined default Vitest: 412 passed; additional real-service integration suite: 21 passed across actual detector tests, standalone access tests and real HTTP integration tests.
 - The eight PLAN §10 boundary checks exercise actual detectors, JWTs, real Mongo, scoped vault, restoration/link order, encrypted approvals and a simulated provider.
 - Five seeded values: zero hits in integration audit, incidents, approval metadata and captured logs.
 - All 37 access fixtures pass through the HTTP integration; scope/timings are in results/alwaz/http-integration.json.
@@ -20,3 +20,9 @@ The branch includes `main` at `7d1e305` (detector PR #3), preserving the latest 
 The detector optional Transformers peer range accepts both v3 and the v4 runtime used by the recorded classifier spike; root and standalone npm lockfiles are refreshed. The editable deck retains its earlier 219 + 21 test snapshot; the counts above are the latest combined validation. Classifier and reference-host timing reports retain their original measurement scope.
 
 Source, fixtures, tests, evaluation data, reports, documentation and the deck are committed. Ignored dependencies, build output, model caches and local secrets are excluded. The pull request remains the publication/review location; publishing the branch does not merge it into `main`.
+
+## Real local-model follow-up
+
+Real local Ollama verification is now recorded in `results/alwaz/OLLAMA-VERIFICATION.md` and `ollama-verification.json`: 38 direct-pipeline requests, 37 real model calls and 10/10 explicit smoke/boundary checks. All restricted/quarantined targets were excluded in the 16-case and 15-paraphrase slices. Original action labels matched only 4/31 cases; attached-document versus query retrieval, local versus cloud permissions and redact versus mask differ. This is development boundary evidence, not a passing full-fixture accuracy claim. Earlier statements that all real-model inference was unverified are superseded for this local run only; Groq remains unverified.
+
+The shared evaluator now excludes both `llm` and `LLM` stage names from overhead; two focused regression tests pass. The previous deck and timing reports remain historical snapshots.

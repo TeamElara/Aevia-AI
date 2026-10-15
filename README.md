@@ -106,3 +106,20 @@ See [Alwaz access setup and evidence](docs/ALWAZ-ACCESS.md) for seeded documents
 `npm run demo:gateway` starts the full merged Express gateway, actual detectors, real temporary MongoDB, audit/SSE/stats, ACL retrieval and encrypted approval replay on loopback. Its upstream is an explicitly simulated local HTTP provider; no cloud call is made. In a second terminal run `npm run dev --workspace @leakshield/web -- --host 127.0.0.1`, then open http://127.0.0.1:5173 . The UI labels the provider as simulated. As Meera, request Garuda, approve in Approvals, then return to Chat. This is reproducible integration evidence, not a real-model answer-quality benchmark.
 
 Before using the normal persistent server, seed its configured database: `node --env-file=.env seed/seed.js`. The seed CLI uses `MONGODB_URI`, `MONGODB_DB` and `FINGERPRINT_KEY`; it resets the named synthetic fixtures. Keep that database separate from production.
+
+### Real local-model verification
+
+With Ollama installed, start an isolated local daemon in one terminal:
+
+```sh
+OLLAMA_NO_CLOUD=1 OLLAMA_HOST=127.0.0.1:11435 OLLAMA_MODELS="$PWD/.cache/ollama" ollama serve
+```
+
+In another terminal, pull the small smoke-test model and run the metadata-only verification:
+
+```sh
+OLLAMA_HOST=127.0.0.1:11435 ollama pull qwen2.5:0.5b
+npm run verify:ollama
+```
+
+This runs the production gateway pipeline and local HTTP provider with temporary seeded Mongo. It checks real inference and access/privacy boundaries without a cloud key. See [the observed results and fixture limitations](results/alwaz/OLLAMA-VERIFICATION.md). It does not replace the frozen benchmark or browser rehearsal.
