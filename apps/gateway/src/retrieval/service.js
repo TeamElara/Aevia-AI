@@ -38,16 +38,19 @@ export function createAccessService({ db, inspectOutbound, inspectResponse, prov
     const currentUser = await principal(user.id);
     const latest = await assembleChunks(chunks, currentUser, fresh, { external: true, approved });
     if (latest.some((chunk,i)=>chunk.content_hash !== fresh[i].content_hash)) throw new Error('Content changed during scan');
-    const raw = await provider(scan.payload, { user, chunks: fresh, input, request_id: input.request_id });
+    const provided = await provider(scan.payload, { user, chunks: fresh, input, request_id: input.request_id });
+    const raw = typeof provided === 'string' ? provided : provided?.text;
+    const providerCalls = typeof provided === 'string' ? 1 : provided?.provider_calls;
+    if (!Number.isInteger(providerCalls) || providerCalls<1) throw new Error('Invalid provider call count');
     if (typeof raw !== 'string') throw new Error('Invalid provider response');
     const evidence = captureProviderPayload ? { _provider_payload: scan.payload.messages.map(m=>m.content).join('\n'), sent_to_model: scan.payload.messages.at(-1).content } : {};
     const responseUser = await principal(user.id);
     const restricted = await chunks.find({ quarantined: false }).toArray();
-    for (const c of restricted) if (!canRead(responseUser, c) && fingerprints.matches(raw, c.fingerprints ?? fingerprints.fingerprint(c.text))) return { action: 'block_response', provider_calls: 1, ...evidence };
+    for (const c of restricted) if (!canRead(responseUser, c) && fingerprints.matches(raw, c.fingerprints ?? fingerprints.fingerprint(c.text))) return { action: 'block_response', provider_calls: providerCalls, ...evidence };
     const response = await inspectResponse(raw, { user: responseUser, chunks: fresh, input });
     if (!response || !['allow', 'redact', 'block_response'].includes(response.action)) throw new Error('Response scanner failed');
     if (response.action !== 'block_response' && typeof response.answer !== 'string') throw new Error('Invalid inspected answer');
-    return { action: response.action === 'allow' ? scan.action : response.action, answer: response.answer, provider_calls: 1, findings: scan.findings ?? [], citations: fresh.map(c => ({doc_id:c.document_id,title:c.title})), ...evidence };
+    return { action: response.action === 'allow' ? scan.action : response.action, answer: response.answer, provider_calls: providerCalls, findings: scan.findings ?? [], citations: fresh.map(c => ({doc_id:c.document_id,title:c.title})), ...evidence };
   }
   const approvals = createApprovals({ metadata: db.collection('approvals'),
     async revalidate(payload, ctx) {

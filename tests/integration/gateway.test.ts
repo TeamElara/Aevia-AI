@@ -30,6 +30,10 @@ test('HTTP blocked prompts and retrieved credentials invoke provider zero times'
   const r=await f.chat(token,message,{attached_doc});assert.equal(r.status,200);assert.equal(r.data.action,'block');assert.equal(r.data.provider_calls,0);assert.equal(r.data.eval.provider_payload,null);
  }
  assert.equal(f.payloads.length,0);
+ const asha=await f.login('asha');
+ const blocked=await f.chat(asha,'AWS credential AKIAIOSFODNN7EXAMPLE');
+ const retry=await f.chat(asha,'Use [SECRET_DEMO] instead',{conversation_id:blocked.data.conversation_id});
+ assert.equal(retry.data.provider_calls,1);assert.equal(f.payloads.length,1);
 });
 test('HTTP provider receives only masks across prompt, history and retrieved HR source',async t=>{
  const f=await fixture(t),token=await f.login('ravi');

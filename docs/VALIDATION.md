@@ -1,6 +1,6 @@
 # Validation record — 15 October 2026
 
-- Combined Vitest: 141 passed across actual detector tests, standalone access tests and real HTTP integration tests.
+- Combined Vitest: 143 passed across actual detector tests, standalone access tests and real HTTP integration tests.
 - The eight PLAN §10 boundary checks exercise actual detectors, JWTs, real Mongo, scoped vault, restoration/link order, encrypted approvals and a simulated provider.
 - Five seeded values: zero hits in integration audit, incidents, approval metadata and captured logs.
 - All 37 access fixtures pass through the HTTP integration; scope/timings are in results/alwaz/http-integration.json.

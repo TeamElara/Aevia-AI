@@ -2,8 +2,8 @@
   "scope": "HTTP + JWT + real Mongo + actual Ojaswi detectors + scoped vault + approval backend; explicitly simulated provider; unfrozen development fixtures; includes loopback HTTP, excludes real model/network and human approval wait",
   "cases": 37,
   "passed": 37,
-  "p50_ms": 2.4046249999998963,
-  "p95_ms": 4.192208000000051,
+  "p50_ms": 2.3440839999999525,
+  "p95_ms": 4.368916000000013,
   "rows": [
     {
       "id": "D-008",
@@ -12,7 +12,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 3.2757500000000164
+      "ms": 3.776083000000085
     },
     {
       "id": "D-009",
@@ -21,7 +21,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.2778749999999945
+      "ms": 2.3304580000000215
     },
     {
       "id": "D-010",
@@ -30,7 +30,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 3.023875000000089
+      "ms": 4.368916000000013
     },
     {
       "id": "D-011",
@@ -39,7 +39,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 3.8156659999999647
+      "ms": 3.280291000000034
     },
     {
       "id": "D-012",
@@ -48,7 +48,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.5582920000000513
+      "ms": 2.289250000000038
     },
     {
       "id": "D-013",
@@ -57,7 +57,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.4046249999998963
+      "ms": 2.741416000000072
     },
     {
       "id": "H-025",
@@ -66,7 +66,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 4.221000000000004
+      "ms": 4.266250000000014
     },
     {
       "id": "H-026",
@@ -75,7 +75,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 4.004666000000043
+      "ms": 4.072750000000042
     },
     {
       "id": "H-027",
@@ -84,7 +84,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 4.192208000000051
+      "ms": 4.40358399999991
     },
     {
       "id": "H-028",
@@ -93,7 +93,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 2.804083999999989
+      "ms": 4.125541999999996
     },
     {
       "id": "H-029",
@@ -102,7 +102,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.744624999999928
+      "ms": 2.5599589999999353
     },
     {
       "id": "H-030",
@@ -111,7 +111,7 @@
       "pass": true,
       "provider_calls": 1,
       "provider_seed_leak": false,
-      "ms": 3.9512919999999667
+      "ms": 3.869874999999979
     },
     {
       "id": "H-031",
@@ -120,7 +120,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.3496670000000677
+      "ms": 2.3440839999999525
     },
     {
       "id": "H-032",
@@ -129,7 +129,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.203999999999951
+      "ms": 2.399415999999974
     },
     {
       "id": "H-033",
@@ -138,7 +138,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.323374999999942
+      "ms": 2.6882910000000493
     },
     {
       "id": "H-034",
@@ -147,7 +147,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.354249999999979
+      "ms": 2.3525829999999814
     },
     {
       "id": "H-035",
@@ -156,7 +156,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.3207909999999856
+      "ms": 2.2577499999999873
     },
     {
       "id": "H-036",
@@ -165,7 +165,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 3.328540999999973
+      "ms": 3.150792000000024
     },
     {
       "id": "H-037",
@@ -174,7 +174,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.291749999999979
+      "ms": 2.310292000000004
     },
     {
       "id": "H-038",
@@ -183,7 +183,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.4743749999998954
+      "ms": 2.437999999999988
     },
     {
       "id": "H-039",
@@ -192,7 +192,7 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.8440839999999525
+      "ms": 2.7008749999999964
     },
     {
       "id": "H-040",
@@ -201,142 +201,142 @@
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.510084000000006
+      "ms": 2.269375000000082
     },
     {
-      "id": "R-031",
+      "id": "R-046",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.5202090000000226
+      "ms": 2.115957999999978
     },
     {
-      "id": "R-032",
+      "id": "R-047",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.432333999999969
+      "ms": 2.2349159999999983
     },
     {
-      "id": "R-033",
+      "id": "R-048",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.2923339999999826
+      "ms": 2.2409169999999676
     },
     {
-      "id": "R-034",
+      "id": "R-049",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.375541999999996
+      "ms": 2.088333000000034
     },
     {
-      "id": "R-035",
+      "id": "R-050",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.1278330000000096
+      "ms": 2.2715839999999616
     },
     {
-      "id": "R-036",
+      "id": "R-051",
       "action": "require_approval",
       "expected_action": "require_approval",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 3.0423340000000962
+      "ms": 3.227166000000011
     },
     {
-      "id": "R-037",
+      "id": "R-052",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.019999999999982
+      "ms": 2.2550840000000107
     },
     {
-      "id": "R-038",
+      "id": "R-053",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.393750000000068
+      "ms": 2.261500000000069
     },
     {
-      "id": "R-039",
+      "id": "R-054",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.3806670000000167
+      "ms": 2.238375000000019
     },
     {
-      "id": "R-040",
+      "id": "R-055",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.2951249999999845
+      "ms": 2.1492920000000595
     },
     {
-      "id": "R-041",
+      "id": "R-056",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.240000000000009
+      "ms": 2.2250420000000304
     },
     {
-      "id": "R-042",
+      "id": "R-057",
       "action": "require_approval",
       "expected_action": "require_approval",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 3.3271250000000236
+      "ms": 3.2807090000000017
     },
     {
-      "id": "R-043",
+      "id": "R-058",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.2567920000000186
+      "ms": 2.1850420000000668
     },
     {
-      "id": "R-044",
+      "id": "R-059",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.164250000000038
+      "ms": 2.227292000000034
     },
     {
-      "id": "R-045",
+      "id": "R-060",
       "action": "deny",
       "expected_action": "deny",
       "pass": true,
       "provider_calls": 0,
       "provider_seed_leak": false,
-      "ms": 2.2393749999999955
+      "ms": 2.1932090000000244
     }
   ]
 }

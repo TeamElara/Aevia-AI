@@ -53,7 +53,7 @@ export function createIntegrationServer({ db, jwtSecret, fingerprintKey, provide
         else {if(conversations.size>=1000)return reply(res,503,{error:'Conversation capacity reached'});conversation_id=randomUUID();conversations.set(conversation_id,{user:user.id,history:[],expires:Date.now()+1_800_000});}
         const conversation=conversations.get(conversation_id);
         const result=await access.run(user.id,{prompt:body.message,history:conversation.history.slice(-19),attached_doc:body.attached_doc,conversation_id});
-        conversation.history.push(body.message);conversation.history=conversation.history.slice(-20);
+        if(['allow','warn','mask','redact','require_approval'].includes(result.action)) { conversation.history.push(body.message);conversation.history=conversation.history.slice(-20); }
         if(result.id)requests.set(result.request_id,{user:user.id,conversation_id,approval_id:result.id,expires:Date.parse(result.expires_at)});
         return reply(res,200,format(result,conversation_id,result.request_id,req.headers['x-eval-capture']==='1'));
       }
