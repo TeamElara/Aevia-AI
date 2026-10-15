@@ -21,6 +21,9 @@ const OUT = option('--out', 'results')
 const BASELINE = flag('--baseline')
 const MOCK = flag('--mock')
 const MODE = MOCK ? 'mock' : BASELINE ? 'baseline' : 'leakshield'
+const INTERVAL = Number(process.env.EVAL_INTERVAL_MS ?? 0)
+if (!Number.isFinite(INTERVAL) || INTERVAL < 0 || INTERVAL > 60000) throw new Error('Invalid EVAL_INTERVAL_MS')
+let nextChatAt = 0
 
 if (!files.length) {
   console.error('Usage: node eval/run.mjs <cases.jsonl> [...] [--gateway URL] [--baseline] [--mock] [--out dir]')
@@ -36,6 +39,7 @@ if (MOCK && BASELINE) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function gatewayPost(path, body, token, extraHeaders = {}) {
+  if (path === '/api/chat' && nextChatAt > Date.now()) await sleep(nextChatAt - Date.now())
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(GATEWAY + path, {
       method: 'POST',
@@ -56,7 +60,9 @@ async function gatewayPost(path, body, token, extraHeaders = {}) {
       const data = await res.json().catch(() => ({}))
       throw new Error(data.error ?? `HTTP ${res.status}`)
     }
-    return res.json()
+    const data = await res.json()
+    if (path === '/api/chat' && data.provider_calls > 0) nextChatAt = Date.now() + INTERVAL
+    return data
   }
 }
 
