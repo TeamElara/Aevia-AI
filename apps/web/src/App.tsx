@@ -6,7 +6,7 @@ import { PayloadCard, type Exchange } from './components/PayloadCard'
 import { SignIn } from './components/SignIn'
 import { Avatar, Sidebar } from './components/Sidebar'
 import type { View } from './lib/views'
-import { BrandMark, Drawer, Icon, Toast, Wordmark } from './components/ui'
+import { BrandMark, Drawer, Icon, Toast } from './components/ui'
 import { exampleExchanges, users } from './data/demo'
 import { pad2 } from './lib/format'
 import { withTransition } from './lib/motion'
@@ -188,14 +188,12 @@ export default function App() {
   const userIndex = users.findIndex((u) => u.id === activeUser)
   const user = users[userIndex]
   const last = done[done.length - 1]
-  const busy = turns.some((t) => t.status === 'pending')
   const tone = toneOf(last?.response?.action)
 
   const sidebar = (
     <Sidebar
       unreachable={unreachable}
       view={view}
-      tone={tone}
       user={user}
       userIndex={userIndex}
       backend={session?.backend ?? null}
@@ -226,8 +224,8 @@ export default function App() {
             <Icon name="menu" />
           </button>
           <button onClick={() => go('Chat')} className="flex items-center gap-2" aria-label="LeakShield, open Chat">
-            <BrandMark size={26} busy={busy} />
-            <Wordmark className="text-[17px]" />
+            <BrandMark size={30} />
+            <span className="font-display text-[17px] font-semibold tracking-[-0.03em]">LeakShield</span>
           </button>
           <button onClick={() => setSignInOpen(true)} aria-label={`Signed in as ${user.name}. Change who is signed in`} className="rounded-full transition active:scale-95">
             <Avatar user={user} index={userIndex} size={34} />
