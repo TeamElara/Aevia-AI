@@ -21,7 +21,25 @@ export async function quarantineHighScores(collection, onQuarantine = async () =
   }
   return ids;
 }
-export function createRetriever(collection, { onQuarantine } = {}) {
+// Conservative lexical relevance gate: ordinary chat must not disclose a
+// reference merely because its body contains a common word. Explicit attachments
+// use the access adapter's separate ACL-checked selection path.
+const queryNoise = new Set('a an the and or for of to in on at by with from this that these those is are was were be been being it its my our your their me us you i we they what when where how why who please can could would should do does did as about into using use write draft explain summarise summarize tell show give ek ke ki ka ko hai hain liye aur mein se'.split(' '));
+function terms(text) {
+  return new Set((text.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+    .filter(term => term.length > 1 && !queryNoise.has(term))
+    .map(term => term.length > 3 && term.endsWith('s') ? term.slice(0, -1) : term));
+}
+function relevant(chunk, queryTerms) {
+  const titleTerms = terms(chunk.title ?? '');
+  const documentTerms = terms(`${chunk.title ?? ''} ${chunk.text ?? ''}`);
+  const titleMatch = [...queryTerms].some(term => titleTerms.has(term));
+  const matched = [...queryTerms].filter(term => documentTerms.has(term)).length;
+  const required = ['approval', 'deny'].includes(chunk.external_llm) ? 2 : Math.min(2, queryTerms.size);
+  return titleMatch && matched >= required;
+}
+export function createRetriever(collection, { onQuarantine, minimumScoreRatio = 0.5 } = {}) {
+  if (!Number.isFinite(minimumScoreRatio) || minimumScoreRatio < 0 || minimumScoreRatio > 1) throw new TypeError('Invalid score ratio');
   return async function retrieve(user, query, options = {}) {
     const { limit = 8 } = options;
     if (typeof query !== 'string' || query.length > 4000 || !query.trim()) throw new TypeError('Invalid query');
@@ -29,8 +47,14 @@ export function createRetriever(collection, { onQuarantine } = {}) {
     await quarantineHighScores(collection, onQuarantine);
     // Mongo's text index applies search + ACL before sort/top-k; query is data, never an operator object.
     const filter = { ...aclFilter(user, options), $text: { $search: query } };
-    const chunks = await collection.find(filter).sort({ _id: 1 }).limit(limit).toArray();
-    return chunks.filter(chunk => authorized(user, chunk, options));
+    const queryTerms = terms(query);
+    // ACLs are inside the Mongo filter, before relevance ranking or candidate cap.
+    // Rank a bounded candidate pool, apply lexical eligibility, then final top-k.
+    const chunks = await collection.find(filter, { projection: { score: { $meta: 'textScore' } } })
+      .sort({ score: { $meta: 'textScore' }, _id: 1 }).limit(50).toArray();
+    const eligible = chunks.filter(chunk => authorized(user, chunk, options) && relevant(chunk, queryTerms));
+    const topScore = eligible[0]?.score ?? 0;
+    return eligible.filter(chunk => Number.isFinite(chunk.score) && chunk.score >= topScore * minimumScoreRatio).slice(0, limit);
   };
 }
 export async function assembleChunks(collection, user, chunks, options = {}) {

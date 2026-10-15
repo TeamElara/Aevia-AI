@@ -1,9 +1,9 @@
 name: Alwaz access security
 on:
   push:
-    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'tests/integration/**', 'packages/detectors/**', 'apps/web/**', 'package.json', 'pnpm-lock.yaml', 'eval/**', '.github/workflows/access-security.yml']
+    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'tests/integration/**', 'packages/detectors/**', 'apps/web/**', 'package.json', 'package-lock.json', 'eval/**', '.github/workflows/access-security.yml']
   pull_request:
-    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'tests/integration/**', 'packages/detectors/**', 'apps/web/**', 'package.json', 'pnpm-lock.yaml', 'eval/**', '.github/workflows/access-security.yml']
+    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'tests/integration/**', 'packages/detectors/**', 'apps/web/**', 'package.json', 'package-lock.json', 'eval/**', '.github/workflows/access-security.yml']
 permissions:
   contents: read
 jobs:

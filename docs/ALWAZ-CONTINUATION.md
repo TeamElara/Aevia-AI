@@ -1,3 +1,5 @@
+> Retrieval follow-up: [RETRIEVAL-RELEVANCE.md](RETRIEVAL-RELEVANCE.md) records the latest 20/20 dev run. Earlier combined reports below predate that fix.
+
 # Alwaz continuation — 15 October 2026
 
 Continued from main `55e4f5a`, after fetching GitHub. PR #1 is already merged;

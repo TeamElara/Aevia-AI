@@ -78,7 +78,9 @@ function pickLiveSubset(): { cases: Case[]; source: string } {
 }
 
 const { cases, source } = pickLiveSubset()
-const development = Object.values(reportFiles).filter((r) => r.provenance?.frozen === false && r.provenance?.provider_evidence === 'simulated' && r.summary)
+const developmentReports = Object.values(reportFiles).filter((r) => r.provenance?.frozen === false && r.provenance?.provider_evidence === 'simulated' && r.summary)
+// Retain historical files on disk; show the newest run for each dataset/mode.
+const development = [...new Map(developmentReports.sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map(report => [`${report.file}-${report.mode}`, report] as const)).values()]
 const frozen = Object.values(reportFiles).filter((r) => r.provenance?.frozen === true && r.file?.includes('heldout') && r.mode !== 'mock')
 const leakshieldReport = frozen.find((r) => r.mode === 'leakshield')
 const baselineReport = frozen.find((r) => r.mode === 'baseline')
