@@ -1,0 +1,710 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T13:27:33.232904+00:00",
+  "title": "Design System: LeakShield",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Surface 2",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "void": {
+        "role": "neutral",
+        "displayName": "Void",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Line 2",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Line Strong",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "fg": {
+        "role": "neutral",
+        "displayName": "Fg",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "accent-2": {
+        "role": "primary",
+        "displayName": "Accent 2",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Accent Soft",
+        "tonalRamp": [
+          "oklch(15% 0.02 75)",
+          "oklch(26% 0.02 75)",
+          "oklch(37% 0.02 75)",
+          "oklch(49% 0.02 75)",
+          "oklch(61% 0.02 75)",
+          "oklch(73% 0.02 75)",
+          "oklch(85% 0.02 75)",
+          "oklch(95% 0.02 75)"
+        ]
+      },
+      "ok": {
+        "role": "secondary",
+        "displayName": "Ok",
+        "tonalRamp": [
+          "oklch(15% 0.08 158)",
+          "oklch(26% 0.08 158)",
+          "oklch(37% 0.08 158)",
+          "oklch(49% 0.08 158)",
+          "oklch(61% 0.08 158)",
+          "oklch(73% 0.08 158)",
+          "oklch(85% 0.08 158)",
+          "oklch(95% 0.08 158)"
+        ]
+      },
+      "mask": {
+        "role": "secondary",
+        "displayName": "Mask",
+        "tonalRamp": [
+          "oklch(15% 0.08 38)",
+          "oklch(26% 0.08 38)",
+          "oklch(37% 0.08 38)",
+          "oklch(49% 0.08 38)",
+          "oklch(61% 0.08 38)",
+          "oklch(73% 0.08 38)",
+          "oklch(85% 0.08 38)",
+          "oklch(95% 0.08 38)"
+        ]
+      },
+      "stop": {
+        "role": "secondary",
+        "displayName": "Stop",
+        "tonalRamp": [
+          "oklch(15% 0.08 355)",
+          "oklch(26% 0.08 355)",
+          "oklch(37% 0.08 355)",
+          "oklch(49% 0.08 355)",
+          "oklch(61% 0.08 355)",
+          "oklch(73% 0.08 355)",
+          "oklch(85% 0.08 355)",
+          "oklch(95% 0.08 355)"
+        ]
+      },
+      "hold": {
+        "role": "secondary",
+        "displayName": "Hold",
+        "tonalRamp": [
+          "oklch(15% 0.08 257)",
+          "oklch(26% 0.08 257)",
+          "oklch(37% 0.08 257)",
+          "oklch(49% 0.08 257)",
+          "oklch(61% 0.08 257)",
+          "oklch(73% 0.08 257)",
+          "oklch(85% 0.08 257)",
+          "oklch(95% 0.08 257)"
+        ]
+      },
+      "dark-paper": {
+        "role": "neutral",
+        "displayName": "Dark Paper",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark Surface",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-surface-2": {
+        "role": "neutral",
+        "displayName": "Dark Surface 2",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-void": {
+        "role": "neutral",
+        "displayName": "Dark Void",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Dark Line",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-line-2": {
+        "role": "neutral",
+        "displayName": "Dark Line 2",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-line-strong": {
+        "role": "neutral",
+        "displayName": "Dark Line Strong",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-fg": {
+        "role": "neutral",
+        "displayName": "Dark Fg",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Dark Muted",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-faint": {
+        "role": "neutral",
+        "displayName": "Dark Faint",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(37% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(73% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "Dark Accent",
+        "tonalRamp": [
+          "oklch(15% 0.015 204)",
+          "oklch(26% 0.015 204)",
+          "oklch(37% 0.015 204)",
+          "oklch(49% 0.015 204)",
+          "oklch(61% 0.015 204)",
+          "oklch(73% 0.015 204)",
+          "oklch(85% 0.015 204)",
+          "oklch(95% 0.015 204)"
+        ]
+      },
+      "dark-accent-2": {
+        "role": "primary",
+        "displayName": "Dark Accent 2",
+        "tonalRamp": [
+          "oklch(15% 0.015 203)",
+          "oklch(26% 0.015 203)",
+          "oklch(37% 0.015 203)",
+          "oklch(49% 0.015 203)",
+          "oklch(61% 0.015 203)",
+          "oklch(73% 0.015 203)",
+          "oklch(85% 0.015 203)",
+          "oklch(95% 0.015 203)"
+        ]
+      },
+      "dark-accent-soft": {
+        "role": "primary",
+        "displayName": "Dark Accent Soft",
+        "tonalRamp": [
+          "oklch(15% 0.015 240)",
+          "oklch(26% 0.015 240)",
+          "oklch(37% 0.015 240)",
+          "oklch(49% 0.015 240)",
+          "oklch(61% 0.015 240)",
+          "oklch(73% 0.015 240)",
+          "oklch(85% 0.015 240)",
+          "oklch(95% 0.015 240)"
+        ]
+      },
+      "dark-ok": {
+        "role": "secondary",
+        "displayName": "Dark Ok",
+        "tonalRamp": [
+          "oklch(15% 0.08 158)",
+          "oklch(26% 0.08 158)",
+          "oklch(37% 0.08 158)",
+          "oklch(49% 0.08 158)",
+          "oklch(61% 0.08 158)",
+          "oklch(73% 0.08 158)",
+          "oklch(85% 0.08 158)",
+          "oklch(95% 0.08 158)"
+        ]
+      },
+      "dark-mask": {
+        "role": "secondary",
+        "displayName": "Dark Mask",
+        "tonalRamp": [
+          "oklch(15% 0.08 39)",
+          "oklch(26% 0.08 39)",
+          "oklch(37% 0.08 39)",
+          "oklch(49% 0.08 39)",
+          "oklch(61% 0.08 39)",
+          "oklch(73% 0.08 39)",
+          "oklch(85% 0.08 39)",
+          "oklch(95% 0.08 39)"
+        ]
+      },
+      "dark-stop": {
+        "role": "secondary",
+        "displayName": "Dark Stop",
+        "tonalRamp": [
+          "oklch(15% 0.08 355)",
+          "oklch(26% 0.08 355)",
+          "oklch(37% 0.08 355)",
+          "oklch(49% 0.08 355)",
+          "oklch(61% 0.08 355)",
+          "oklch(73% 0.08 355)",
+          "oklch(85% 0.08 355)",
+          "oklch(95% 0.08 355)"
+        ]
+      },
+      "dark-hold": {
+        "role": "secondary",
+        "displayName": "Dark Hold",
+        "tonalRamp": [
+          "oklch(15% 0.08 253)",
+          "oklch(26% 0.08 253)",
+          "oklch(37% 0.08 253)",
+          "oklch(49% 0.08 253)",
+          "oklch(61% 0.08 253)",
+          "oklch(73% 0.08 253)",
+          "oklch(85% 0.08 253)",
+          "oklch(95% 0.08 253)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Warm Paper Display",
+        "purpose": "Empty-chat hero headline."
+      },
+      "inspector": {
+        "displayName": "Inspector Serif",
+        "purpose": "Retained local drawer heading."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-light",
+        "value": "0 1px 2px rgba(27, 26, 23, 0.04), 0 12px 32px -18px rgba(27, 26, 23, 0.22)",
+        "purpose": "Light theme --shadow."
+      },
+      {
+        "name": "raised-light",
+        "value": "0 2px 6px rgba(27, 26, 23, 0.05), 0 30px 70px -30px rgba(27, 26, 23, 0.35)",
+        "purpose": "Light theme --shadow-lg."
+      },
+      {
+        "name": "ambient-dark",
+        "value": "0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 36px -20px rgba(0, 0, 0, 0.8)",
+        "purpose": "Dark theme --shadow."
+      },
+      {
+        "name": "raised-dark",
+        "value": "0 2px 8px rgba(0, 0, 0, 0.35), 0 34px 80px -30px rgba(0, 0, 0, 0.9)",
+        "purpose": "Dark theme --shadow-lg."
+      },
+      {
+        "name": "workspace-rest",
+        "value": "0 8px 28px -18px #29272233",
+        "purpose": "Opening composer resting depth."
+      },
+      {
+        "name": "workspace-focus",
+        "value": "0 10px 32px -18px #29272255, 0 0 0 2px var(--color-accent-soft)",
+        "purpose": "Opening composer focus."
+      },
+      {
+        "name": "hero-action-hover",
+        "value": "0 8px 18px -10px #29272280",
+        "purpose": "Soft action hover lift."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-soft",
+        "value": "cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "Arrival and state transitions."
+      },
+      {
+        "name": "ease-spring",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Control response and sliding selection."
+      },
+      {
+        "name": "arm-offer",
+        "value": "10s cubic-bezier(.45,0,.55,1) infinite; midpoint translateY(-8px) rotate(2deg)",
+        "purpose": "Subtle wrist offering movement."
+      },
+      {
+        "name": "butterfly-return",
+        "value": "10s cubic-bezier(.45,0,.55,1) infinite; peak translate(72px,-120px) rotate(5deg)",
+        "purpose": "Continuous lift and return in SVG coordinates."
+      },
+      {
+        "name": "wing-flutter",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "Independent wing movement."
+      },
+      {
+        "name": "view-change",
+        "value": "exit 220ms ease; enter 520ms var(--ease-soft)",
+        "purpose": "Native main-column view transitions; skipped for reduced motion."
+      },
+      {
+        "name": "motion-policy",
+        "value": "paused by user, offscreen or hidden; animation:none under prefers-reduced-motion",
+        "purpose": "Scene consent and rendering suspension."
+      },
+      {
+        "name": "title-entrance",
+        "value": "850ms cubic-bezier(.16,1,.3,1); second line delay 90ms",
+        "purpose": "Staggered hero title lines."
+      },
+      {
+        "name": "description-entrance",
+        "value": "750ms 140ms var(--ease-soft)",
+        "purpose": "Description arrival."
+      },
+      {
+        "name": "action-entrance",
+        "value": "opacity 750ms 220ms var(--ease-soft)",
+        "purpose": "Action entry independent of hover transform."
+      },
+      {
+        "name": "workspace-entrance",
+        "value": "800ms 200ms var(--ease-soft)",
+        "purpose": "Centered workspace arrival."
+      },
+      {
+        "name": "illustration-entrance",
+        "value": "1100ms var(--ease-soft)",
+        "purpose": "Soft image entrance."
+      },
+      {
+        "name": "starter-entrance",
+        "value": "600ms var(--ease-soft); delay 220ms + index \u00d7 40ms",
+        "purpose": "Staggered starter actions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "hero-stack-max",
+        "value": "767px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "large-hero",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compact console action.",
+      "html": "<button class=\"ds-button-primary\">Continue</button>",
+      "css": ".ds-button-primary{font-family:var(--font-sans);font-weight:500;padding:11px 18px;border-radius:12px;font-size:14px;transition:background .25s,border-color .25s,transform .25s var(--ease-spring);background:var(--color-fg);color:var(--color-void);border:0;}.ds-button-primary:hover:not(:disabled){background:color-mix(in srgb,var(--color-fg) 85%,var(--color-paper));}.ds-button-primary:active:not(:disabled){transform:scale(.97)}.ds-button-primary:disabled{opacity:.45}.ds-button-primary:focus-visible{outline:2px solid var(--color-accent);outline-offset:4px;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Compact console action.",
+      "html": "<button class=\"ds-button-ghost\">Continue</button>",
+      "css": ".ds-button-ghost{font-family:var(--font-sans);font-weight:500;padding:11px 18px;border-radius:12px;font-size:14px;transition:background .25s,border-color .25s,transform .25s var(--ease-spring);background:var(--color-surface);color:var(--color-fg);border:1px solid var(--color-line);}.ds-button-ghost:hover:not(:disabled){border-color:var(--color-line-strong);}.ds-button-ghost:active:not(:disabled){transform:scale(.97)}.ds-button-ghost:disabled{opacity:.45}.ds-button-ghost:focus-visible{outline:2px solid var(--color-accent);outline-offset:4px;}"
+    },
+    {
+      "name": "Hero Action",
+      "kind": "button",
+      "refersTo": "hero-action",
+      "description": "Rounded entrance action with soft lift and directional arrow.",
+      "html": "<button class=\"ds-hero-action\">Start a conversation <svg width=\"14\" height=\"8\" viewBox=\"0 0 14 8\" fill=\"none\" aria-hidden=\"true\"><path d=\"M0 4h12M9 1l3 3-3 3\" stroke=\"currentColor\" stroke-width=\"1.2\"/></svg></button>",
+      "css": ".ds-hero-action{font-family:var(--font-sans);font-weight:500;display:inline-flex;align-items:center;gap:28px;background:var(--color-fg);color:var(--color-void);padding:14px 18px;font-size:12px;border:0;border-radius:14px;transition:transform .3s var(--ease-soft),box-shadow .3s var(--ease-soft)}.ds-hero-action:hover{transform:translateY(-2px);box-shadow:0 8px 18px -10px #29272280}.ds-hero-action:active{transform:scale(.98)}.ds-hero-action:disabled{opacity:.5}.ds-hero-action:focus-visible{outline:2px solid var(--color-accent);outline-offset:4px;}"
+    },
+    {
+      "name": "Workspace Field",
+      "kind": "input",
+      "refersTo": "workspace-field",
+      "description": "Rounded centered entrance message field.",
+      "html": "<div class=\"ds-field\"><textarea aria-label=\"Message\" placeholder=\"Message LeakShield\u2026\" rows=\"2\"></textarea></div>",
+      "css": ".ds-field{padding:8px 8px 8px 20px;border:1px solid var(--color-line);border-radius:20px;box-shadow:0 8px 28px -18px #29272233;transition:box-shadow .3s var(--ease-soft),border-color .3s;background:var(--color-surface)}.ds-field:focus-within{outline:none;border-color:var(--color-accent);box-shadow:0 10px 32px -18px #29272255,0 0 0 2px var(--color-accent-soft)}.ds-field textarea{font-family:var(--font-sans);font-size:15.5px;line-height:1.625;color:var(--color-fg);background:transparent;border:0;padding:8px 0;resize:none;width:100%;caret-color:var(--color-fg)}.ds-field textarea:focus{outline:0}.ds-field textarea::placeholder{color:var(--color-faint)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Container shell; consumer sets internal padding.",
+      "html": "<article class=\"ds-card\">Request details</article>",
+      "css": ".ds-card{font-family:var(--font-sans);color:var(--color-fg);background:var(--color-surface);border:1px solid var(--color-line-2);border-radius:18px;box-shadow:var(--shadow);position:relative}.ds-card:after{content:\"\";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(300px circle at 50% 50%,color-mix(in srgb,var(--color-accent) 10%,transparent),transparent 60%)}.ds-card:hover:after{opacity:1}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Noninteractive outlined metadata.",
+      "html": "<span class=\"ds-chip\">mock</span>",
+      "css": ".ds-chip{font-family:var(--font-sans);display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--color-line);border-radius:99px;font-size:12.5px;color:var(--color-muted);white-space:nowrap}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Static self-contained counterpart of the runtime sliding selection pill.",
+      "html": "<nav aria-label=\"Views\"><button class=\"ds-nav\" aria-current=\"page\">Chat</button><button class=\"ds-nav\">Incidents</button></nav>",
+      "css": ".ds-nav{font-family:var(--font-sans);display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border:0;border-radius:11px;font-size:14px;color:var(--color-muted);text-align:left;background:transparent;transition:background .2s,color .2s}.ds-nav:hover{background:var(--color-surface-2);color:var(--color-fg)}.ds-nav[aria-current=\"page\"]{color:var(--color-fg);background:var(--color-surface);box-shadow:var(--shadow),inset 0 0 0 1px var(--color-line-2)}.ds-nav:focus-visible{outline:2px solid var(--color-accent);outline-offset:4px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Warm Paper Console",
+    "overview": "LeakShield combines a warm paper entrance with a working privacy gateway console. The shipped light theme uses beige surfaces, brown neutral accents, tightly spaced display typography, and a supplied robotic hand and butterfly image. Chat, Incidents, Overview, Approvals, and Eval remain the five navigable views. The dark console palette is preserved.\n\nThe entrance is balanced and spacious: equal desktop hero columns, centered mobile copy, and a centered message workspace. Rounded controls and quiet shadows soften the supplied mechanical subject. The photographic subject is separated into independently moving layers. PRODUCT.md records the approved refinement and existing product behavior from the web README and implemented views.",
+    "keyCharacteristics": [
+      "Warm paper and brown neutrals in light mode; preserved dark console surfaces.",
+      "Balanced hero columns and centered mobile content without decorative rules.",
+      "Tight sans-serif display type, readable body text, and monospace technical values.",
+      "Functional semantic color for gateway verdicts.",
+      "Slow subject motion and staggered entrances, with pause and reduced-motion support."
+    ],
+    "rules": [
+      {
+        "name": "The Neutral Atmosphere Rule",
+        "body": "Keep the light page and hero ambient field warm beige; semantic verdict color belongs to functional status indicators and gateway content.",
+        "section": "colors"
+      },
+      {
+        "name": "The Motion Consent Rule",
+        "body": "Keep the scene pause control and the global reduced-motion override when reusing the moving subject.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do use warm paper, surface, and line roles for the light ambient canvas.",
+      "Do preserve semantic labels alongside colored gateway verdicts.",
+      "Do use balanced desktop hero columns and centered mobile copy and opening workspace.",
+      "Do preserve pause, offscreen suspension, and reduced-motion behavior for the hero subject."
+    ],
+    "donts": [
+      "Don't reintroduce purple or yellow ambient illumination to the hero or page background.",
+      "Don't add decorative circuit lines, hero dividers, or asymmetric entrance layouts.",
+      "Don't replace the supplied robotic hand and butterfly with an unrelated subject.",
+      "Don't use the hero display size for operational tables or message content."
+    ]
+  }
+}
