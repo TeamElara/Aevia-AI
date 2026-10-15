@@ -1,10 +1,33 @@
 # Aevia AI / LeakShield
 
-Final real-provider evidence, frozen results and known misses: [Mahatva final checks](docs/MAHATVA_FINAL.md). Groq, Windows Ollama/fp32 inference and Docker on a clean Linux runner are now verified; see that report for the exact scope.
+LeakShield inspects sensitive input and document access before workplace apps call an LLM.<br>
+It combines masking, ACL retrieval, quarantine, approval replay and output checks to support permitted work.<br>
+CyberCUP 6.0 · CC6-AI03 · synthetic demo and evaluation data; documented limitations apply.
 
-CyberCUP 6.0 · CC6-AI03 · an inspection gateway between workplace applications and an LLM.
+**Frozen v2 headline: 12 → 1 provider-leak flags on the same 60 cases**, with **53/60 exact actions** and **56/60 robustness exact actions**, using real Groq `gpt-oss-20b`. One IFSC provider flag remains; this is not a zero-leakage claim. [Results, v1/v2 provenance and timing scope](results/freeze-v2-groq/RESULTS.md) · [Limitations and known misses](docs/LIMITATIONS.md).
 
-The team implementations are integrated: **Mahatva's gateway**, **Ojaswi's detectors**, **Alwaz's retrieval/encrypted approval queue**, and **Arihant's console/evaluator**. See [team assignments](docs/TEAM.md), [plan](docs/PLAN.md), [console API](docs/API.md) and [gateway hand-off](docs/MAHATVA_HANDOFF.md).
+**Team:** Arihant — console/evaluator; Mahatva — gateway/provider lifecycle; Ojaswi — detectors/analysis; Alwaz — access/approvals/deck. [Team assignments](docs/TEAM.md) · [Console API](docs/API.md) · [Real-provider and deployment checks](docs/MAHATVA_FINAL.md).
+
+## Architecture
+
+```mermaid
+flowchart TD
+    App[Workplace app or console] --> Auth[JWT or API-key identity]
+    Auth --> Input[1. Input and history inspection]
+    Input --> ACL[2. ACL retrieval and assembly recheck]
+    ACL --> Docs[3. Document inspection and quarantine]
+    Docs --> Outbound[4. Final outbound inspection]
+    Docs -. External approval required .-> Queue[Encrypted pending request]
+    Queue --> Approval[Admin hash approval and fresh access checks]
+    Approval --> Input
+    Outbound --> Provider[Explicitly selected Groq or local Ollama]
+    Provider --> Output[5. Output inspection]
+    Output --> Restore[6. Owner and conversation-scoped restoration]
+    Restore --> Sanitise[7. Link and image sanitisation]
+    Sanitise --> Reply[Plain-text answer to original caller]
+```
+
+The direct path continues only when policy permits it; a required approval pauses before any external call and replays the full pipeline after approval. Denied or quarantined content is withheld. Mongo stores metadata-only audit/approval records; sensitive conversation and pending-request state stays in process memory. In the checked Personal organization, inference ZDR is **disabled**: approved content can reach Groq, and we do not claim zero retention. [Account scope and judge wording](docs/GROQ-ACCOUNT-CHECK.md).
 
 ## What works
 
@@ -28,13 +51,31 @@ npm ci
 npm run setup:env
 ```
 
+Start your MongoDB service before seeding. If `mongod` is installed but no service is running, this macOS/Linux example starts a local instance in a separate terminal:
+
+```sh
+mkdir -p .cache/mongodb/data
+mongod --dbpath .cache/mongodb/data --bind_ip 127.0.0.1 --port 27017
+```
+
+Keep that terminal open. An existing local Mongo service is also suitable; do not start a second server on its occupied port. On Windows use the installed MongoDB service or run the same `mongod` options with an existing writable data directory. MongoDB installation is a prerequisite, not something `npm ci` installs for the normal gateway.
+
 Edit the generated `.env` locally:
 
 1. For Groq, set `GROQ_API_KEY` and an available `GROQ_MODEL` from the team's account. For local inference, set `LLM_PROVIDER=ollama` and `OLLAMA_MODEL` to a model already pulled on that machine. The gateway never silently falls back to another destination.
-2. Set `MONGODB_URI` for your MongoDB instance; the default is local Mongo on port 27017.
+2. Set `MONGODB_URI` for your MongoDB instance; the default is local Mongo on port 27017. Set `MONGODB_DB` to a dedicated synthetic-demo database, for example `leakshield_demo`; the gateway and seed must use the same database and generated `FINGERPRINT_KEY`.
 3. The detector module is included at `packages/detectors/src/index.ts`. `CLASSIFIER_BACKEND=none` uses its rules; optional `node` loads the pinned fp32 classifier. Int8 is not enabled because the recorded attack predictions failed.
 4. For the **local synthetic demo only**, set `DEMO_AUTH=true` to enable the console's user switcher. This endpoint issues privileged demo identities without passwords; keep it disabled outside an isolated demo.
 5. The sample config sets `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` and `APPROVALS_MODULE=apps/gateway/src/approvals/index.js`. Existing `.env` files should use these paths too. Both modules and the bridge are now included. With Mongo running, seed the dedicated synthetic demo database using `npm run seed`; it uses the same `MONGODB_URI`, `MONGODB_DB` and `FINGERPRINT_KEY` as the gateway. Do not seed a production database.
+6. For the isolated synthetic rehearsal in [DEMO.md](docs/DEMO.md), set `EVAL_MODE=1` locally; the generated config otherwise defaults to `false`. Keep `HOST=127.0.0.1` and `BASELINE_MODE=false`. Do not use these evaluation settings for a public deployment.
+
+Once Mongo is reachable and `.env` is configured, seed before starting the gateway:
+
+```sh
+npm run seed
+```
+
+The synthetic seed reports 10 documents, 10 chunks and 2 quarantined sources. A connection error here usually means Mongo is not running or `MONGODB_URI` points to a different port. Do not regenerate the fingerprint key between seed and gateway startup.
 
 ```sh
 npm run dev
@@ -47,6 +88,10 @@ npm run dev --workspace @leakshield/web
 ```
 
 Open `http://localhost:5173`. Set the web app's `VITE_API_MODE=live` for rehearsals so a missing gateway cannot be mistaken for a real result. The UI's mock mode is a separate frontend feature, not evidence of gateway operation.
+
+Set frontend mode in the console process, not just the repository-root `.env`. For example, on macOS/Linux use `VITE_API_MODE=live npm run dev --workspace @leakshield/web -- --strictPort`. In PowerShell, set `$env:VITE_API_MODE='live'` before the console command. The default gateway/console ports are 8080/5173; check that they are free before starting. A stale service can otherwise be mistaken for the new checkout, and Vite may silently choose another port without `--strictPort`. If intentionally changing ports, match the console's `GATEWAY_URL` to the gateway and the gateway's `CORS_ORIGIN` to the actual console origin, then restart both processes.
+
+See [the latest independent clean-clone setup check](docs/ALWAZ-CLEAN-CLONE.md): the normal seed, gateway and web/proxy startup passed with persistent MongoDB and real Groq. That setup check is separate from the pending browser screenshots and five-minute team rehearsal.
 
 For a rehearsal without a cloud key or an installed Mongo server, use `npm run demo:gateway` instead of `npm run dev`, then start the console in its default auto mode. This starts the complete gateway with a temporary real MongoDB and an explicitly simulated loopback HTTP provider; the console displays **simulated provider**. This tests integration, not real model behavior or quality. The first run downloads MongoDB. Keep it separate from the normal gateway because both use port 8080.
 
@@ -111,7 +156,7 @@ The integrated decision code is tagged [eval-freeze-v2](https://github.com/TeamE
 - [Eight-slide editable team deck](docs/LeakShield-Freeze-v2.pptx)
 - [Freeze time and reproduction commands](docs/EVAL-FREEZE-V2.md)
 - [Limitations and known misses](docs/LIMITATIONS.md)
-- [Arihant/Ojaswi narration and proposed rehearsal slots](docs/REHEARSAL-AND-NARRATION.md)
-- [Groq model, observed quota windows and unverified ZDR](docs/GROQ-ACCOUNT-CHECK.md)
+- [Canonical Arihant/Ojaswi script, checklist and Garuda verification](docs/DEMO.md)
+- [Groq model, recorded limits and disabled ZDR in the checked account](docs/GROQ-ACCOUNT-CHECK.md)
 
-The v2 protected run has 1 provider-leak flag versus 12 baseline flags, not zero. The original freeze and historical reports/decks remain preserved. Follow the per-report provenance when presenting numbers.
+The v2 protected run has 1 provider-leak flag versus 12 baseline flags, not zero. Historical reports and deck revisions remain in Git history; use only the linked canonical team deck. Follow the per-report provenance when presenting numbers.
