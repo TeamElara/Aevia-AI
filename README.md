@@ -35,6 +35,7 @@ Edit the generated `.env` locally:
 3. The detector module is included at `packages/detectors/src/index.ts`. `CLASSIFIER_BACKEND=none` uses its rules; optional `node` loads the pinned fp32 classifier. Int8 is not enabled because the recorded attack predictions failed.
 4. For the **local synthetic demo only**, set `DEMO_AUTH=true` to enable the console's user switcher. This endpoint issues privileged demo identities without passwords; keep it disabled outside an isolated demo.
 5. The sample config sets `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` and `APPROVALS_MODULE=apps/gateway/src/approvals/index.js`. Existing `.env` files should use these paths too. Both modules and the bridge are now included. With Mongo running, seed the dedicated synthetic demo database using `npm run seed`; it uses the same `MONGODB_URI`, `MONGODB_DB` and `FINGERPRINT_KEY` as the gateway. Do not seed a production database.
+6. For the isolated synthetic rehearsal in [DEMO.md](docs/DEMO.md), set `EVAL_MODE=1` locally; the generated config otherwise defaults to `false`. Keep `HOST=127.0.0.1` and `BASELINE_MODE=false`. Do not use these evaluation settings for a public deployment.
 
 ```sh
 npm run dev
@@ -47,6 +48,10 @@ npm run dev --workspace @leakshield/web
 ```
 
 Open `http://localhost:5173`. Set the web app's `VITE_API_MODE=live` for rehearsals so a missing gateway cannot be mistaken for a real result. The UI's mock mode is a separate frontend feature, not evidence of gateway operation.
+
+Set frontend mode in the console process, not just the repository-root `.env`. For example, on macOS/Linux use `VITE_API_MODE=live npm run dev --workspace @leakshield/web -- --strictPort`. In PowerShell, set `$env:VITE_API_MODE='live'` before the console command. The default gateway/console ports are 8080/5173; check that they are free before starting. A stale service can otherwise be mistaken for the new checkout, and Vite may silently choose another port without `--strictPort`. If intentionally changing ports, match the console's `GATEWAY_URL` to the gateway and the gateway's `CORS_ORIGIN` to the actual console origin, then restart both processes.
+
+See [the latest independent clean-clone check and open rehearsal blockers](docs/ALWAZ-CLEAN-CLONE.md). Its API smoke and startup check are not a completed five-minute browser rehearsal.
 
 For a rehearsal without a cloud key or an installed Mongo server, use `npm run demo:gateway` instead of `npm run dev`, then start the console in its default auto mode. This starts the complete gateway with a temporary real MongoDB and an explicitly simulated loopback HTTP provider; the console displays **simulated provider**. This tests integration, not real model behavior or quality. The first run downloads MongoDB. Keep it separate from the normal gateway because both use port 8080.
 
