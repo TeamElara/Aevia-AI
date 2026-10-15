@@ -46,6 +46,18 @@ test('SSE bytes and rate-limit status survive the transport', async () => {
   globalThis.fetch = async () => Response.json({ error: 'RATE_LIMITED' }, { status: 429, headers: { 'retry-after': '10' } });
   const limited = await call('/api/gateway?route=/v1/scan'); assert.equal(limited.status, 429); assert.equal(limited.headers.get('retry-after'), '10');
 });
+
+test('rewrite captures never pollute strict application query parameters', async () => {
+  process.env.GATEWAY_URL = 'https://gateway.example';
+  const targets = [];
+  globalThis.fetch = async url => { targets.push(String(url)); return Response.json({ ok: true }); };
+  await call('/api/gateway?route=/api/stats&path=stats&window=60');
+  await call('/api/gateway?route=/api/access/results/test&path=access/results/test&conversation_id=synthetic');
+  assert.deepEqual(targets, [
+    'https://gateway.example/api/stats?window=60',
+    'https://gateway.example/api/access/results/test?conversation_id=synthetic',
+  ]);
+});
 test('upstream failures return a stable error without leaking transport details', async () => {
   process.env.GATEWAY_URL = 'https://gateway.example'; globalThis.fetch = async () => { throw new Error('private transport detail'); };
   const r = await call('/api/gateway?route=/api/health'); assert.equal(r.status, 502); assert.deepEqual(await r.json(), { error: 'GATEWAY_UNREACHABLE' });

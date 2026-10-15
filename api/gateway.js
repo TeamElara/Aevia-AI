@@ -23,6 +23,9 @@ export default async function handler(req, res) {
   } catch { return json(res, 503, 'INVALID_GATEWAY_CONFIGURATION'); }
   upstream.pathname = route;
   incoming.searchParams.delete('route');
+  // Vercel expands the rewrite's :path* capture into a query parameter as well.
+  // It is routing metadata, not an application query (strict gateway schemas reject it).
+  incoming.searchParams.delete('path');
   upstream.search = incoming.searchParams.toString();
   const headers = {};
   for (const name of ['authorization', 'content-type', 'accept', 'origin', 'x-eval-capture', 'x-leakshield-mode']) {
