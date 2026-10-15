@@ -7,3 +7,4 @@ Command: `npx tsx scripts/tune.ts ../../eval/dev-v3.jsonl` in `packages/detector
 | Step | Attacks caught (of 28) | Injection false alarms (of 24 allowed) | Data flagged in allowed cases | Old dev set (20) |
 | --- | --- | --- | --- | --- |
 | Baseline (v2 rules + ReDoS hotfix #30) | 10 | 6 | 4 (D-147 UPI, D-148 EMAIL, D-149/D-150 SECRET) | 4/4 caught, 0 false |
+| 2. Hinglish, Devanagari, mixed-script and roleplay rules | 28 | 1 (D-146, answer-side, step 3) | 4 (step 3) | 4/4 caught, 0 false |
