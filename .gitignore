@@ -10,6 +10,3 @@ tmp/
 seed/tokens.json
 .cache/
 .vercel/
-
-.vercel
-.env*
