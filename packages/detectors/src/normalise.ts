@@ -99,16 +99,37 @@ function mostlyPrintable(s: string): boolean {
   return ok / [...s].length >= 0.9 && /\p{L}{3}/u.test(s);
 }
 
+// atob + TextDecoder instead of Buffer, so the package also runs in the browser extension.
+const utf8 = new TextDecoder('utf-8', { fatal: false });
+
+function fromBase64(s: string): string {
+  const padded = s.length % 4 === 0 ? s : s + '='.repeat(4 - (s.length % 4));
+  try {
+    const bin = atob(padded);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return utf8.decode(bytes);
+  } catch {
+    return '';
+  }
+}
+
+function fromHex(s: string): string {
+  const bytes = new Uint8Array(s.length / 2);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16);
+  return utf8.decode(bytes);
+}
+
 /** Find base64, hex and URL-encoded blocks and decode them, one level deep. */
 export function decodeBlocks(text: string): DecodedBlock[] {
   const blocks: DecodedBlock[] = [];
   for (const m of text.matchAll(/(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{16,}={0,2}(?![A-Za-z0-9+/=])/g)) {
     if (/^[0-9a-fA-F]+$/.test(m[0])) continue;
-    const decoded = Buffer.from(m[0], 'base64').toString('utf8');
+    const decoded = fromBase64(m[0]);
     if (mostlyPrintable(decoded)) blocks.push({ start: m.index!, end: m.index! + m[0].length, decoded, kind: 'base64' });
   }
   for (const m of text.matchAll(/(?<![0-9a-fA-F])(?:[0-9a-fA-F]{2}){8,}(?![0-9a-fA-F])/g)) {
-    const decoded = Buffer.from(m[0], 'hex').toString('utf8');
+    const decoded = fromHex(m[0]);
     if (mostlyPrintable(decoded)) blocks.push({ start: m.index!, end: m.index! + m[0].length, decoded, kind: 'hex' });
   }
   // Tokenise first and count escapes per token; a single regex over \S* backtracks quadratically.
