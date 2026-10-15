@@ -32,6 +32,35 @@ set('sh/ts7md4r2', 'Real Groq evidence · eval-freeze-v2 · 15 October 2026');
 set('sh/t8byxkn2', 'Real Groq and local fallback are separate, explicitly selected providers.');
 set('sh/xk7qlczu', 'Outbound\ninspection');
 table('tb/it87elgv', [['Scenario', 'Expected boundary'], ['Asha attaches salary bands', 'Deny; zero provider calls'], ['Ravi attaches salary bands', 'Permit HR retrieval'], ['Admin attaches board minutes', 'Deny; no document bypass'], ['CEO attaches board minutes', 'Local only; deny external send'], ['Meera attaches Garuda', 'External: approval; local: allow']]);
+// Real post-freeze Halo console captures. Preserve their full viewport and aspect ratio.
+const approvalSlide = p.slides.items[3];
+const uiEvidence = [
+  ['garuda-pending', 'Garuda pending: zero model calls', 72],
+  ['garuda-approved', 'Garuda approved: one model call', 398],
+];
+for (const [stem, alt, left] of uiEvidence) {
+  const blob = new Uint8Array(await fs.readFile(`docs/screenshots/${stem}.jpg`));
+  const existing = approvalSlide.images.items.find(image => image.alt === alt);
+  const image = existing ?? approvalSlide.images.add({ blob, contentType: 'image/jpeg', alt, fit: 'contain' });
+  if (existing) image.replace({ blob, contentType: 'image/jpeg', alt, fit: 'contain' });
+  image.position = { left, top: 168, width: 300, height: 423 };
+  const name = `${stem}-caption`;
+  const caption = approvalSlide.shapes.items.find(shape => shape.name === name) ?? approvalSlide.shapes.add({
+    name, geometry: 'textbox', fill: 'none', line: { fill: 'none', width: 0 },
+    position: { left, top: 604, width: 310, height: 36 },
+  });
+  caption.text = stem.endsWith('pending') ? 'Pending: 0 model calls' : 'Approved: 1 model call';
+  caption.text.style = { typeface: 'Aptos', fontSize: 22, color: '#64DEB1' };
+}
+set('sh/rm1k7yt4', 'Hidden carriers trigger whole-document quarantine before rendering.');
+p.resolve('sh/rm1k7yt4').position = { left: 744, top: 172, width: 450, height: 150 };
+p.resolve('sh/rm1k7yt4').text.style = { typeface: 'Aptos', fontSize: 29, color: '#64DEB1' };
+set('sh/ql8jytsj', 'Approval holds the request in encrypted memory for ten minutes. Replay rechecks current access. Mongo stores metadata and the request hash.');
+p.resolve('sh/ql8jytsj').position = { left: 744, top: 356, width: 450, height: 226 };
+p.resolve('sh/ql8jytsj').text.style = { typeface: 'Aptos', fontSize: 27, color: '#F1F5FA' };
+set('sh/doj29oba', 'Actual UI check: main 0c560db, 15 Oct 2026. Synthetic data, real Groq gpt-oss-120b. Frozen slide 5 uses 20b.');
+p.resolve('sh/doj29oba').position = { left: 72, top: 651, width: 1056, height: 48 };
+p.resolve('sh/doj29oba').text.style = { typeface: 'Aptos', fontSize: 16, color: '#B6C3D7' };
 set('sh/dgbulwnm', 'Frozen metrics and robustness');
 set('sh/cf2tcr61', 'Real Groq gpt-oss-20b · 60 held-out + 60 robustness cases');
 table('tb/nad4jits', [['Measurement', 'Observed'], ['Held-out exact actions', `${Math.round(h.correct_action_rate * h.cases)} / ${h.cases}`], ['Provider-leak flags', `Protected ${h.provider_leaks} / baseline ${b.provider_leaks}`], ['Robustness / intervention retention', `${Math.round(r.correct_action_rate * r.cases)} / ${r.cases}; ${robust.retention.retention}`], ['Stage overhead p50 / p95', `Held-out ${h.overhead_ms_p50}/${h.overhead_ms_p95} ms; robust ${r.overhead_ms_p50}/${r.overhead_ms_p95} ms`]]);
@@ -50,7 +79,7 @@ const notes = [
   'Team roles, rehearsal checklist and the single narration script: docs/DEMO.md. Backup video owner: Mahatva (TEAM.md). Frozen source eval-freeze-v2 = 05d1afc5cda7309edbc7c733aaca42353128788f, 15 Oct 2026 17:02:11 IST. Do not apply these results to changed decision code.',
   'Authenticated memberships, ACL-before-top-k, relevance gating, assembly checks, outbound scan, provider, output scan, exact scoped restore and link cleaning. Approval replay follows the same pipeline. Source: apps/gateway/src and docs/ALWAZ-CONTINUATION.md.',
   'Explicit attachment expectations: eval/expectations.mjs. Local processing is distinct from external transmission. Admin role grants approval authority, not document read access.',
-  'Source: apps/gateway/src/approvals and approval-bridge.ts. Ten-minute encrypted memory queue, hash-bound single replay, metadata-only Mongo and fresh ACL/quarantine checks at completed-result polling. Restart discards ephemeral state.',
+  'Browser captures: docs/screenshots/garuda-pending.jpg, garuda-queue.jpg and garuda-approved.jpg. Source main 0c560db after UI PR #31 and ReDoS PR #25. Meera pending with zero calls, admin approval through Approvals, original conversation completed with one call. Real Groq openai/gpt-oss-120b, synthetic seed, 15 Oct 2026. This post-freeze smoke check is separate from the frozen 20b evaluation. Source: apps/gateway/src/approvals and approval-bridge.ts. Ten-minute encrypted memory queue, hash-bound single replay, metadata-only Mongo and fresh ACL/quarantine checks at completed-result polling. Restart discards ephemeral state.',
   `Sources: results/freeze-v2-groq/heldout-leakshield.json, heldout-baseline.json and robustness-leakshield.json. Historical v1 sources: results/heldout-leakshield.json and results/heldout-baseline.json. ${freezeFootnote} v2 is not a new blinded evaluation. Model ${held.provenance.model}. Frozen source ${held.provenance.freeze_commit}. Precision ${h.precision}; recall ${h.recall}. Measured-stage overhead excludes inference and uninstrumented audit/vault work. Wall time is separate. Original expected actions and contract explanations are retained. Provider/user leak flags use limited declared assertions, not proof of arbitrary zero leakage. Prior access tests used some authored slices, so not independently blinded.`,
   'Sources: results/freeze-v2-groq/detector-misses.md; results/ojaswi/classifier-check.md. Injection detector 32/36; mutated attacks 20/24 retained. Hinglish misses R-032, R-033, R-034, R-037. H-045 flags secret-shaped security text. H-020 IFSC provider flag follows configured warning policy; preserve it. Real fp32 classifier benign flags 19/110 (~17%); default CLASSIFIER_BACKEND=none. Int8 is refused; historical speed feasibility does not override this decision.',
   'Primary Act: https://www.indiacode.nic.in/bitstream/123456789/22037/1/a2023-22.pdf . Sections 6(1), 8(5), 8(6), 8(7). Phased commencement footnote schedules the cited substantive duties eighteen months from 13 November 2025. This is technical mapping, not a legal compliance claim. Notice/consent, notification operations and complete erasure remain outside this demonstration.',

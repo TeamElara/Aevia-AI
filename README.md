@@ -29,6 +29,14 @@ flowchart TD
 
 The direct path continues only when policy permits it; a required approval pauses before any external call and replays the full pipeline after approval. Denied or quarantined content is withheld. Mongo stores metadata-only audit/approval records; sensitive conversation and pending-request state stays in process memory. In the checked Personal organization, inference ZDR is **disabled**: approved content can reach Groq, and we do not claim zero retention. [Account scope and judge wording](docs/GROQ-ACCOUNT-CHECK.md).
 
+## Current console
+
+Actual Halo UI after the ReDoS hotfix and UI merge, captured on main `0c560db` with synthetic records and real Groq **gpt-oss-120b**. This browser smoke check is separate from the frozen **20b** evaluation above. Meera's Garuda request waits with zero calls, an admin approves it in Approvals, then the original conversation completes with one call. [Reproduce the scene](docs/DEMO.md#actual-console-check-after-hotfix-and-halo-ui-merge) · [Verification and remaining human rehearsal](docs/ALWAZ-FINAL-UI.md).
+
+| Pending: no provider call | Admin approval queue | Returned answer: one call |
+| --- | --- | --- |
+| ![Meera pending with zero model calls](docs/screenshots/garuda-pending.jpg) | ![Garuda approval queue](docs/screenshots/garuda-queue.jpg) | ![Meera receives approved result with one model call](docs/screenshots/garuda-approved.jpg) |
+
 ## What works
 
 - JWT/API-key identity; opt-in passwordless login for the five synthetic demo accounts.
@@ -91,7 +99,7 @@ Open `http://localhost:5173`. Set the web app's `VITE_API_MODE=live` for rehears
 
 Set frontend mode in the console process, not just the repository-root `.env`. For example, on macOS/Linux use `VITE_API_MODE=live npm run dev --workspace @leakshield/web -- --strictPort`. In PowerShell, set `$env:VITE_API_MODE='live'` before the console command. The default gateway/console ports are 8080/5173; check that they are free before starting. A stale service can otherwise be mistaken for the new checkout, and Vite may silently choose another port without `--strictPort`. If intentionally changing ports, match the console's `GATEWAY_URL` to the gateway and the gateway's `CORS_ORIGIN` to the actual console origin, then restart both processes.
 
-See [the latest independent clean-clone setup check](docs/ALWAZ-CLEAN-CLONE.md): the normal seed, gateway and web/proxy startup passed with persistent MongoDB and real Groq. That setup check is separate from the pending browser screenshots and five-minute team rehearsal.
+See [the latest independent clean-clone setup check](docs/ALWAZ-CLEAN-CLONE.md): the normal seed, gateway and web/proxy startup passed with persistent MongoDB and real Groq. The [post-merge browser check](docs/ALWAZ-FINAL-UI.md) now also passes; the timed joint team rehearsal remains a separate human task.
 
 For a rehearsal without a cloud key or an installed Mongo server, use `npm run demo:gateway` instead of `npm run dev`, then start the console in its default auto mode. This starts the complete gateway with a temporary real MongoDB and an explicitly simulated loopback HTTP provider; the console displays **simulated provider**. This tests integration, not real model behavior or quality. The first run downloads MongoDB. Keep it separate from the normal gateway because both use port 8080.
 
@@ -123,7 +131,7 @@ Docker/WSL are not installed on the Windows development host. Actual container b
 - `GET /policy`: admin-only policy snapshot. Edit and increment the version in `apps/gateway/policy.yaml` to reload.
 - `POST /v1/chat/completions`: use model alias `leakshield` (or the configured provider model); supported fields are `model`, string-content `messages`, `stream`, and `n: 1`. Decisions are returned in `leakshield`; policy-blocked requests return a safe completion with HTTP 200 and zero provider calls, including buffered streaming. Unsupported fields are rejected. Client system text remains untrusted context; the gateway owns the privileged system instructions.
 
-Both chat routes return final **plain text**. Never render answers with `innerHTML` or permit automatic remote image fetching. The existing console already renders plain text. `/v1` callers must enforce the same rule.
+Both chat routes return final **plain text**. Never render answers with `innerHTML` or permit automatic remote image fetching. The existing console renders safe formatting without raw HTML, executable links or fetched images. `/v1` callers must enforce the same rule.
 
 The ordinary console response contains only the sanitised current user turn in `sent_to_model`. Full `captured_payload` on `/chat`, or `eval.provider_payload` on `/api/chat` with `X-Eval-Capture: 1`, is available only with `EVAL_MODE=true` (or `1`) on loopback. It contains permitted model context and private test markers. Consume it in memory, calculate leak booleans, and discard it. Never log or commit it.
 

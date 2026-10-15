@@ -1,6 +1,6 @@
 # Independent README-only setup check — 15 October 2026
 
-A second, new standalone remote-main clone at `1876046e1ac260962ae6236f649b8347b0089ca1` was used after PRs #14 and #19 merged. The setup instructions were README.md only. Dependencies and source changes were not copied from another checkout. **Normal persistent-Mongo seed, gateway and web/proxy startup passed.** Browser screenshots and the timed joint rehearsal are separate, still-pending acceptance items.
+A second, new standalone remote-main clone at `1876046e1ac260962ae6236f649b8347b0089ca1` was used after PRs #14 and #19 merged. The setup instructions were README.md only. Dependencies and source changes were not copied from another checkout. **Normal persistent-Mongo seed, gateway and web/proxy startup passed.** The browser item subsequently passed on the merged Halo UI: see [final UI evidence](ALWAZ-FINAL-UI.md). The timed joint rehearsal remains a separate human acceptance item.
 
 ## What actually ran
 
@@ -26,4 +26,4 @@ The proxy check exercised the normal auth/chat routes and matching CORS origin. 
 
 README now gives an explicit Mongo startup example, a separate seed command and expected counts, matching database/fingerprint-key requirements, the local rehearsal evaluation flag, frontend-process environment instructions, and port/CORS checks with strict Vite port handling. No gateway or web source was changed.
 
-Stop only the dedicated services from this check after finishing. The ignored persistent data directory and private environment are not committed. For the remaining stage rehearsal, Arihant drives and Ojaswi narrates DEMO.md with a stopwatch; capture real Garuda states and record actual participants/elapsed time. The setup check does not substitute for that human run.
+Stop only the dedicated services from this check after finishing. The ignored persistent data directory and private environment are not committed. The later browser captures are linked in DEMO.md. For the remaining stage rehearsal, Arihant drives and Ojaswi narrates DEMO.md with a stopwatch and records actual participants/elapsed time. The setup check does not substitute for that human run.
