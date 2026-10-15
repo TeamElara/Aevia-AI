@@ -12,3 +12,11 @@ Record in the team console: organization/project, selected model ID, RPM/RPD/TPM
 ## Continuation check
 
 15 October 2026: an authorized check in the current in-app browser reached the GroqCloud sign-in page at `https://console.groq.com/home`, with no authenticated organization session. No account settings could be read; all team RPM/RPD/TPM/TPD and ZDR checks remain pending. This is separate from the historical approval-gate denial above. No credential entry or account-setting changes occurred.
+
+The continuation subsequently verified real HTTPS inference with the locally
+configured `openai/gpt-oss-120b`: four model calls and 8/8 synthetic boundary
+checks. The first response advertised `x-ratelimit-limit-requests: 1000` and
+`x-ratelimit-limit-tokens: 8000`; all observed rate/reset headers are retained
+in `results/continuation-groq/boundaries.json`. Do not relabel these header
+values as a complete RPM/RPD/TPM/TPD configuration; authenticated settings
+inspection remains necessary. No header verified ZDR.

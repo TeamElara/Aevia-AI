@@ -22,6 +22,8 @@ type Case = {
 
 type Row = {
   status: 'idle' | 'running' | 'done' | 'error'
+  expected_action?: Action
+  expectation_reason?: string
   observed_action?: Action
   correct?: boolean
   expected_intervention?: boolean
@@ -169,7 +171,7 @@ export function EvalView() {
                       <tr key={c.id} className="border-b border-line" title={c.prompt}>
                         <td className="py-2.5 pr-4 font-mono text-[11px] text-fg">{c.id}</td>
                         <td className="py-2.5 pr-4 text-muted">{c.category.replace(/_/g, ' ')}</td>
-                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{c.expected_action}</td>
+                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted" title={r?.expectation_reason}>{r?.expected_action ?? c.expected_action}</td>
                         <td className="py-2.5 pr-4">
                           {r?.observed_action ? (
                             <ActionBadge label={actionLabel[r.observed_action]} stop={isStop(r.observed_action)} />

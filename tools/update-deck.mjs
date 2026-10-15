@@ -5,7 +5,7 @@ const { FileBlob, PresentationFile } = await import(process.env.ARTIFACT_TOOL_MO
 const root=resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const p=await PresentationFile.importPptx(new FileBlob(new Uint8Array(await fs.readFile(root+'/docs/Alwaz-LeakShield.pptx'))));
 const table=p.resolve('tb/nad4jits');
-const values=[['Measurement','Observed'],['Current combined tests','414 + 53 passed'],['Historical real Ollama calls','37 calls; 10/10 boundary checks'],['Historical fixture labels','4/31 matched; not accuracy pass'],['Current UI rehearsal','Mask + approval + live eval']];
+const values=[['Measurement','Observed'],['Current combined tests','414 + 53 passed'],['Current real Groq boundaries','8/8 checks; 4 actual model calls'],['Historical fixture labels','4/31 matched; not accuracy pass'],['Current UI rehearsal','Mask + approval + live eval']];
 for(let row=0;row<5;row++)for(let col=0;col<2;col++) { const cell=table.getCell(row,col); cell.text.replace(String(cell.text), values[row][col]); }
 const changes={
  'sh/dgbulwnm':['Measured access evidence','Evidence and validation'],
@@ -17,6 +17,10 @@ const changes={
 };
 for(const [id,[from,to]] of Object.entries(changes))p.resolve(id).text.replace(from,to);
 p.resolve('tb/it87elgv').getCell(5,1).text.replace('Require admin approval','External: approval; local: allow');
+const notes=await p.inspect({kind:'notes',maxChars:16000});
+for(const note of notes.records ?? []) {
+ if(note.slideIndex===4) p.resolve(note.id).text='Current validation: docs/ALWAZ-CONTINUATION.md; real Groq boundaries: results/continuation-groq/boundaries.json; historical Ollama labels: results/alwaz/ollama-verification.json. Current Groq smoke is unfrozen and is not a full model-backed evaluation.';
+}
 await fs.mkdir(root+'/tmp/deck-build',{recursive:true});
 const blob=await PresentationFile.exportPptx(p);await blob.save(root+'/tmp/deck-build/candidate.pptx');
 console.log('Exported editable eight-slide candidate');

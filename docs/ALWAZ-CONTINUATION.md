@@ -36,7 +36,7 @@ environment failures, followed by the successful authorized runs.
 | Held-out | 60 | 51/60 | 1 | 12 | 0 | 2 / 4 ms |
 | Robustness | 60 | 52/60 | 0 | 14 | 0 | 1 / 4 ms |
 
-Reports: `results/continuation-simulated/`. All 280 requests use the same
+Reports: `results/continuation-simulated/`. All 280 evaluated cases (plus fixture history turns) use the same
 **simulated echo HTTP provider** and synthetic corpus; no real inference or
 frozen accuracy is claimed. Provider leaks mean exact declared forbidden-value
 assertions plus the evaluator's limited category-sensitive extraction. Zero is
@@ -82,8 +82,11 @@ Python builder is explicitly historical. Original reports and deck are retained.
 
 ## External dependencies and honest limits
 
-No remote `eval-freeze` tag was present when checked. No accessible Ojaswi chat
-was found; freeze coordination is requested on the continuation PR. Creating a
+No remote `eval-freeze` tag was present on the initial check. A later fetch
+found Mahatva’s annotated tag at `772a7aff556663a45a8f0904137e0932cd65b177`.
+It is on `codex/mahatva-final-validation` and excludes this continuation. No
+accessible Ojaswi chat was found; coordination on how these contract/access
+fixes enter the freeze is requested on the continuation PR. Creating a
 freeze unilaterally would not satisfy the handoff. The runner deliberately marks
 these reports unfrozen, and no final model-backed report is loaded as frozen.
 
@@ -95,9 +98,15 @@ contract expectations, writing by default to a new continuation directory so
 it cannot silently overwrite the historical report. That updated script has
 been typechecked, not rerun against a model here.
 
-Groq account model entitlement, RPM/RPD/TPM/TPD and ZDR configuration remain
-unverified. Runtime configuration is not proof of authenticated account settings.
+Groq real inference now succeeds for the configured `openai/gpt-oss-120b`
+model. The eight-case synthetic boundary run made four actual calls and passed
+8/8 checks plus audit privacy. See `results/continuation-groq/boundaries.json`.
+It verifies model availability for this key at this time, not the complete
+account entitlement list. Account RPM/RPD/TPM/TPD and ZDR remain unverified. Runtime configuration is not proof of authenticated account settings.
 The authorized in-app-browser console check reached the Groq sign-in page without an authenticated session. No credentials were requested or committed. Docker startup, second-machine
 rehearsal, a coordinated frozen real-model baseline and backup demo recording
-remain outstanding. A same-machine clean-copy check is recorded separately when
-completed; it does not imply Docker or second-laptop verification.
+remain outstanding. A same-machine clean clone of `a62edc6` to `/tmp/Aevia-continuation-clean`
+passed `npm ci --offline` (403 installed packages, 0 reported vulnerabilities),
+TypeScript, web production build, dataset validation and temporary real-Mongo/
+simulated-HTTP startup with an explicit zero-call ACL denial. It does not imply
+Docker or second-laptop verification.

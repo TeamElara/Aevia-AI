@@ -1,0 +1,146 @@
+{
+  "at": "2026-10-15T10:26:04.095Z",
+  "source_commit": "a62edc639d98126d0333b2ed3fb3b9d65aa37d93",
+  "source_dirty": true,
+  "model": "openai/gpt-oss-120b",
+  "provider": "real Groq HTTPS",
+  "frozen": false,
+  "scope": "Eight synthetic direct-pipeline boundaries, four planned real calls. Not browser E2E, independent accuracy, a full baseline or a frozen evaluation. Stage timings exclude model and uninstrumented audit/vault work. Response rate headers do not prove all RPM/RPD/TPM/TPD limits or ZDR.",
+  "audit_private": true,
+  "rows": [
+    {
+      "id": "greeting",
+      "action": "allow",
+      "expected_action": "allow",
+      "provider_calls": 1,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": true,
+      "stage_overhead_ms": 24.347042999999985,
+      "wall_ms": 956.4117500000001
+    },
+    {
+      "id": "user-pii",
+      "action": "mask",
+      "expected_action": "mask",
+      "provider_calls": 1,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": true,
+      "stage_overhead_ms": 15.148919000000205,
+      "wall_ms": 784.1554999999998
+    },
+    {
+      "id": "authorized-hr",
+      "action": "allow",
+      "expected_action": "allow",
+      "provider_calls": 1,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": true,
+      "stage_overhead_ms": 26.022040999999263,
+      "wall_ms": 749.086209
+    },
+    {
+      "id": "document-pii",
+      "action": "redact",
+      "expected_action": "redact",
+      "provider_calls": 1,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": true,
+      "stage_overhead_ms": 11.121374999998807,
+      "wall_ms": 584.3826250000002
+    },
+    {
+      "id": "forbidden",
+      "action": "deny",
+      "expected_action": "deny",
+      "provider_calls": 0,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": false,
+      "stage_overhead_ms": 3.0803759999998874,
+      "wall_ms": 8.333875000000262
+    },
+    {
+      "id": "quarantined",
+      "action": "quarantine",
+      "expected_action": "quarantine",
+      "provider_calls": 0,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": false,
+      "stage_overhead_ms": 2.2690829999992275,
+      "wall_ms": 4.274459000000206
+    },
+    {
+      "id": "external-deny",
+      "action": "deny",
+      "expected_action": "deny",
+      "provider_calls": 0,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": false,
+      "stage_overhead_ms": 2.7525839999980235,
+      "wall_ms": 4.236458999999741
+    },
+    {
+      "id": "external-approval",
+      "action": "require_approval",
+      "expected_action": "require_approval",
+      "provider_calls": 0,
+      "passed": true,
+      "declared_pii_provider_leak": false,
+      "answer_nonempty": false,
+      "stage_overhead_ms": 5.779665000001842,
+      "wall_ms": 8.644000000000233
+    }
+  ],
+  "transport_metadata": [
+    {
+      "status": 200,
+      "rate_headers": {
+        "x-ratelimit-limit-requests": "1000",
+        "x-ratelimit-limit-tokens": "8000",
+        "x-ratelimit-remaining-requests": "984",
+        "x-ratelimit-remaining-tokens": "7429",
+        "x-ratelimit-reset-requests": "23m2.4s",
+        "x-ratelimit-reset-tokens": "4.282s"
+      }
+    },
+    {
+      "status": 200,
+      "rate_headers": {
+        "x-ratelimit-limit-requests": "1000",
+        "x-ratelimit-limit-tokens": "8000",
+        "x-ratelimit-remaining-requests": "983",
+        "x-ratelimit-remaining-tokens": "7439",
+        "x-ratelimit-reset-requests": "24m28.8s",
+        "x-ratelimit-reset-tokens": "4.207s"
+      }
+    },
+    {
+      "status": 200,
+      "rate_headers": {
+        "x-ratelimit-limit-requests": "1000",
+        "x-ratelimit-limit-tokens": "8000",
+        "x-ratelimit-remaining-requests": "982",
+        "x-ratelimit-remaining-tokens": "7088",
+        "x-ratelimit-reset-requests": "25m55.199s",
+        "x-ratelimit-reset-tokens": "6.84s"
+      }
+    },
+    {
+      "status": 200,
+      "rate_headers": {
+        "x-ratelimit-limit-requests": "1000",
+        "x-ratelimit-limit-tokens": "8000",
+        "x-ratelimit-remaining-requests": "981",
+        "x-ratelimit-remaining-tokens": "7444",
+        "x-ratelimit-reset-requests": "27m21.6s",
+        "x-ratelimit-reset-tokens": "4.17s"
+      }
+    }
+  ]
+}
