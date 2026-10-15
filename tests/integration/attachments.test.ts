@@ -157,3 +157,39 @@ test('the audit records only categories and counts from the file', async () => {
   const dump = JSON.stringify(events);
   for (const raw of [AADHAAR, PAN, AWS, 'kyc.pdf', 'Test Person']) assert.ok(!dump.includes(raw), `audit contains ${raw}`);
 }, 120_000);
+
+// Bug bash fixes (results/bug-bash/*.md).
+import { normaliseOcrLine } from '../../apps/gateway/src/attachments.js';
+import { documents } from '../../seed/corpus.js';
+
+test('OCR spacing errors are undone so a glued PAN and a misgrouped Aadhaar are still caught', () => {
+  const box = { x0: 0, y0: 0, x1: 10, y1: 10 };
+  assert.deepEqual(normaliseOcrLine([{ text: 'PANABCPE1234F', bbox: box }]).map(p => p.text), ['PAN', 'ABCPE1234F']);
+  assert.deepEqual(normaliseOcrLine([{ text: 'PAN:ABCPE1234F.', bbox: box }]).map(p => p.text), ['PAN', 'ABCPE1234F.']);
+  assert.deepEqual(normaliseOcrLine(['Aadhaar', '2345', '67890124'].map(text => ({ text, bbox: box }))).map(p => p.text), ['Aadhaar', '2345 6789 0124']);
+  assert.deepEqual(normaliseOcrLine(['2345', '6789', '0124'].map(text => ({ text, bbox: box }))).map(p => p.text), ['2345', '6789', '0124']);
+  assert.deepEqual(normaliseOcrLine(['+91', '98765', '43210'].map(text => ({ text, bbox: box }))).map(p => p.text), ['+91', '98765', '43210']);
+});
+
+test('a photo with a PAN glued to its label never sends the PAN to the model', async () => {
+  const token = await login('asha');
+  const res = await upload(token, 'glued.png', photo(['PANABCPE1234F', 'Aadhaar 2345 67890124'])).expect(200);
+  assertCleanRequest(sent.at(-1)!);
+  assert.ok(res.body.attachment.found.PAN >= 1);
+}, 120_000);
+
+test('text copied from a restricted document stops before the model, typed or uploaded', async () => {
+  const board = documents.find((d: { id: string }) => d.id === 'board')!.text as string;
+  const token = await login('asha'); const before = sent.length;
+  const typed = (await base.post('/api/chat').set('Authorization', `Bearer ${token}`).send({ message: `Summarise this: ${board}` }).expect(200)).body;
+  assert.equal(typed.action, 'block'); assert.equal(typed.provider_calls, 0);
+  const uploaded = (await upload(token, 'minutes.pdf', pdf([{ text: board.match(/.{1,80}(\s|$)/g)!.map(s => s.trim()) }])).expect(200)).body;
+  assert.equal(uploaded.action, 'block'); assert.equal(uploaded.provider_calls, 0);
+  assert.equal(sent.length, before);
+}, 120_000);
+
+test('one busy console cannot lock every other user out of demo login', async () => {
+  for (let i = 0; i < 30; i++) await base.post('/api/auth/login').send({ user: 'ceo' }).expect(200);
+  await base.post('/api/auth/login').send({ user: 'ceo' }).expect(429);
+  await base.post('/api/auth/login').send({ user: 'ravi' }).expect(200);
+});

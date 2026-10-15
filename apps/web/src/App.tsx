@@ -36,6 +36,7 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [cardDir, setCardDir] = useState<1 | -1>(1)
   const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
+  const [unreachable, setUnreachable] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const posts = useActingPosts(session)
 
@@ -146,10 +147,12 @@ export default function App() {
       const res = file ? await chatWithFile(session.backend, session.token, req, file) : await chat(session.backend, session.token, req)
       if (generation !== chatGeneration.current) return
       setConversationId(res.conversation_id)
+      setUnreachable(false)
       setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'done', response: res } : t)))
       setSelectedId(id)
     } catch (e) {
       if (generation !== chatGeneration.current) return
+      setUnreachable((e as Error).message === 'GATEWAY_UNREACHABLE')
       setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'error', error: (e as Error).message } : t)))
     }
   }
@@ -187,6 +190,7 @@ export default function App() {
 
   const sidebar = (
     <Sidebar
+      unreachable={unreachable}
       view={view}
       tone={tone}
       user={user}

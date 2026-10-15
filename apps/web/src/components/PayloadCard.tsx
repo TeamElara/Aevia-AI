@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { users } from '../data/demo'
 import { initials, ms } from '../lib/format'
 import { toneOfLabel, toneVar } from '../lib/tone'
@@ -64,6 +65,9 @@ export function ActionBadge({ label, stop, className = '' }: { label: string; st
 }
 
 function Field({ label, text, strong, i }: { label: string; text: string; strong?: boolean; i: number }) {
+  const [open, setOpen] = useState(false)
+  // Long payloads start clamped; the full text is one click away.
+  const long = text.length > 280 || text.split('\n').length > 4
   return (
     <div
       className={`stg ${strong ? '-mx-3 rounded-[12px] bg-accent-soft px-3 py-2.5' : ''}`}
@@ -71,10 +75,15 @@ function Field({ label, text, strong, i }: { label: string; text: string; strong
     >
       <p className="label">{label}</p>
       <p
-        className={`mt-1.5 line-clamp-4 break-words font-mono text-[12.5px] leading-relaxed ${strong ? 'text-fg' : 'text-muted'}`}
+        className={`mt-1.5 ${open ? 'max-h-80 overflow-y-auto whitespace-pre-wrap' : 'line-clamp-4'} break-words font-mono text-[12.5px] leading-relaxed ${strong ? 'text-fg' : 'text-muted'}`}
       >
         <Tokens text={text} />
       </p>
+      {long && (
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-1 text-[12px] text-faint underline underline-offset-2 hover:text-fg">
+          {open ? 'Show less' : 'Show all'}
+        </button>
+      )}
     </div>
   )
 }

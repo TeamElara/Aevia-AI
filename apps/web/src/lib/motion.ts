@@ -9,7 +9,13 @@ export function withTransition(update: () => void) {
     update()
     return null
   }
-  return document.startViewTransition(() => flushSync(update))
+  const vt = document.startViewTransition(() => flushSync(update))
+  // A newer transition skips this one; that is expected, not an error.
+  const ignore = () => undefined
+  vt.ready.catch(ignore)
+  vt.finished.catch(ignore)
+  vt.updateCallbackDone.catch(ignore)
+  return vt
 }
 
 // Gateway tokens look like [AADHAAR_K7Q2], [PAN_3XJM] or [SECRET_…].

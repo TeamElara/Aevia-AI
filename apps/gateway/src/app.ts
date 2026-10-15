@@ -52,12 +52,15 @@ export function createApp(options: Options) {
     ceo: { id: 'ceo', name: 'CEO', role: 'Executive', groups: ['employee', 'executive'] },
     admin: { id: 'admin', name: 'Admin', role: 'Administrator', groups: ['admin'] },
   };
-  let loginWindow = Date.now(); let logins = 0;
+  // Demo logins are limited per seeded user (30 a minute) and in total (150 a minute), so one busy
+  // console tab, such as fast switching between dashboards, cannot lock every other user out.
+  let loginWindow = Date.now(); let logins = 0; const perUser = new Map<string, number>();
   app.post('/api/auth/login', express.json({ limit: '1kb' }), async (req, res) => {
     if (!options.demoAuth || !options.signingSecret) throw new GatewayError('DEMO_AUTH_DISABLED', 403);
-    if (Date.now() - loginWindow > 60_000) { loginWindow = Date.now(); logins = 0; }
-    if (++logins > 30) { res.setHeader('Retry-After', String(Math.max(1, Math.ceil((loginWindow + 60_000 - Date.now()) / 1000)))); throw new GatewayError('RATE_LIMITED', 429); }
     const body = z.object({ user: z.enum(['asha', 'ravi', 'meera', 'ceo', 'admin']) }).strict().parse(req.body);
+    if (Date.now() - loginWindow > 60_000) { loginWindow = Date.now(); logins = 0; perUser.clear(); }
+    const mine = (perUser.get(body.user) ?? 0) + 1; perUser.set(body.user, mine);
+    if (++logins > 150 || mine > 30) { res.setHeader('Retry-After', String(Math.max(1, Math.ceil((loginWindow + 60_000 - Date.now()) / 1000)))); throw new GatewayError('RATE_LIMITED', 429); }
     const user = demoUsers[body.user];
     res.json({ token: await issueToken({ id: user.id, groups: user.groups }, options.signingSecret), user });
   });

@@ -307,8 +307,8 @@ export function ThemeToggle() {
         { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
         { duration: 750, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', pseudoElement: '::view-transition-new(root)' },
       ),
-    )
-    vt.finished.finally(() => delete root.dataset.vt)
+    ).catch(() => undefined)
+    vt.finished.catch(() => undefined).finally(() => delete root.dataset.vt)
   }
   return (
     <button ref={btn} className="icon-btn" onClick={flip} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>

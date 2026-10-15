@@ -35,6 +35,7 @@ export function Sidebar({
   user,
   userIndex,
   backend,
+  unreachable,
   onGo,
   onNewChat,
   onSignIn,
@@ -46,6 +47,8 @@ export function Sidebar({
   user: DemoUser
   userIndex: number
   backend: Backend | null
+  /** The last request could not reach the gateway. */
+  unreachable?: boolean
   onGo: (v: View) => void
   onNewChat: () => void
   onSignIn: () => void
@@ -109,10 +112,10 @@ export function Sidebar({
         <div className="flex items-center justify-between px-2.5">
           <span
             className="flex items-center gap-2 text-[12.5px] text-faint"
-            title={backend === 'simulated' ? 'Real local gateway with a simulated provider' : backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : backend ? 'Connected to apps/gateway' : 'Signing in'}
+            title={unreachable ? 'The last request could not reach apps/gateway' : backend === 'simulated' ? 'Real local gateway with a simulated provider' : backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : backend ? 'Connected to apps/gateway' : 'Signing in'}
           >
-            <span className="live-dot" style={backend === 'live' ? undefined : { background: 'var(--color-faint)', animation: 'none' }} />
-            {backend ? backendLabel[backend] : 'connecting…'}
+            <span className="live-dot" style={backend === 'live' && !unreachable ? undefined : { background: unreachable ? 'var(--color-stop)' : 'var(--color-faint)', animation: 'none' }} />
+            {unreachable ? 'gateway unreachable' : backend ? backendLabel[backend] : 'connecting…'}
           </span>
           <ThemeToggle />
         </div>
