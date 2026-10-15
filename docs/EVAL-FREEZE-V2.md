@@ -1,5 +1,7 @@
 # Evaluation freeze v2 — 15 October 2026
 
+First freeze (eval-freeze, v1): 48/60 exact actions, provider leaks 12 → 1. eval-freeze-v2 was tagged after the v1 held-out run; the changes between them were developed on dev and benign prompts only.
+
 `eval-freeze-v2` points to **05d1afc5cda7309edbc7c733aaca42353128788f**. The annotated tag was created at **17:02:11 IST / 11:32:11 UTC**, after PR #9 merged the reviewed continuation (#7) and classifier follow-up (#8) into main. All three PRs are merged. The original `eval-freeze` at `772a7aff556663a45a8f0904137e0932cd65b177` is preserved for the original Groq reports; its results do not describe the later source changes.
 
 The demo/evaluation setting is `CLASSIFIER_BACKEND=none`. The pretrained fp32 experiment flagged 19/110 benign prompts; int8 is refused by the gateway adapter. Do not tune detectors, access relevance thresholds, policy, corpus, expectations or cases after seeing these runs. Changes affecting decisions need a new versioned freeze and fresh evaluation, never moving an existing tag.

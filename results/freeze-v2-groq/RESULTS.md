@@ -1,5 +1,7 @@
 # Final v2 real-Groq evidence — 15 October 2026
 
+First freeze (eval-freeze, v1): 48/60 exact actions, provider leaks 12 → 1. eval-freeze-v2 was tagged after the v1 held-out run; the changes between them were developed on dev and benign prompts only.
+
 Frozen source: `eval-freeze-v2` / `05d1afc5cda7309edbc7c733aaca42353128788f`, tagged 17:02:11 IST after the reviewed team changes merged. Actual model: `openai/gpt-oss-20b`; classifier backend: `none`. Client hardware: Apple M3, darwin/arm64, Node v24.19.0. All 180 evaluated cases completed with zero execution errors. Raw prompts, answers, provider payloads and credentials are absent from these reports.
 
 | Run | Exact actions | Provider / user leak flags | Stage overhead p50 / p95 | Wall p50 / p95 |
