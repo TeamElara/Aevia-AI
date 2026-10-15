@@ -111,11 +111,16 @@ export function decodeBlocks(text: string): DecodedBlock[] {
     const decoded = Buffer.from(m[0], 'hex').toString('utf8');
     if (mostlyPrintable(decoded)) blocks.push({ start: m.index!, end: m.index! + m[0].length, decoded, kind: 'hex' });
   }
-  for (const m of text.matchAll(/\S*(?:%[0-9A-Fa-f]{2}\S*){3,}/g)) {
+  // Tokenise first and count escapes per token; a single regex over \S* backtracks quadratically.
+  for (const m of text.matchAll(/\S+/g)) {
+    const token = m[0];
+    let escapes = 0;
+    for (const _ of token.matchAll(/%[0-9A-Fa-f]{2}/g)) if (++escapes >= 3) break;
+    if (escapes < 3) continue;
     try {
-      const decoded = decodeURIComponent(m[0]);
-      if (decoded !== m[0] && mostlyPrintable(decoded)) {
-        blocks.push({ start: m.index!, end: m.index! + m[0].length, decoded, kind: 'url' });
+      const decoded = decodeURIComponent(token);
+      if (decoded !== token && mostlyPrintable(decoded)) {
+        blocks.push({ start: m.index!, end: m.index! + token.length, decoded, kind: 'url' });
       }
     } catch {
       // malformed escape: not an encoded block

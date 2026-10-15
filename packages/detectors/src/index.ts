@@ -3,6 +3,7 @@ import { detectInjection } from './injection';
 import { decodeBlocks, normalise, toOriginal } from './normalise';
 import { PII_DETECTORS } from './pii';
 import { secrets } from './secrets';
+import { keepNonOverlapping } from './spans';
 import type { Category, Detector, DetectorContext, Finding, Hit, Via } from './types';
 
 export * from './types';
@@ -11,6 +12,17 @@ export { normalise, leetFold, decodeBlocks } from './normalise';
 export { detectInjection, injectionScore } from './injection';
 export { detectSplitSecrets, type SplitSecretFinding } from './secrets';
 export { findLinks, type Link } from './links';
+export {
+  classifyInjection,
+  combineInjection,
+  createHttpClassifier,
+  createTransformersClassifier,
+  shouldRunClassifier,
+  splitWindows,
+  type ClassifierResult,
+  type InjectionClassifier,
+} from './classifier';
+export { seededValues, findSeededLeaks, type SeededValue } from './privacy';
 
 const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECTORS];
 
@@ -36,18 +48,26 @@ function dedupeData(fs: Finding[]): Finding[] {
       viaRank[a.via] - viaRank[b.via] ||
       b.end - b.start - (a.end - a.start),
   );
-  const kept: Finding[] = [];
-  for (const f of sorted) {
-    if (!kept.some((k) => f.start < k.end && f.end > k.start)) kept.push(f);
+  return keepNonOverlapping(sorted);
+}
+
+/** Larger inputs are refused rather than scanned; the gateway should block them. */
+export const MAX_SCAN_CHARS = 100_000;
+
+export class ScanLimitError extends Error {
+  constructor(length: number) {
+    super(`input of ${length} chars exceeds MAX_SCAN_CHARS (${MAX_SCAN_CHARS})`);
+    this.name = 'ScanLimitError';
   }
-  return kept;
 }
 
 /**
  * Run every detector over the original text, the normalised text and any decoded blocks.
  * Offsets in the result always point into `text`. Findings never contain the matched value.
+ * Throws ScanLimitError for oversized input.
  */
 export function detectAll(text: string, ctx: DetectorContext): Finding[] {
+  if (text.length > MAX_SCAN_CHARS) throw new ScanLimitError(text.length);
   const data: Finding[] = runData(text, ctx).map((h) => withMeta(h, ctx, 'raw'));
 
   const norm = normalise(text);
@@ -70,6 +90,24 @@ export function detectAll(text: string, ctx: DetectorContext): Finding[] {
   }
 
   return [...dedupeData(data), ...injection].sort((a, b) => a.start - b.start || b.score - a.score);
+}
+
+export type ScanResult =
+  | { ok: true; findings: Finding[]; ms: number }
+  | { ok: false; error: 'too_large' | 'scanner_error'; ms: number };
+
+/**
+ * Fail-closed wrapper for the gateway: never throws, and an `ok: false` result means "block".
+ * The error never carries the input text or the exception message, so it is safe to log.
+ */
+export function safeDetectAll(text: string, ctx: DetectorContext): ScanResult {
+  const t0 = performance.now();
+  try {
+    const findings = detectAll(text, ctx);
+    return { ok: true, findings, ms: performance.now() - t0 };
+  } catch (e) {
+    return { ok: false, error: e instanceof ScanLimitError ? 'too_large' : 'scanner_error', ms: performance.now() - t0 };
+  }
 }
 
 /** Response-side scan: same detectors; pass the canaries so a leaked marker is caught. */
