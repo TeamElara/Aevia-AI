@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-15T12:55:35.160Z",
+  "source_commit": "b7c611237f64e89d5a3487d8d1a0b0dcace01bc6",
+  "branch": "main",
+  "tracked_and_untracked_status_clean": true,
+  "checkout": "fresh standalone checkout on the actual Windows demo laptop",
+  "groq_model": "openai/gpt-oss-120b",
+  "ollama_model": "qwen2.5:0.5b",
+  "classifier": "none",
+  "demo_auth": true,
+  "seeded_documents": 10,
+  "seeded_quarantined_sources": 2,
+  "checks": {
+    "real_groq_kyc_mask_restore": true,
+    "secret_zero_calls": true,
+    "actual_ollama_answer": true,
+    "local_garuda_needs_no_external_approval": true,
+    "restored_groq_garuda_pauses_zero_calls": true,
+    "admin_hash_approval_returns_answer": true,
+    "clean_main": true
+  },
+  "switches": [
+    {
+      "provider": "groq",
+      "readiness_ms": 1139,
+      "first_answer_total_ms": 2700
+    },
+    {
+      "provider": "ollama",
+      "readiness_ms": 814,
+      "first_answer_total_ms": 2952
+    },
+    {
+      "provider": "groq",
+      "readiness_ms": 1123,
+      "first_answer_total_ms": 2265
+    }
+  ],
+  "final_provider": "groq",
+  "scope": "Post-freeze machine/rehearsal check, not a replacement for v1/v2 frozen evaluation. Timings are one observed switch on this laptop; first-answer total includes restart/login/model inference and, for the final Groq row, approval replay."
+}
