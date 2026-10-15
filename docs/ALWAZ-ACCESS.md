@@ -29,7 +29,7 @@ For an existing local MongoDB, copy `.env.example`, export its values in your sh
 
 Run `npm run test:report` when deliberately refreshing the measured access report; ordinary tests leave committed results unchanged.
 
-Evidence: [results](results/alwaz/RESULTS.md), [classifier decision](docs/CLASSIFIER-DECISION.md), [handoff](docs/ALWAZ-HANDOFF.md), [eight-slide deck](docs/Alwaz-LeakShield.pptx).
+Evidence: [results](results/alwaz/RESULTS.md), [classifier decision](docs/CLASSIFIER-DECISION.md), [handoff](docs/ALWAZ-HANDOFF.md), [eight-slide team deck](LeakShield-Freeze-v2.pptx).
 
 Run `npm run classifier:spike` separately to download the pinned English classifier and measure Node feasibility. This downloads approximately 713 MB; model weights stay ignored in `.cache`. The classifier is optional and not a substitute for ACLs. The locally quantized variant can be reproduced using `tools/quantize-classifier.py` with Python ONNX dependencies; the normal upstream model supports the default full-precision path.
 

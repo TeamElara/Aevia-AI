@@ -1,10 +1,10 @@
-// Editable update of the existing eight-slide template. Requires the bundled Artifact Tool.
+// Update the sole team deck using a privately validated copy. Requires the bundled Artifact Tool.
 import fs from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 const { FileBlob, PresentationFile } = await import(process.env.ARTIFACT_TOOL_MODULE ?? '@oai/artifact-tool');
-const root = process.cwd(), source = resolve('docs/Alwaz-LeakShield-continued.pptx');
+const root = process.cwd(), source = resolve('docs/LeakShield-Freeze-v2.pptx');
 const input = await fs.readFile(source);
 const p = await PresentationFile.importPptx(new FileBlob(new Uint8Array(input)));
 const info = await p.inspect({ kind: 'textbox,notes', maxChars: 40000 });
