@@ -7,6 +7,7 @@ import { toneOf, type Tone } from '../lib/tone'
 import { ActionBadge } from './PayloadCard'
 import { reducedMotion } from '../lib/motion'
 import { Arrow, Icon, Magnetic, Orb, Reveal, Tokens } from './ui'
+import { GatewayLens } from './GatewayLens'
 
 export type Turn = {
   id: string
@@ -50,54 +51,31 @@ export function ChatPanel({
   const lastStatus = turns[turns.length - 1]?.status
 
   useEffect(() => {
-    if (turns.length) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
+    if (turns.length) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: reducedMotion() ? 'instant' : 'smooth' })
   }, [turns.length, lastStatus])
 
   if (turns.length === 0) {
     return (
-      <section data-tone={tone} className="relative z-10 flex min-h-[calc(100vh-72px)] flex-col items-center justify-center px-1 py-10 lg:min-h-screen">
-        <div className="dotgrid" aria-hidden="true" />
-        <div className="relative flex w-full max-w-[680px] flex-col items-center text-center">
-          <div className="stg" style={{ ['--i' as string]: 0 }}>
-            <Orb tone={tone} size={96} busy={!ready} anchor follow />
+      <section data-tone={tone} className="home-panel">
+        <header className="home-topline">
+          <span>Private by design.</span>
+          <span className="home-status"><span className="live-dot" />{backend === 'mock' ? 'mock' : backend === 'simulated' ? 'simulated' : ready ? 'live gateway' : 'connecting…'}</span>
+        </header>
+        <div className="home-hero">
+          <div className="home-copy">
+            <h1 className="home-title"><span className="hero-title-line">AI WITHOUT</span><span className="hero-title-line">THE EXPOSURE.</span></h1>
+            <p className="home-description">Ask freely. Private values stay protected.<br />Your ideas are what reach the model.</p>
+            <button className="hero-cta" onClick={() => document.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus()} disabled={!ready}>Start a conversation <Arrow /></button>
           </div>
-          <h1 className="mt-8 font-serif text-[clamp(34px,5vw,52px)] leading-[1.05] tracking-[-0.01em]">
-            <span className="stg block" style={{ ['--i' as string]: 1 }}>
-              {greeting()}, {user.name.split(' ')[0]}.
-            </span>
-            <span className="stg block" style={{ ['--i' as string]: 2 }}>
-              <span className="sheen italic">What can I help with?</span>
-            </span>
-          </h1>
-          <p className="stg mt-4 max-w-[44ch] text-[14px] text-faint" style={{ ['--i' as string]: 3 }}>
-            {ready ? 'Ask anything. Private values are swapped for tokens before the model sees them.' : 'Signing you in…'}
-          </p>
-          <div className="stg mt-8 w-full" style={{ ['--i' as string]: 4 }}>
-            <Composer onSend={onSend} disabled={!ready} busy={false} big />
-          </div>
-          <ul className="mt-5 flex flex-wrap justify-center gap-2">
-            {starters.map((s, i) => (
-              <li key={s} className="stg min-w-0 max-w-full" style={{ ['--i' as string]: i + 5 }}>
-                <Magnetic strength={0.18} className="max-w-full">
-                  <button
-                    disabled={!ready}
-                    onClick={() => onSend(s)}
-                    className="block max-w-[300px] truncate rounded-full border border-line bg-surface/80 px-3.5 py-2 text-[13px] text-muted shadow-[var(--shadow)] backdrop-blur transition-colors hover:border-[color-mix(in_srgb,var(--tone)_45%,var(--color-line))] hover:text-fg disabled:opacity-40"
-                  >
-                    {s}
-                  </button>
-                </Magnetic>
-              </li>
-            ))}
+          <GatewayLens />
+        </div>
+        <div className="home-workspace">
+          <div className="home-greeting"><h2>{greeting()}, {user.name.split(' ')[0]}.</h2><p>{ready ? 'What can I help with?' : 'Signing you in…'}</p></div>
+          <Composer onSend={onSend} disabled={!ready} busy={false} big />
+          <ul className="home-starters">
+            {starters.map(s => <li key={s}><button disabled={!ready} onClick={() => onSend(s)}>{s}<Arrow /></button></li>)}
           </ul>
-          <button
-            onClick={onShowExamples}
-            className="stg mt-8 inline-flex items-center gap-2 text-[13px] text-faint transition hover:text-fg"
-            style={{ ['--i' as string]: 11 }}
-          >
-            <Icon name="eye" className="h-4 w-4" />
-            See what the model actually receives
-          </button>
+          <button onClick={onShowExamples} className="home-inspect"><Icon name="eye" className="h-4 w-4" />See what the model actually receives<Arrow /></button>
         </div>
       </section>
     )

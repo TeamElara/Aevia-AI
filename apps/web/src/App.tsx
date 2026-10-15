@@ -6,7 +6,6 @@ import { PayloadCard, type Exchange } from './components/PayloadCard'
 import { SignIn } from './components/SignIn'
 import { Avatar, Sidebar } from './components/Sidebar'
 import type { View } from './lib/views'
-import { Field } from './components/Field'
 import { Drawer, Icon, Orb, Toast } from './components/ui'
 import { exampleExchanges, users } from './data/demo'
 import { pad2 } from './lib/format'
@@ -198,16 +197,6 @@ export default function App() {
 
   return (
     <div data-tone={tone} className="min-h-screen overflow-x-clip lg:grid lg:grid-cols-[264px_1fr]">
-      {view === 'Chat' && (
-        <>
-          <div className="aurora" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </div>
-          <Field tone={tone} busy={busy} burstKey={last?.id} />
-        </>
-      )}
       <aside className="sticky top-0 z-20 hidden h-screen border-r border-line bg-paper/70 backdrop-blur-xl lg:block">{sidebar}</aside>
 
       <div className="flex min-w-0 flex-col">

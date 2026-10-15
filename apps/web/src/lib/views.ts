@@ -2,4 +2,4 @@ export const views = ['Chat', 'Incidents', 'Overview', 'Approvals', 'Eval'] as c
 export type View = (typeof views)[number]
 
 // One colour per demo person, so their avatar stays the same everywhere.
-export const avatarTone = ['#5b57d6', '#17a673', '#e8960f', '#e5404f', '#7c4ff0']
+export const avatarTone = ['#4c5d68', '#5f686e', '#485c60', '#65717a', '#555e65']
