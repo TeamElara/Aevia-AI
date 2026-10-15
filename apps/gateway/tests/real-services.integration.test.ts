@@ -1,6 +1,9 @@
 import { once } from 'node:events';
 import type { Server } from 'node:http';
 import { createServer } from 'node:http';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb';
@@ -11,6 +14,8 @@ import { Audit, MongoAuditStore } from '../src/audit.js';
 import { Auth, issueToken } from '../src/auth.js';
 import { Gateway } from '../src/pipeline.js';
 import { HttpProvider } from '../src/provider.js';
+import { OfflineBaseline } from '../src/baseline.js';
+import { Scanner } from '../src/scanner.js';
 import { admin, employee, harness, secret } from './helpers.js';
 
 describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
@@ -23,6 +28,8 @@ describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
   let sdk: OpenAI;
   let upstream: Server;
   let upstreamCalls = 0;
+  let baseline: OfflineBaseline;
+  const detectorPath = resolve(process.env.TEST_DETECTOR_MODULE ?? 'packages/detectors/src/index.ts');
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create({ binary: { version: '8.0.16' } });
     dbClient = new MongoClient(mongo.getUri()); await dbClient.connect();
@@ -40,8 +47,11 @@ describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
     const upstreamAddress = upstream.address();
     if (!upstreamAddress || typeof upstreamAddress === 'string') throw new Error('missing upstream');
     const provider = new HttpProvider({ kind: 'ollama', baseURL: `http://127.0.0.1:${upstreamAddress.port}/v1`, model: 'fixture' });
-    const gateway = new Gateway({ ...h, audit, provider });
-    const app = createApp({ gateway, audit, auth: new Auth(secret), policies: h.policies, ready: () => true });
+    const scanner = existsSync(detectorPath) ? new Scanner((await import(detectorPath)).detectAll) : h.scanner;
+    const gateway = new Gateway({ ...h, audit, provider, scanner, evalMode: true });
+    await dbClient.db('integration').collection('chunks').createIndex({ text: 'text' });
+    baseline = new OfflineBaseline(provider, audit, async query => (await dbClient.db('integration').collection('chunks').find({ $text: { $search: query } }).toArray()).map(c => c.text as string));
+    const app = createApp({ gateway, audit, auth: new Auth(secret), policies: h.policies, ready: () => true, demoAuth: true, signingSecret: secret, evalMode: true, baseline });
     server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('missing address');
@@ -51,7 +61,7 @@ describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
   afterAll(async () => {
     if (server) { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
     if (upstream) { upstream.closeAllConnections(); await new Promise<void>(resolve => upstream.close(() => resolve())); }
-    h?.close(); await dbClient?.close(); await mongo?.stop();
+    baseline?.close(); h?.close(); await dbClient?.close(); await mongo?.stop();
   });
   it('works with the unmodified stock SDK for non-streaming chat', async () => {
     const result = await sdk.chat.completions.create({ model: 'leakshield', messages: [{ role: 'user', content: 'Write a letter for 2345 6789 0124' }] });
@@ -98,5 +108,23 @@ describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
       const chunk = await reader.read(); const text = new TextDecoder().decode(chunk.value);
       expect(text).toContain('event: audit'); expect(text).toContain('user_pseudo'); expect(text).not.toContain('SSE test');
     } finally { controller.abort(); await reader.cancel().catch(() => {}); }
+  });
+  it.skipIf(!existsSync(detectorPath))('runs the existing evaluator on dev cases through actual HTTP, Mongo and published detectors', async () => {
+    const outputDir = join(h.dir, 'reports');
+    const run = async (extra: string[]) => {
+      const child = spawn(process.execPath, ['eval/run.mjs', 'eval/contributions/mahatva/dev.jsonl', '--gateway', baseURL, '--out', outputDir, ...extra], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+      child.stdout.resume(); child.stderr.resume();
+      const [code] = await once(child, 'exit'); expect(code).toBe(0);
+    };
+    await run([]);
+    const protectedReport = JSON.parse(readFileSync(join(outputDir, 'dev-leakshield.json'), 'utf8'));
+    expect(protectedReport.summary.cases).toBe(7); expect(protectedReport.summary.errors).toBe(0);
+    expect(protectedReport.summary.provider_leaks).toBe(0); expect(protectedReport.summary.correct_action_rate).toBe(1);
+    await run(['--baseline']);
+    const baselineReport = JSON.parse(readFileSync(join(outputDir, 'dev-baseline.json'), 'utf8'));
+    expect(baselineReport.summary.errors).toBe(0); expect(baselineReport.summary.provider_leaks).toBeGreaterThan(0);
+    for (const report of [protectedReport, baselineReport]) {
+      for (const value of ['2345 6789 0124', 'ABCPA1234F', '9876543210', 'AKIAFAKEDEMO00000000']) expect(JSON.stringify(report)).not.toContain(value);
+    }
   });
 });

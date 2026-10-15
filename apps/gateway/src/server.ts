@@ -3,8 +3,10 @@ import { pathToFileURL } from 'node:url';
 import { MongoClient } from 'mongodb';
 import type { ApprovalService, DetectAll, Retrieve } from '../../../types.js';
 import { createApp } from './app.js';
+import { loadAccessAdapter } from './access-adapter.js';
 import { Audit, MongoAuditStore } from './audit.js';
 import { Auth } from './auth.js';
+import { OfflineBaseline } from './baseline.js';
 import { loadConfig } from './config.js';
 import { GatewayError } from './errors.js';
 import { installConsolePrivacyFilter, safeLog } from './logger.js';
@@ -25,12 +27,7 @@ async function start() {
   } catch { /* Missing teammate module is explicit on /ready and never treated as clean. */ }
   let retrieve: Retrieve | undefined;
   let restrictedOverlap: ((text: string, user: import('../../../types.js').User) => Promise<boolean>) | undefined;
-  if (config.RETRIEVAL_MODULE) {
-    const loaded = await import(pathToFileURL(resolve(config.RETRIEVAL_MODULE)).href);
-    if (typeof loaded.retrieve !== 'function' || typeof loaded.restrictedOverlap !== 'function') throw new GatewayError('RETRIEVAL_CONFIG_INVALID');
-    retrieve = loaded.retrieve as Retrieve;
-    restrictedOverlap = loaded.restrictedOverlap;
-  }
+  let principal: ((id: string) => Promise<import('../../../types.js').User>) | undefined;
   let approvals: ApprovalService | undefined;
   if (config.APPROVALS_MODULE) {
     const loaded = await import(pathToFileURL(resolve(config.APPROVALS_MODULE)).href);
@@ -39,6 +36,7 @@ async function start() {
   }
   const client = new MongoClient(config.MONGODB_URI, { serverSelectionTimeoutMS: 5000, socketTimeoutMS: 5000 });
   await client.connect();
+  if (config.RETRIEVAL_MODULE) ({ retrieve, restrictedOverlap, principal } = await loadAccessAdapter(client.db(config.MONGODB_DB), config.RETRIEVAL_MODULE, config.FINGERPRINT_KEY));
   const store = new MongoAuditStore(client.db(config.MONGODB_DB));
   await store.initialise();
   const audit = new Audit(store, config.AUDIT_HMAC_SECRET);
@@ -49,10 +47,14 @@ async function start() {
     ? { kind: 'groq', baseURL: 'https://api.groq.com/openai/v1', apiKey: config.GROQ_API_KEY, model: config.GROQ_MODEL! }
     : { kind: 'ollama', baseURL: config.OLLAMA_URL, model: config.OLLAMA_MODEL! });
   const gateway = new Gateway({ scanner: new Scanner(detect), provider, audit, policies, vault, retrieve, approvals, restrictedOverlap, evalMode: config.EVAL_MODE });
-  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE });
+  const baseline = config.BASELINE_MODE ? new OfflineBaseline(provider, audit, async query => {
+    const documents = await client.db(config.MONGODB_DB).collection('chunks').find({ $text: { $search: query.slice(0, 4000) } }).sort({ _id: 1 }).limit(8).toArray();
+    return documents.map(d => d.text as string);
+  }) : undefined;
+  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline });
   const server = app.listen(config.PORT, config.HOST, () => safeLog('STARTED', { port: config.PORT }));
   const stop = () => {
-    server.close(() => { vault.close(); policies.close(); void client.close().then(() => process.exit(0)); });
+    server.close(() => { vault.close(); policies.close(); baseline?.close(); void client.close().then(() => process.exit(0)); });
     server.closeIdleConnections();
     setTimeout(() => process.exit(1), 10_000).unref();
   };

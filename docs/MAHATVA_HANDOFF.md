@@ -14,7 +14,9 @@ Checksum-only Aadhaar (`score < 0.8`) warns in both directions. Strong Aadhaar a
 
 ## Alwaz → gateway
 
-Set `RETRIEVAL_MODULE` to a module exporting:
+Your published `createRetriever`/`assembleChunks` API is now supported directly through `apps/gateway/src/access-adapter.ts`. Set `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` and `FINGERPRINT_KEY` to the seed key, and seed the configured `MONGODB_DB` (default `aevia`, while your standalone seed CLI currently defaults to `leakshield`). The adapter reloads users from Mongo, requests internal read-authorised chunks, rechecks their content hashes/ACLs, maps `document_id` to `doc_id`, and checks forbidden response shingles. JWTs from either the gateway issuer or `leakshield-seed` are supported when the database principal resolver is active. Token groups cannot override current Mongo memberships.
+
+A standalone module can alternatively export:
 
 ```ts
 retrieve(user: User, query: string): Promise<Chunk[]>
@@ -25,7 +27,9 @@ Use the shared `Chunk` type: `text`, `doc_id`, `allowed_groups`, `allowed_users`
 
 Any suspicious chunk removes the whole document from context. PII from documents is irreversibly redacted and never enters the user vault. `external_llm: deny` withholds an external call. Local Ollama can process read-authorised content under the local-provider policy. Provider permission is checked before approval, so an approval never overrides a deny.
 
-Set `APPROVALS_MODULE` to a module exporting an `approvals` object:
+The queue factory on your branch has a different replay interface from the gateway's minimal approval port. **Do not set `APPROVALS_MODULE` directly to your factory file yet.** A bridge must inject `revalidate`/`replay` callbacks that re-enter the full gateway pipeline, provide the ephemeral one-use grant consumed by `verifyAndConsume`, and register authenticated approve/reject/result routes. Until that bridge exists, requests correctly remain `require_approval` with zero provider calls.
+
+The gateway's standalone adapter port expects an `approvals` object:
 
 ```ts
 enqueue({ messages, chunks }, ctx): Promise<{ id: string; expires_at: string }>
@@ -44,7 +48,9 @@ The existing console works without source changes: gateway port **8080**, `/api/
 
 `POST /v1/scan` accepts `{ text }`; it is advisory and performs no provider call. It never proves the final assembled request is safe. `/v1/chat/completions` supports non-stream and buffered SSE text chat using the stock SDK and the `leakshield` model alias. Tools, images, arbitrary model destinations and unsupported options are rejected explicitly.
 
-For evaluation, set `EVAL_MODE=true` while bound to loopback, consume `captured_payload` from `/chat`, and store **only booleans/categories/timings** in reports. Provider-call counts include actual retry attempts. There is no public bypass switch; the baseline belongs in the offline eval runner.
+For evaluation, set `EVAL_MODE=true` or `1` while bound to loopback. `/api/chat` honors `X-Eval-Capture: 1` with the `eval.provider_calls`/`eval.provider_payload` object already used by your runner; `/chat` also exposes `captured_payload`. Store **only booleans/categories/timings**. API stage names include uppercase `LLM`, so the existing overhead calculation excludes model time correctly. Provider-call counts include actual retry attempts.
+
+For your runner's `--baseline`, use a **separate local process** with `BASELINE_MODE=true`, `EVAL_MODE=1` and synthetic seeded data. Only then does `X-LeakShield-Mode: passthrough` run naive Mongo text retrieval without ACLs, masking, quarantine or output checks. This mode is impossible on a public bind address or in the Compose service. Normal servers reject the header instead of silently returning protected results and misleading the comparison. Baseline histories are AES-GCM encrypted in memory and never logged. Full pipeline/runner integration is tested on dev fixtures with a simulated model; no frozen metrics are claimed.
 
 Mahatva contributed `D-001`–`D-007` and `H-001`–`H-024` under `eval/contributions/mahatva/`. Merge those with the existing root sets while checking duplicate IDs. The held-out contribution has not been used to tune gateway policy or detectors. Do not expose it to Ojaswi before the team's freeze.
 

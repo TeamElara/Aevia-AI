@@ -32,7 +32,7 @@ Edit the generated `.env` locally:
 2. Set `MONGODB_URI` for your MongoDB instance; the default is local Mongo on port 27017.
 3. Ensure Ojaswi's detector implementation is present at `packages/detectors/src/index.ts`, or set `DETECTOR_MODULE` to its module path. It must export `detectAll(text, ctx)`.
 4. For the **local synthetic demo only**, set `DEMO_AUTH=true` to enable the console's user switcher. This endpoint issues privileged demo identities without passwords; keep it disabled outside an isolated demo.
-5. Connect Alwaz's modules using `RETRIEVAL_MODULE` and `APPROVALS_MODULE` when available. Their contracts are in `types.ts` and the hand-off notes.
+5. For Alwaz's published retrieval factory, set `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` after his branch is merged, and seed the **same Mongo database** with the same `FINGERPRINT_KEY`. The adapter maps his chunks, rechecks hashes/ACLs, reloads user memberships and checks restricted-output fingerprints. A standalone `retrieve`/`restrictedOverlap` module is also supported. Approval storage still needs the bridge described in the hand-off notes; setting the factory module directly is not supported.
 
 ```sh
 npm run dev
@@ -74,7 +74,9 @@ Docker and Ollama were not installed on the development host used for this imple
 
 Both chat routes return final **plain text**. Never render answers with `innerHTML` or permit automatic remote image fetching. The existing console already renders plain text. `/v1` callers must enforce the same rule.
 
-The ordinary console response contains only the sanitised current user turn in `sent_to_model`. Full `captured_payload` is available only with `EVAL_MODE=true` on loopback; it contains permitted model context and private test markers. Consume it in memory, calculate leak booleans, and discard it. Never log or commit it. Baseline execution remains the eval runner owner's responsibility and is not exposed as a public bypass endpoint.
+The ordinary console response contains only the sanitised current user turn in `sent_to_model`. Full `captured_payload` on `/chat`, or `eval.provider_payload` on `/api/chat` with `X-Eval-Capture: 1`, is available only with `EVAL_MODE=true` (or `1`) on loopback. It contains permitted model context and private test markers. Consume it in memory, calculate leak booleans, and discard it. Never log or commit it.
+
+For the **unprotected comparison only**, start a separate local evaluation process with `HOST=127.0.0.1`, `EVAL_MODE=1`, `BASELINE_MODE=true` and synthetic seeded data. Then Arihant's existing `eval/run.mjs --baseline` header is supported. This deliberately omits ACL filtering, masking, quarantine and output checks, using the same provider; raw multi-turn history is encrypted in memory. Ordinary gateway instances reject that header explicitly. Baseline mode cannot start on a public bind address or in Compose. Keep it off for the actual demo and never use real records in this process.
 
 ## Verification
 
@@ -88,7 +90,7 @@ node eval/validate.mjs eval/contributions/mahatva/dev.jsonl eval/contributions/m
 
 Unit tests inject a deterministic fixture detector/provider. Integration tests use **real MongoDB**, the real HTTP provider adapter, and the stock OpenAI client, against a **simulated LLM HTTP server**. The first Mongo integration run may download a large MongoDB binary into a local cache. Detector hand-off tests run when the production detector module exists; otherwise they are explicitly skipped. `TEST_DETECTOR_MODULE` can point to a checkout of Ojaswi's branch without merging or editing it.
 
-The implementation was also checked against Ojaswi's published detector commit `3d18c1f` using development-only examples. No held-out cases were run for tuning. Mahatva's 7 dev and 24 held-out contributions live under `eval/contributions/mahatva/` for Arihant to assemble.
+The implementation was also checked against Ojaswi's published detector commit `21751c4` and Alwaz's published retrieval implementation using development-only examples and real Mongo. The existing evaluator was run end to end on Mahatva's **dev cases only**, in protected and baseline modes with a simulated model HTTP server; generated reports remained temporary. No held-out cases were run for tuning. Mahatva's 7 dev and 24 held-out contributions live under `eval/contributions/mahatva/` for Arihant to assemble.
 
 ## Limits
 

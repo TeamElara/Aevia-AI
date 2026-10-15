@@ -17,9 +17,11 @@ services:
     env_file: .env
     environment:
       HOST: 0.0.0.0
+      PORT: 8080
       MONGODB_URI: mongodb://mongo:27017
       OLLAMA_URL: http://host.docker.internal:11434/v1
       EVAL_MODE: "false"
+      BASELINE_MODE: "false"
     ports:
       - "127.0.0.1:8080:8080"
     extra_hosts:

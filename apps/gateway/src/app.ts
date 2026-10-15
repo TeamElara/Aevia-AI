@@ -6,12 +6,13 @@ import { Audit } from './audit.js';
 import { Auth, issueToken } from './auth.js';
 import { GatewayError } from './errors.js';
 import { Gateway } from './pipeline.js';
+import type { OfflineBaseline } from './baseline.js';
 import { PolicyStore } from './policy.js';
 
 const messages = z.array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().min(1).max(30_000) }).strict()).min(1).max(20);
 const chatSchema = z.object({ prompt: z.string().min(1).max(30_000), conversation_id: z.uuid().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict();
 const completionSchema = z.object({ model: z.literal('leakshield').default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
-interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; }
+interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; }
 const identity = (res: Response): User => res.locals.user as User;
 const admin = (res: Response): void => { if (!identity(res).groups.includes('admin')) throw new GatewayError('FORBIDDEN', 403); };
 export function createApp(options: Options) {
@@ -77,9 +78,12 @@ export function createApp(options: Options) {
   app.post('/chat', chat);
   app.post('/api/chat', async (req, res) => {
     // Never silently execute protected requests when the runner thinks it is measuring a baseline.
-    if (req.headers['x-leakshield-mode'] !== undefined) throw new GatewayError('OFFLINE_BASELINE_REQUIRED', 501);
+    const mode = req.headers['x-leakshield-mode'];
+    if (mode !== undefined && (mode !== 'passthrough' || !options.evalMode || !options.baseline)) throw new GatewayError('OFFLINE_BASELINE_REQUIRED', 501);
     const body = z.object({ message: z.string().min(1).max(30_000), conversation_id: z.uuid().nullable().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict().parse(req.body);
-    const result = await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id });
+    const result = mode === 'passthrough'
+      ? await options.baseline!.run(identity(res), body.message, body.conversation_id ?? undefined)
+      : await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id });
     const { findings, approval, captured_payload, ...rest } = result;
     const stageNames: Record<string, string> = { prompt: 'PII', retrieval: 'ACL', documents: 'Docs', outbound: 'Outbound', llm: 'LLM', response: 'Out', restore: 'Restore' };
     res.json({ ...rest, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,

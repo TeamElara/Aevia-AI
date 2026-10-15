@@ -7,3 +7,4 @@ dist/
 tmp/
 *.log
 .DS_Store
+seed/tokens.json
