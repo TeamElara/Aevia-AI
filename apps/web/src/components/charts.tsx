@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Single-series monochrome charts (one hue, so no legend; the title names the
 // series). Thin marks, 4px rounded data-ends, hairline recessive grid, per-mark
@@ -59,13 +59,13 @@ export function ColumnChart({
                 className="relative flex h-full flex-1 cursor-default items-end justify-center outline-none"
               >
                 <div
-                  className={`w-full max-w-[24px] rounded-t-[4px] transition-colors ${
-                    hover === i ? 'bg-fg' : 'bg-fg/70'
+                  className={`w-full max-w-[10px] origin-bottom animate-[grow_900ms_var(--ease-soft)_both] rounded-t-[4px] transition-colors ${
+                    hover === i ? 'bg-accent-2' : 'bg-accent'
                   }`}
-                  style={{ height: `${(d.value / max) * 100}%`, minHeight: d.value ? 2 : 0 }}
+                  style={{ height: `${(d.value / max) * 100}%`, minHeight: d.value ? 2 : 0, animationDelay: `${i * 18}ms` }}
                 />
                 {hover === i && (
-                  <div className="pointer-events-none absolute bottom-full z-10 mb-2 whitespace-nowrap rounded-[4px] border border-line-strong bg-void px-2.5 py-1.5 shadow-xl">
+                  <div className="pointer-events-none absolute bottom-full z-10 mb-2 animate-msg whitespace-nowrap rounded-[10px] border border-line bg-surface px-3 py-2 shadow-[var(--shadow)]">
                     <p className="text-[13px] font-medium text-fg">
                       {fmt(d.value)} <span className="font-normal text-muted">{valueLabel}</span>
                     </p>
@@ -110,7 +110,7 @@ export function BarList({
           <span className={`truncate font-mono text-[11px] ${hover === d.key ? 'text-fg' : 'text-muted'}`}>{d.label}</span>
           <div className="flex items-center gap-2">
             <div
-              className={`h-[10px] rounded-r-[4px] transition-colors ${hover === d.key ? 'bg-fg' : 'bg-fg/70'}`}
+              className={`h-[6px] origin-left animate-[grow-x_900ms_var(--ease-soft)_both] rounded-r-[4px] transition-colors ${hover === d.key ? 'bg-accent-2' : 'bg-accent'}`}
               style={{ width: `calc(${(d.value / max) * 100}% - 40px)`, minWidth: 2 }}
             />
             <span className="font-mono text-[11px] tabular-nums text-fg">{fmt(d.value)}</span>
@@ -122,15 +122,84 @@ export function BarList({
   )
 }
 
-// Number first, label under it, as in a "stats & facts" block.
-export function StatTile({ label, value, sub, hero }: { label: string; value: string; sub?: string; hero?: boolean }) {
+// Number first, label under it, as in a "stats & facts" block. As a tile it
+// sits in a card with any unit set small beside the number.
+export function StatTile({
+  label,
+  value,
+  sub,
+  hero,
+  tile,
+}: {
+  label: string
+  value: string
+  sub?: string
+  hero?: boolean
+  tile?: boolean
+}) {
+  const [, num, unit] = value.match(/^([\d.,]+)(\D.*)?$/) ?? [null, value, '']
+  const size = hero ? 'text-[clamp(52px,5.4vw,76px)]' : 'text-[clamp(32px,3vw,40px)]'
+  const number = (
+    <p className={`display text-fg ${size}`} aria-label={value}>
+      <span aria-hidden="true">
+        <CountUp value={num} />
+        {unit && <span className="ml-[0.06em] align-top text-[0.36em] tracking-[-0.02em]">{unit}</span>}
+      </span>
+    </p>
+  )
+  if (!tile)
+    return (
+      <div className="min-w-0">
+        {number}
+        <p className="mt-2 text-[12.5px] leading-snug text-fg">{label}</p>
+        {sub && <p className="mt-0.5 text-[12px] leading-snug text-faint">{sub}</p>}
+      </div>
+    )
   return (
-    <div className="min-w-0">
-      <p className={`display text-fg ${hero ? 'text-[clamp(56px,6vw,88px)]' : 'text-[clamp(36px,3.6vw,52px)]'}`}>{value}</p>
-      <p className="mt-3 text-[12px] leading-snug text-fg">{label}</p>
-      {sub && <p className="mt-0.5 text-[11px] leading-snug text-faint">{sub}</p>}
+    <div className="card flex min-w-0 flex-col gap-4 p-5">
+      <p className="label">{label}</p>
+      {number}
+      {sub && (
+        <p className="flex items-center gap-2 border-t border-line-2 pt-3 text-[12.5px] leading-snug text-faint">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+          {sub}
+        </p>
+      )}
     </div>
   )
+}
+
+// Counts up to a plain number the first time it shows and whenever it changes.
+// Anything that is not a plain number is shown as is.
+function CountUp({ value }: { value: string }) {
+  const target = /^[\d,]+(\.\d+)?$/.test(value) ? Number(value.replace(/,/g, '')) : null
+  const decimals = value.split('.')[1]?.length ?? 0
+  const [shown, setShown] = useState(target ?? 0)
+  const from = useRef(0)
+
+  useEffect(() => {
+    if (target == null) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(target)
+      from.current = target
+      return
+    }
+    const start = performance.now()
+    const begin = from.current
+    let raf = 0
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 1100)
+      const eased = 1 - (1 - t) ** 4
+      setShown(begin + (target - begin) * eased)
+      if (t < 1) raf = requestAnimationFrame(step)
+      else from.current = target
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target])
+
+  if (target == null) return <>{value}</>
+  return <>{shown.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</>
 }
 
 function SrTable({ caption, rows }: { caption: string; rows: [string, number][] }) {
