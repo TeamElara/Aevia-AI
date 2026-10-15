@@ -16,6 +16,20 @@ For the judge: “Masked prompts and approved content do reach Groq. The real AP
 
 The key was disclosed in chat and should be rotated after testing; never paste it into the group, a deck or a GitHub comment. API authorization does not create a Groq console session. The earlier browser gate denial was not bypassed.
 
+## Account owner confirmation
+
+For the account owner to complete; no organization setting is inferred or filled in here.
+
+| Field | Confirmation |
+| --- | --- |
+| Date | |
+| Verifier | |
+| ZDR on/off | |
+| RPM | |
+| RPD | |
+| TPM | |
+| TPD | |
+
 ## Historical records
 
 # Groq Q&A evidence — 15 October 2026

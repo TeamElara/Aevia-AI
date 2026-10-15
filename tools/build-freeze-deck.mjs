@@ -23,6 +23,11 @@ const table = (id, rows) => rows.forEach((row, i) => row.forEach((text, j) => {
   const cell = p.resolve(id).getCell(i, j); cell.text.replace(String(cell.text), String(text));
 }));
 set('sh/k3yl0zql', 'Arihant · Mahatva · Ojaswi · Alwaz · CyberCUP 6.0');
+const taglineText = 'Your AI does the work. It never sees the real data.';
+const tagline = info.records.find(record => record.slideIndex === 0 &&
+  ['Control which documents reach the model.', taglineText].includes(record.text?.replace(/\s+/g, ' ').trim()));
+if (!tagline) throw new Error('Expected cover tagline was not found');
+p.resolve(tagline.id).text.replace(tagline.text, taglineText);
 set('sh/ts7md4r2', 'Real Groq evidence · eval-freeze-v2 · 15 October 2026');
 set('sh/t8byxkn2', 'Real Groq and local fallback are separate, explicitly selected providers.');
 set('sh/xk7qlczu', 'Outbound\ninspection');
@@ -42,7 +47,7 @@ set('sh/ri9g7uhw', 'Real Groq evaluation; versioned frozen source; rules-only cl
 set('sh/6h0fypgb', 'Remaining: admin-confirmed ZDR and a joint Arihant/Ojaswi rehearsal. Proposed times are not booked.');
 set('sh/tkby9kzm', 'Approved content reaches Groq. Finite tests do not prove zero leakage. Fingerprints catch copying, not arbitrary paraphrases.');
 const notes = [
-  'Team roles and five-minute narration: docs/REHEARSAL-AND-NARRATION.md. Frozen source eval-freeze-v2 = 05d1afc5cda7309edbc7c733aaca42353128788f, 15 Oct 2026 17:02:11 IST. Do not apply these results to changed decision code.',
+  'Team roles, rehearsal checklist and the single narration script: docs/DEMO.md. Backup video owner: Mahatva (TEAM.md). Frozen source eval-freeze-v2 = 05d1afc5cda7309edbc7c733aaca42353128788f, 15 Oct 2026 17:02:11 IST. Do not apply these results to changed decision code.',
   'Authenticated memberships, ACL-before-top-k, relevance gating, assembly checks, outbound scan, provider, output scan, exact scoped restore and link cleaning. Approval replay follows the same pipeline. Source: apps/gateway/src and docs/ALWAZ-CONTINUATION.md.',
   'Explicit attachment expectations: eval/expectations.mjs. Local processing is distinct from external transmission. Admin role grants approval authority, not document read access.',
   'Source: apps/gateway/src/approvals and approval-bridge.ts. Ten-minute encrypted memory queue, hash-bound single replay, metadata-only Mongo and fresh ACL/quarantine checks at completed-result polling. Restart discards ephemeral state.',
