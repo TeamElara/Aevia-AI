@@ -38,7 +38,7 @@ if (!scan.ok) {
 
 ### Classifier in the gateway (no gateway code change)
 
-Alwaz's spike (`docs/CLASSIFIER-DECISION.md`) found Node ONNX works: fp32 warm p95 ≈ 12 ms, q8 ≈ 8 ms per prompt, ~2 s load. To turn it on:
+Alwaz's spike (`docs/CLASSIFIER-DECISION.md`) found Node ONNX fp32 works: warm p95 ≈ 12 ms per prompt, ~2 s load. To turn it on:
 
 ```bash
 npm install @huggingface/transformers          # optional peer dependency
@@ -47,7 +47,8 @@ LEAKSHIELD_CLASSIFIER=fp32 \
 npm start
 ```
 
-- `LEAKSHIELD_CLASSIFIER`: `off` (default, rules only), `fp32` (pinned upstream revision, ~713 MB download on first run), or `q8` together with `LEAKSHIELD_CLASSIFIER_MODEL=<local int8 model>`. `LEAKSHIELD_CLASSIFIER_CACHE` sets the cache directory.
+- `LEAKSHIELD_CLASSIFIER`: `off` (default, rules only) or `fp32` (pinned upstream revision, ~713 MB download on first run). `q8` is refused at startup: in the spike the int8 model labelled all three recorded attacks SAFE (`docs/CLASSIFIER-GATEWAY.md`). `LEAKSHIELD_CLASSIFIER_CACHE` sets the cache directory.
+- The production gateway enables the same backend with `CLASSIFIER_BACKEND=node` (`apps/gateway/src/classifier-adapter.ts` calls `createTransformersClassifier`).
 - The model loads once when the gateway imports the module. If it fails to load, the import throws and the gateway reports not-ready. It does not silently fall back to rules only.
 - Only user text (`prompt`, `history`) is classified, and only when the rules haven't already blocked. Documents are scored at ingest; responses aren't classified.
 - A window over 512 tokens is split again rather than truncated, so an attack at the end of a dense Hinglish or code prompt is still read.
