@@ -1,3 +1,5 @@
+> Current final status: see [EVAL-FREEZE-V2.md](EVAL-FREEZE-V2.md) and [v2 real-Groq results](../results/freeze-v2-groq/RESULTS.md). Historical checkpoints below remain unchanged.
+
 > Current continuation evidence: [ALWAZ-CONTINUATION.md](ALWAZ-CONTINUATION.md). Earlier snapshots below are historical.
 
 # Full merged gateway status

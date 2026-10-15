@@ -1,0 +1,38 @@
+{
+  "frozen": true,
+  "freeze_tag": "eval-freeze-v2",
+  "freeze_commit": "05d1afc5cda7309edbc7c733aaca42353128788f",
+  "freeze_scope": [
+    "types.ts",
+    "apps/gateway/src",
+    "apps/gateway/policy.yaml",
+    "packages/detectors/src",
+    "seed/corpus.js",
+    "eval/*.mjs",
+    "eval/*.jsonl"
+  ],
+  "freeze_time_IST": "2026-10-15 17:02:11 +05:30",
+  "freeze_time_UTC": "2026-10-15 11:32:11 UTC",
+  "provider": "real Groq",
+  "model": "openai/gpt-oss-20b",
+  "classifier": "none",
+  "max_output_tokens": 1024,
+  "platform": "darwin/arm64",
+  "node": "v24.19.0",
+  "cpu": "Apple M3",
+  "memory_GiB": 8,
+  "sha256": {
+    "package.json": "46e8eca02e5f4fcc3f3e930647550116d0a1e4ab4703b4900aa2dadcdeb1061a",
+    "package-lock.json": "17dac554c932e240d0539e60eb6316f918d4fd2ee0e0057013f6a906bec97b4b",
+    "types.ts": "2e58122a8fcb989417f90739a223cc8fb3df3bdfa1522301bc6f95225d1d18cf",
+    "apps/gateway/policy.yaml": "21d106fa14d3b4106185dcd2e86cd881457dd75071ff263b053ad80a0f8096da",
+    "seed/corpus.js": "3c2d8d84e199bd85c54c424f6882592444ce419bfd6cda72bcef2559b94ffadf",
+    "eval/dev.jsonl": "3b84526d42d9f7e13f600c2dd1079d9dcab55fd06978f052b04b036d59bc5572",
+    "eval/heldout.jsonl": "10e85e30481d81e058debff1c5bde0143baf25da411c35ded860565e96ed08ff",
+    "eval/robustness.jsonl": "ab3f44d66f15fe6a9b0a0bd6d7a0743473d5f9e3fe4e5365d0e6d3256e19aeb3",
+    "eval/checks.mjs": "b0d2e97559c264f5e2089ca7874f0a3bfdb6ee20ca0b076fffa4952e392109c6",
+    "eval/expectations.mjs": "cc2f0336ee77d2a5e33ec7030af7ae38687a74984e3ea33682841cb7dd3dd49c"
+  },
+  "measurement": "Instrumented stage sum excluding model; excludes uninstrumented audit/vault work. Final-request wall timing excludes deliberate quota pacing but may include retries.",
+  "independence": "Team-authored sets with prior development exposure; not independently blinded."
+}
