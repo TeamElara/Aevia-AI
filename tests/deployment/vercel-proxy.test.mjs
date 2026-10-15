@@ -3,15 +3,16 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import handler from '../../api/gateway.js';
-const originalFetch = globalThis.fetch, originalGateway = process.env.GATEWAY_URL;
+const originalFetch = globalThis.fetch, originalGateway = process.env.GATEWAY_URL, originalProxySecret = process.env.GATEWAY_PROXY_SECRET;
 const server = createServer(handler).listen(0, '127.0.0.1');
 await once(server, 'listening');
 const base = `http://127.0.0.1:${server.address().port}`;
 const call = (path, init) => originalFetch(base + path, init);
-beforeEach(() => { delete process.env.GATEWAY_URL; globalThis.fetch = originalFetch; });
+beforeEach(() => { delete process.env.GATEWAY_URL; delete process.env.GATEWAY_PROXY_SECRET; globalThis.fetch = originalFetch; });
 after(async () => {
   globalThis.fetch = originalFetch;
   if (originalGateway === undefined) delete process.env.GATEWAY_URL; else process.env.GATEWAY_URL = originalGateway;
+  if (originalProxySecret === undefined) delete process.env.GATEWAY_PROXY_SECRET; else process.env.GATEWAY_PROXY_SECRET = originalProxySecret;
   server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
 });
 test('unconfigured gateway returns explicit JSON rather than pretending to run a model', async () => {
@@ -48,4 +49,13 @@ test('SSE bytes and rate-limit status survive the transport', async () => {
 test('upstream failures return a stable error without leaking transport details', async () => {
   process.env.GATEWAY_URL = 'https://gateway.example'; globalThis.fetch = async () => { throw new Error('private transport detail'); };
   const r = await call('/api/gateway?route=/api/health'); assert.equal(r.status, 502); assert.deepEqual(await r.json(), { error: 'GATEWAY_UNREACHABLE' });
+});
+test('only the server-owned proxy credential is forwarded, even when a client spoofs it', async () => {
+  process.env.GATEWAY_URL = 'https://gateway.example'; process.env.GATEWAY_PROXY_SECRET = 'synthetic-server-owned-test-secret';
+  globalThis.fetch = async (_url, options) => {
+    assert.equal(options.headers['x-leakshield-proxy-secret'], process.env.GATEWAY_PROXY_SECRET);
+    return Response.json({ ok: true });
+  };
+  const result = await call('/api/gateway?route=/api/health', { headers: { 'x-leakshield-proxy-secret': 'forged-client-copy' } });
+  assert.equal(result.status, 200);
 });

@@ -12,11 +12,12 @@ import type { ApprovalBridge } from './approval-bridge.js';
 import type { Delegations } from './delegation.js';
 import { MAX_FILE_BYTES, type Attachments } from './attachments.js';
 import type { SecurityEscalation } from './security-escalation.js';
+import { proxyAuth } from './proxy-auth.js';
 
 const messages = z.array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().min(1).max(30_000) }).strict()).min(1).max(20);
 const chatSchema = z.object({ prompt: z.string().min(1).max(30_000), conversation_id: z.uuid().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict();
 const completionSchema = z.object({ model: z.string().min(1).max(100).default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
-interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated' | 'groq' | 'ollama'; delegations?: Delegations; attachments?: Attachments; securityEscalation?: SecurityEscalation; }
+interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; proxySecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated' | 'groq' | 'ollama'; delegations?: Delegations; attachments?: Attachments; securityEscalation?: SecurityEscalation; }
 const identity = (res: Response): User => res.locals.user as User;
 const admin = (res: Response): void => { if (!identity(res).groups.includes('admin')) throw new GatewayError('FORBIDDEN', 403); };
 const consoleStages = (stages: Record<string, number>) => {
@@ -28,6 +29,7 @@ export function createApp(options: Options) {
   app.disable('x-powered-by');
   app.use(helmet());
   app.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
+  app.use(proxyAuth(options.proxySecret));
   app.use((req, res, next) => {
     if (req.headers.origin) {
       if (req.headers.origin !== options.corsOrigin) return res.status(403).json({ error: { code: 'ORIGIN_NOT_ALLOWED' } });

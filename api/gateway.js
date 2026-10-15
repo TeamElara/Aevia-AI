@@ -28,6 +28,8 @@ export default async function handler(req, res) {
   for (const name of ['authorization', 'content-type', 'accept', 'origin', 'x-eval-capture', 'x-leakshield-mode']) {
     if (typeof req.headers[name] === 'string') headers[name] = req.headers[name];
   }
+  // Client-supplied copies are deliberately ignored; only the server owns this credential.
+  if (process.env.GATEWAY_PROXY_SECRET) headers['x-leakshield-proxy-secret'] = process.env.GATEWAY_PROXY_SECRET;
   let body;
   if (req.method !== 'GET' && req.method !== 'OPTIONS') {
     if (req.body !== undefined) body = Buffer.isBuffer(req.body) || typeof req.body === 'string' ? req.body : JSON.stringify(req.body);

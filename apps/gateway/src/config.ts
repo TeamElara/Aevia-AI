@@ -19,6 +19,7 @@ const envSchema = z.object({
   EVAL_MODE: z.enum(['true', 'false', '1', '0']).default('false').transform(v => v === 'true' || v === '1'),
   DEMO_AUTH: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   BASELINE_MODE: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
+  GATEWAY_PROXY_SECRET: z.string().min(32).max(256).optional(),
   // Unset means on wherever it can work (DB-backed identities, not baseline). Set false to turn it off.
   SECURITY_ESCALATION_ENABLED: z.enum(['true', 'false']).optional(),
   SECURITY_HIERARCHY_PATH: z.string().default('apps/gateway/security-hierarchy.json'),

@@ -76,7 +76,7 @@ async function start() {
     const documents = await client.db(config.MONGODB_DB).collection('chunks').find(documentId ? { document_id: documentId } : { $text: { $search: query.slice(0, 4000) } }).sort({ _id: 1 }).limit(8).toArray();
     return documents.map(d => d.text as string);
   }) : undefined;
-  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER, delegations, attachments, securityEscalation });
+  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, proxySecret: config.GATEWAY_PROXY_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER, delegations, attachments, securityEscalation });
   const server = app.listen(config.PORT, config.HOST, () => safeLog('STARTED', { port: config.PORT }));
   const stop = () => {
     server.close(() => { vault.close(); policies.close(); baseline?.close(); approvalBridge?.close(); securityEscalation?.close(); void attachments.close(); void classifier?.close(); void client.close().then(() => process.exit(0)); });
