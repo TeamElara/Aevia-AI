@@ -2,13 +2,21 @@
 // The backend is pluggable because Alwaz's spike decides it: ONNX in Node, int8 ONNX, or a Python sidecar.
 // The model reads 512 tokens; we split by characters with overlap so an attack at the end isn't truncated away.
 
+import { detectAll } from './detect';
+import { injectionScore } from './injection';
 import { INJECTION_BLOCK, type DetectorContext, type Finding } from './types';
 
 export interface InjectionClassifier {
   name: string;
   /** Probability that each text is an injection, 0..1, same order as the input. */
   scoreBatch(texts: string[]): Promise<number[]>;
+  close?(): Promise<void> | void;
 }
+
+// Pinned in Alwaz's spike (docs/CLASSIFIER-DECISION.md on codex/alwaz-access-approvals).
+export const CLASSIFIER_MODEL = 'protectai/deberta-v3-base-prompt-injection-v2';
+export const CLASSIFIER_REVISION = '90c9989b1a342275dd0d1a95aad283c04e075671';
+export const MAX_MODEL_TOKENS = 512;
 
 export interface Window {
   start: number;
@@ -117,27 +125,87 @@ export function createHttpClassifier(url: string, name = 'sidecar'): InjectionCl
 }
 
 /**
- * In-process ONNX classifier via @huggingface/transformers. NOT a dependency of this package:
- * install it in the gateway only if the spike passes. Untested here until then.
- * The model labels are INJECTION / SAFE; we return P(INJECTION).
+ * Score `text` with a model that accepts at most `limit` tokens, without truncating.
+ * A window that tokenises too long (dense Hinglish, code, hex) is split in two with a small overlap
+ * and the higher score wins, so nothing at the end is silently dropped.
  */
-export async function createTransformersClassifier(
-  model = 'protectai/deberta-v3-base-prompt-injection-v2',
-  options: Record<string, unknown> = {},
-): Promise<InjectionClassifier> {
+export async function scoreWithTokenLimit(
+  text: string,
+  countTokens: (t: string) => Promise<number>,
+  score: (t: string) => Promise<number>,
+  limit = MAX_MODEL_TOKENS,
+  depth = 0,
+): Promise<number> {
+  if ((await countTokens(text)) <= limit) return score(text);
+  if (depth >= 8 || text.length < 32) throw new Error('window cannot be reduced under the token limit');
+  const mid = text.length >> 1;
+  const ws = text.lastIndexOf(' ', mid);
+  const cut = ws > text.length / 4 ? ws : mid;
+  const overlap = Math.min(100, cut >> 2);
+  const left = text.slice(0, cut);
+  const right = text.slice(Math.max(0, cut - overlap));
+  const a = await scoreWithTokenLimit(left, countTokens, score, limit, depth + 1);
+  const b = await scoreWithTokenLimit(right, countTokens, score, limit, depth + 1);
+  return Math.max(a, b);
+}
+
+export interface TransformersClassifierOptions {
+  /** 'fp32' loads the pinned upstream model; 'q8' needs a locally quantised model (see Alwaz's spike). */
+  dtype?: 'fp32' | 'q8' | string;
+  cacheDir?: string;
+  /** Path or id of a local model, e.g. the int8 export. Skips the pinned revision. */
+  localModel?: string;
+  revision?: string;
+}
+
+/**
+ * In-process ONNX classifier via @huggingface/transformers, configured as in the spike:
+ * pinned revision, CPU, labels read with top_k: 2, P(INJECTION) returned.
+ * `@huggingface/transformers` is an optional peer dependency; first load downloads ~713 MB (fp32).
+ */
+export async function createTransformersClassifier(opts: TransformersClassifierOptions = {}): Promise<InjectionClassifier> {
   const pkg = '@huggingface/transformers';
   const mod: any = await import(/* @vite-ignore */ pkg);
-  const pipe = await mod.pipeline('text-classification', model, options);
+  if (opts.cacheDir) mod.env.cacheDir = opts.cacheDir;
+  const model = opts.localModel ?? CLASSIFIER_MODEL;
+  const pipe = await mod.pipeline('text-classification', model, {
+    revision: opts.localModel ? undefined : (opts.revision ?? CLASSIFIER_REVISION),
+    dtype: opts.dtype ?? 'fp32',
+    device: 'cpu',
+  });
+  const countTokens = async (t: string): Promise<number> => (await pipe.tokenizer(t)).input_ids.dims.at(-1);
+  const score = async (t: string): Promise<number> => {
+    const rows = await pipe(t, { top_k: 2 });
+    const injection = (rows as Array<{ label: string; score: number }>).find((r) => r.label === 'INJECTION');
+    if (!injection || !Number.isFinite(injection.score)) throw new Error('unknown classifier label contract');
+    return injection.score;
+  };
   return {
     name: 'deberta',
     async scoreBatch(texts) {
       const out: number[] = [];
-      for (const t of texts) {
-        const r = await pipe(t, { truncation: true, max_length: 512 });
-        const top = Array.isArray(r) ? r[0] : r;
-        out.push(top.label === 'INJECTION' ? top.score : 1 - top.score);
-      }
+      for (const t of texts) out.push(await scoreWithTokenLimit(t, countTokens, score));
       return out;
     },
+    close: () => pipe.dispose?.(),
   };
+}
+
+/**
+ * Rules first, then the classifier for user text (prompt and history) when the rules haven't already blocked.
+ * Documents are scored once at ingest and model responses aren't classified. Throws if the classifier
+ * times out or errors, so the gateway's scanner fails the request closed.
+ */
+export async function detectWithClassifier(
+  text: string,
+  ctx: DetectorContext,
+  classifier: InjectionClassifier | null,
+  opts: { timeoutMs?: number } = {},
+): Promise<Finding[]> {
+  const findings = detectAll(text, ctx);
+  if (!classifier || (ctx.source !== 'prompt' && ctx.source !== 'history') || !text.trim()) return findings;
+  if (!shouldRunClassifier(injectionScore(findings))) return findings;
+  const r = await classifyInjection(text, ctx, classifier, opts);
+  if (r.ok === false) throw new Error(`classifier ${r.error}`);
+  return r.finding ? [...findings, r.finding] : findings;
 }

@@ -4,7 +4,7 @@ Mahatva’s gateway has now landed and is merged here. `approvals/gateway.js` br
 
 Four additional full-gateway tests exercise actual Mongo, Ojaswi detectors, Mahatva’s vault/audit/policy/Express app, Alwaz retrieval, the approval bridge, and a real loopback HTTP provider fixture. They verify single replay/hash binding, revoked membership, rejection, stats, and five-value audit/approval privacy. `npm run demo:gateway` starts that merged application without a cloud key and labels its provider as simulated. The original isolated host below remains a diagnostic reference, not the production entry point. The merged production gateway already provides `/v1`, dashboard SSE/stats, policy reload and isolated baseline support.
 
-Validation: 219 default tests plus 21 real-service integration tests pass. The root dev and held-out datasets now contain 20 and 60 cases after adding Mahatva’s contributions. Remaining external evidence: authenticated Groq settings, real-model calls, final frozen robustness/baseline/rehearsal. No global eval-freeze tag or independent headline metrics are claimed.
+Validation: 410 default tests plus 21 real-service integration tests pass (431 total). The root dev and held-out datasets now contain 20 and 60 cases after adding Mahatva’s contributions. Remaining external evidence: authenticated Groq settings, real-model calls, final frozen robustness/baseline/rehearsal. No global eval-freeze tag or independent headline metrics are claimed.
 
 # Alwaz access and approvals integration
 
@@ -18,7 +18,7 @@ Validation: 219 default tests plus 21 real-service integration tests pass. The r
 
 ## Integration and runtime
 
-Ojaswi’s branch at `21751c44bafde2f609fed3a1d9d76508037ebb62` was merged without modifying detector source. `retrieval/integration/scanners.ts` uses that real detector contract. It scans the complete assembled payload and each message with source context, masks PII into the conversation vault, blocks credentials/injection, checks buffered responses, restores exact known tokens only when origins remain authorized, and removes unsafe links afterward. Unknown/lookalike tokens remain literal. Split secrets are checked over the last three user turns. The vault is memory-only, scoped to user + conversation, bounded and expires after thirty minutes.
+The latest detector PR #3 is merged through `main` at `7d1e305`; detector source is preserved. The optional Transformers peer range also accepts the v4 runtime already used by the classifier spike. `retrieval/integration/scanners.ts` uses that real detector contract. It scans the complete assembled payload and each message with source context, masks PII into the conversation vault, blocks credentials/injection, checks buffered responses, restores exact known tokens only when origins remain authorized, and removes unsafe links afterward. Unknown/lookalike tokens remain literal. Split secrets are checked over the last three user turns. The vault is memory-only, scoped to user + conversation, bounded and expires after thirty minutes.
 
 `createAccessService` still accepts required outbound/response scanner and provider callbacks for integration into the team's gateway. The reference host now supplies the real scanners. A scanner failure stops processing. Secrets block before an approval can be queued. Optional provider capture is memory/in-session only; the HTTP host exposes it only in explicit eval mode with the capture header. Reports retain booleans and timing metadata, never payloads.
 
@@ -32,7 +32,7 @@ Pending requests use AES-256-GCM with per-process key, unique IV and approval-ID
 
 ## Evidence and external dependencies
 
-The combined suite has 143 access/detector/reference-host tests, plus 72 gateway unit tests and 4 full-gateway bridge tests (219 default tests), plus 21 real-service integration tests. All eight PLAN §10 integration boundaries are represented using the actual detector package and simulated provider responses. Five seeded values have zero hits across the integration audit, incidents, approval metadata and captured logs. The real production team's eventual stores/logging still require equivalent validation when integrated.
+The combined suite has 410 default tests, including the latest detector regression, benign-corpus and real-gateway privacy tests, plus 21 real-service integration tests. All eight PLAN §10 integration boundaries are represented using the actual detector package and simulated provider responses. Five seeded values have zero hits across the integration audit, incidents, approval metadata and captured logs. Four full-gateway bridge checks also validate the actual audit and approval stores with a simulated upstream.
 
 All 37 access fixtures pass through real HTTP, JWT, Mongo, actual detectors and the scoped vault. These are unfrozen development fixtures, not independent headline accuracy or baseline metrics. Mahatva’s contributions are now merged into the root datasets; the team’s complete robustness and live-subset files have also arrived. A coordinated freeze and real-model evaluation are still needed. Arihant’s Hinglish and Alwaz’s paraphrase cases have distinct ID ranges. No detector tuning or global eval-freeze tag was performed. The local clean-copy check is not a second-laptop rehearsal.
 

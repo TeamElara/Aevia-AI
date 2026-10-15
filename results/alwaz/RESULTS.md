@@ -5,7 +5,7 @@
 | Check | Observed |
 | --- | --- |
 | Standalone access tests | 20 passed, 0 failed |
-| Combined default suite | 219 passed, 0 failed |
+| Combined default suite | 410 passed, 0 failed |
 | Additional real-service integration suite | 21 passed, 0 failed |
 | Access fixture behavior | 37/37 expected access actions |
 | Seeded documents / quarantined | 10 / 2 |
@@ -25,3 +25,5 @@ All 37/37 fixtures now pass with real HTTP + JWT + Mongo + the actual detector p
 The five-value privacy scan of audit, incidents, approval metadata and captured logs passes. The eight required integration boundaries are covered with simulated responses. Reproduce the HTTP report using `pnpm test:integration:report`.
 
 The actual merged gateway now has a tested encrypted approval bridge. Four full-gateway checks use actual source modules and a real loopback HTTP provider fixture; no actual Groq/Ollama model inference is claimed. The 37-case timing report above remains specifically the reference-host development measurement, not the full merged gateway’s frozen overhead.
+
+Latest combined test count includes detector PR #3 merged from main (`7d1e305`): 410 default plus 21 additional integration tests (431 total). Earlier timing JSON and slide counts remain historical measurements, not a new benchmark.
