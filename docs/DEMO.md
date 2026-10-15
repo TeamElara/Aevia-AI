@@ -50,3 +50,19 @@ Verification on 15 October 2026: **10/10 consecutive fresh-conversation requests
 - **"Seedha chatgpt.com pe type kiya toh?"** The gateway covers company apps and our chat. For chatgpt.com, the browser extension masks the text before it is sent (stretch; show it only if it passed the 17:00 check). Companies usually also block chatgpt.com and give employees an internal chat.
 - **"Groq ko data jaata hai?"** Only tokens and approved content. Approved confidential content does reach Groq; that is why it needs an admin decision. Say what Groq retains (checked in hour 0).
 - **"ML model train kiya?"** No training from scratch in 24 hours. We tested the pretrained DeBERTa-v3 injection classifier with the real model: it caught paraphrased attacks our rules missed, but flagged 19 of our 110 normal prompts (code with `password` variables, "ignore the typo"), and its scores did not separate attacks from normal work. So it is off by default (`results/ojaswi/classifier-check.md`), and we added rules for the attack families it was catching. Detection runs on rules, the ACL boundary and quarantine, and is measured on the frozen held-out set. Fine-tuning on Hinglish and office text is the next step.
+
+## Garuda approval verification
+
+15 October 2026, 19:09 IST: fresh remote-main clone at `fbc4691`, production gateway through the existing isolated validation host, temporary seeded MongoDB, real Groq `openai/gpt-oss-120b`, classifier `none`, baseline disabled. This is a post-freeze HTTP smoke check, not a new frozen evaluation.
+
+| Check | Observed |
+| --- | --- |
+| Meera submits the Garuda starter from the running order | `require_approval`, 0 provider calls |
+| Meera polls her own request before approval | HTTP 202 |
+| Admin approves the pending item's exact request hash | HTTP 200, `approved` |
+| Meera reads the result in the original conversation | HTTP 200, `allow`, nonempty answer, 1 provider call |
+| Meera attempts a second result read | HTTP 404; result is single-use |
+
+The browser attempt to open `http://localhost:5173` returned `net::ERR_BLOCKED_BY_CLIENT`. Therefore **the click-through UI check and screenshots are still pending**; no browser success or full end-to-end console rehearsal is claimed. The API smoke did not reproduce a gateway failure, so no product-bug issue was filed. No gateway or web code was changed.
+
+For the outstanding UI check, keep Meera selected, submit the existing Garuda starter, capture the pending badge and zero calls, open **Approvals**, approve the matching item, then return to **Chat** as Meera and wait for result polling. Approvals uses its own admin session; switching the Chat avatar or refreshing clears the original conversation and is not part of this scene. Capture both the approval state and Meera's returned answer/one-call counter using synthetic fixtures only. If the result fails, file an issue with revision, provider/model, action/call counters and safe screenshots; do not change decision code.
