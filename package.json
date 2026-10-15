@@ -28,6 +28,8 @@
     "demo:access": "node --import tsx seed/run-access-demo.mjs",
     "demo:gateway": "node --import tsx seed/run-gateway-demo.ts",
     "verify:ollama": "tsx seed/verify-ollama.ts",
+    "rehearse:groq": "tsx tools/validation-host.ts",
+    "rehearse:ollama": "tsx tools/validation-host.ts --ollama",
     "test:integration:report": "WRITE_GATEWAY_RESULTS=1 vitest run tests/integration",
     "typecheck:access": "tsc -p tsconfig.access.json"
   },

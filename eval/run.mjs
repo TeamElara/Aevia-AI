@@ -100,6 +100,8 @@ async function runCase(client, c) {
     const r = await client.chat(token, { conversation_id, message: turn })
     conversation_id = r.conversation_id
   }
+  // Keep optional quota pacing outside the measured final-request wall time.
+  if (!MOCK && nextChatAt > Date.now()) await sleep(nextChatAt - Date.now())
   const started = performance.now()
   const res = await client.chat(token, { conversation_id, message: c.prompt, attached_doc: c.attached_doc ?? undefined })
   const wall = performance.now() - started

@@ -12,6 +12,7 @@ type Case = {
   category: string
   user: string
   history?: string[]
+  attached_doc?: string | null
   prompt: string
   expected_action: Action
   expected_categories: string[]
@@ -99,7 +100,7 @@ export function EvalView() {
         for (const turn of c.history ?? []) {
           conversation_id = (await chat(s.backend, s.token, { conversation_id, message: turn })).conversation_id
         }
-        const res = await chat(s.backend, s.token, { conversation_id, message: c.prompt }, { evalCapture: true })
+        const res = await chat(s.backend, s.token, { conversation_id, message: c.prompt, attached_doc: c.attached_doc }, { evalCapture: true })
         setRows((r) => ({ ...r, [c.id]: { status: 'done', ...judge(c, res) } }))
       } catch (e) {
         setRows((r) => ({ ...r, [c.id]: { status: 'error', error: (e as Error).message } }))

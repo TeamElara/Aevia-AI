@@ -17,6 +17,7 @@ export function OverviewView() {
   const [windowMin, setWindowMin] = useState(60)
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(false)
+  const [statsError, setStatsError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
 
   // Refresh on a timer and whenever a new audit event arrives.
@@ -35,7 +36,8 @@ export function OverviewView() {
     let cancelled = false
     setLoading(true)
     getStats(admin.backend, admin.token, windowMin)
-      .then((s) => !cancelled && setStats(s))
+      .then((s) => { if (!cancelled) { setStats(s); setStatsError(null) } })
+      .catch(() => { if (!cancelled) setStatsError('Statistics unavailable. Check the gateway connection.') })
       .finally(() => !cancelled && setLoading(false))
     return () => {
       cancelled = true
@@ -74,6 +76,8 @@ export function OverviewView() {
           {error ? `Error: ${error}` : `Policy v${stats?.policy_version ?? '–'}${admin?.backend === 'mock' ? ' · mock data' : ''}`}
         </p>
       </Masthead>
+
+      {statsError && <p role="alert" className="px-5 text-[13px] text-muted">{statsError}</p>}
 
       <div className={`flex flex-col gap-3 transition-opacity ${loading && stats ? 'opacity-60' : ''}`}>
         <section className="ink grid grid-cols-1 gap-x-6 gap-y-8 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1fr_3fr]">

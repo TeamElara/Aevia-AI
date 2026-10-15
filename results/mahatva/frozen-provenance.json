@@ -1,0 +1,20 @@
+{
+  "freeze_tag": "eval-freeze",
+  "freeze_commit": "772a7aff556663a45a8f0904137e0932cd65b177",
+  "provider": "real Groq",
+  "model": "openai/gpt-oss-20b",
+  "classifier": "none",
+  "max_output_tokens": 1024,
+  "platform": "win32/x64",
+  "node": "v26.3.0",
+  "files_sha256": {
+    "eval/heldout.jsonl": "10e85e30481d81e058debff1c5bde0143baf25da411c35ded860565e96ed08ff",
+    "eval/robustness.jsonl": "ab3f44d66f15fe6a9b0a0bd6d7a0743473d5f9e3fe4e5365d0e6d3256e19aeb3",
+    "eval/dev.jsonl": "3b84526d42d9f7e13f600c2dd1079d9dcab55fd06978f052b04b036d59bc5572",
+    "seed/corpus.js": "3c2d8d84e199bd85c54c424f6882592444ce419bfd6cda72bcef2559b94ffadf",
+    "apps/gateway/policy.yaml": "21d106fa14d3b4106185dcd2e86cd881457dd75071ff263b053ad80a0f8096da"
+  },
+  "source_scope": "Frozen detector, pipeline, policy, corpus and case files. Subsequent SSE lifecycle fix does not change inference decisions. Baseline intentionally uses naive query retrieval and omits ACL/masking/output checks; attached_doc is not forced by that baseline.",
+  "independence": "Team-authored sets; prior access development tests used some Alwaz slices. Treat as frozen team evaluation, not independently blinded evidence.",
+  "wall_time_note": "These original runs include intentional client quota pacing in wall_ms. Use measured-stage overhead for gateway timing; audit/vault work outside stage timers is excluded. The evaluator now waits before starting its request wall timer."
+}

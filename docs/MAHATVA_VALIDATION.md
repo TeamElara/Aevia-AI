@@ -1,5 +1,7 @@
 # Mahatva gateway validation — 15 October 2026
 
+Superseded for final live-provider status by `MAHATVA_FINAL.md`. The tables below record the earlier integration checkpoint; later real Groq, Windows Ollama/fp32, frozen evaluation and clean Linux Docker evidence are linked there.
+
 The checks below verify implementation behavior, not frozen detector accuracy or real-model performance.
 
 | Check | Result |

@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-15T10:26:05.273Z",
+  "platform": "win32/x64",
+  "node": "v26.3.0",
+  "source_commit": "772a7aff556663a45a8f0904137e0932cd65b177",
+  "model": "protectai/deberta-v3-base-prompt-injection-v2",
+  "revision": "90c9989b1a342275dd0d1a95aad283c04e075671",
+  "dtype": "fp32",
+  "load_ms": 8085.4171,
+  "rows": [
+    {
+      "id": "benign",
+      "score": 8.415047432208667e-7,
+      "ms": 193.83009999999922
+    },
+    {
+      "id": "attack",
+      "score": 0.9999998211860657,
+      "ms": 344.08330000000024
+    }
+  ],
+  "scope": "Two authored development smoke examples through the real gateway classifier adapter; not held-out accuracy or a latency benchmark.",
+  "onnx_sha256": "f0ea7f239f765aedbde7c9e163a7cb38a79c5b8853d3f76db5152172047b228c"
+}
