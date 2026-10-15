@@ -717,3 +717,93 @@ textarea { caret-color: var(--color-fg); }
 .covering-posts { display: grid; gap: 8px; text-align: left; }
 .covering-post { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-radius: 12px; padding: 10px 12px; background: var(--color-surface-2); color: var(--color-fg); font-size: 12px; }
 @media (max-width: 400px) { .assign-post-modal { padding: 18px; } .post-list > li > .btn { min-height: 40px; } }
+
+/* ------------------------------------------------------------------
+   Bar intro. Once per page load, in the theme's accent: an orb lights up,
+   a ray runs into it and fans out, then the light folds into a seam that
+   opens into the message bar.
+------------------------------------------------------------------- */
+/* Same colours as the Halo orb: the panel's verdict tone and its pale partner. */
+.bar-intro {
+  position: relative; --t0: 300ms;
+  --intro-ray: var(--tone); --intro-hi: var(--tone-2); --intro-core: #ffffff;
+  --intro-glow: color-mix(in srgb, var(--tone-2) 60%, transparent);
+}
+:root[data-theme="dark"] .bar-intro { --intro-ray: color-mix(in srgb, var(--tone-2) 80%, white); --intro-glow: color-mix(in srgb, var(--tone-2) 55%, transparent); }
+/* On the dark theme the orb is lit from inside instead of shaded. */
+:root[data-theme="dark"] .intro-orb {
+  background: radial-gradient(circle at 36% 32%, #fff 0 14%, transparent 40%), radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--tone-2) 60%, white), var(--tone-2) 55%, color-mix(in srgb, var(--tone-2) 55%, var(--tone)) 90%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone-2) 50%, transparent), 0 0 20px 5px var(--intro-glow), 0 0 80px 26px var(--intro-glow);
+}
+.bar-intro[data-stage="wait"] .composer { clip-path: inset(50% 0 round 20px); opacity: 0; }
+.bar-intro[data-stage="play"] .composer {
+  animation: bar-open 800ms calc(var(--t0) + 2250ms) var(--ease-spring) backwards, bar-glow 1600ms calc(var(--t0) + 2250ms) ease-out backwards;
+}
+.bar-intro[data-stage="play"] .composer > :not(.composer-arrival) { animation: intro-rise 650ms calc(var(--t0) + 2650ms) var(--ease-soft) backwards; }
+
+.intro { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.intro-orb {
+  position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--intro-core) 0 10%, transparent 34%), radial-gradient(circle at 50% 65%, var(--intro-hi), var(--tone) 72%);
+  box-shadow: inset 0 -6px 14px color-mix(in srgb, var(--tone) 60%, black), 0 0 18px 4px var(--intro-glow), 0 0 70px 22px var(--intro-glow);
+  animation: orb-life 2350ms var(--t0) var(--ease-soft) both;
+}
+.intro-orb::before {
+  content: ''; position: absolute; inset: -90px; border-radius: 50%;
+  background: radial-gradient(circle, transparent 11%, var(--intro-glow) 16%, transparent 62%);
+  animation: lens-breathe 1.6s ease-in-out infinite;
+}
+.intro-orb::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%; border: 1.5px solid var(--intro-ray); opacity: 0;
+  animation: orb-ring 1000ms calc(var(--t0) + 1120ms) ease-out both;
+}
+.intro-ray {
+  position: absolute; left: 0; right: 50%; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 3px; transform-origin: left;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--intro-ray) 70%, transparent) 45%, var(--intro-ray) 85%, var(--intro-hi));
+  box-shadow: 0 0 12px 1px var(--intro-glow);
+  animation: ray-in 820ms calc(var(--t0) + 320ms) cubic-bezier(.65, 0, .35, 1) both, intro-out 380ms calc(var(--t0) + 1850ms) ease-in forwards;
+}
+.intro-strands {
+  position: absolute; left: 50%; right: 0; top: -10%; width: 50%; height: 120%; overflow: visible;
+  animation: intro-out 420ms calc(var(--t0) + 1850ms) ease-in forwards;
+}
+.intro-strands path {
+  fill: none; stroke: var(--intro-ray); stroke-width: 1.8; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 4px var(--intro-glow));
+  animation: strand-draw 780ms var(--ease-soft) both;
+}
+.intro-seam {
+  position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 3px; transform: scaleX(0);
+  background: linear-gradient(90deg, transparent, var(--intro-ray) 15%, var(--intro-hi) 50%, var(--intro-ray) 85%, transparent);
+  box-shadow: 0 0 16px 2px var(--intro-glow);
+  animation: seam 950ms calc(var(--t0) + 1950ms) var(--ease-spring) both;
+}
+
+@keyframes orb-life {
+  0% { transform: scale(0); opacity: 0; }
+  22% { transform: scale(1.18); opacity: 1; }
+  32%, 47% { transform: scale(1); }
+  52% { transform: scale(1.4); }
+  62%, 80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(5, .06); opacity: 0; }
+}
+@keyframes orb-ring { from { transform: scale(1); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
+@keyframes lens-breathe { 0%, 100% { transform: scale(.9); opacity: .75; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes ray-in { from { transform: scaleX(0); opacity: .4; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes strand-draw { from { stroke-dashoffset: 1; opacity: 0; } 15% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes intro-out { to { opacity: 0; } }
+@keyframes seam {
+  0% { transform: scaleX(0); opacity: 1; }
+  45% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes bar-open { from { clip-path: inset(calc(50% - 1px) 0 round 20px); } to { clip-path: inset(0 round 20px); } }
+@keyframes bar-glow {
+  from { border-color: var(--intro-ray); box-shadow: 0 0 0 1px var(--intro-ray), 0 0 0 6px color-mix(in srgb, var(--intro-ray) 12%, transparent), 0 0 60px -8px var(--intro-glow); }
+}
+@keyframes intro-rise { from { opacity: 0; transform: translateY(6px); filter: blur(4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-intro[data-stage] .composer, .bar-intro[data-stage] .composer > * { animation: none; clip-path: none; opacity: 1; }
+  .intro { display: none; }
+}

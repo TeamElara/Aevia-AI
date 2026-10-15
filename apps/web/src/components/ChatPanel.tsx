@@ -7,6 +7,7 @@ import { ActionBadge } from './PayloadCard'
 import { reducedMotion } from '../lib/motion'
 import { Arrow, Icon, Magnetic, Orb, Tokens } from './ui'
 import { HandButterfly } from './HandButterfly'
+import { BarIntro } from './BarIntro'
 import { Markdown } from './Markdown'
 import { AttachmentCard, FileChip } from './Attachment'
 import { MAX_UPLOAD_BYTES, UPLOAD_TYPES, type Backend } from '../api/client'
@@ -96,7 +97,7 @@ export function ChatPanel({
         </div>
         <div className="home-workspace">
           <div className="home-greeting"><h2>{greeting()}, {user.name.split(' ')[0]}.</h2><p>{ready ? 'What can I help with?' : 'Signing you in…'}</p></div>
-          <Composer onSend={onSend} disabled={!ready} busy={false} big focusRequest={focusRequest} />
+          <BarIntro><Composer onSend={onSend} disabled={!ready} busy={false} big focusRequest={focusRequest} /></BarIntro>
           <ul className="home-starters">
             {starters.map(s => <li key={s}><button disabled={!ready} onClick={() => onSend(s)}>{s}<Arrow /></button></li>)}
           </ul>
