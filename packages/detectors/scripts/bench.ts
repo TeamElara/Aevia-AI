@@ -1,5 +1,11 @@
 // Usage: npm run bench [-- --out ../../results/ojaswi/detector-bench.md]
+//        npm run bench -- --per-detector [--out ../../results/ojaswi/bench.md]   (each detector at 1/10/50 KB)
 // Detector latency (rules only, no classifier), warm, per input group. Dev cases only; never held-out.
+
+if (process.argv.includes('--per-detector')) {
+  await import('./bench-detectors');
+  process.exit(0);
+}
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { arch, cpus, platform } from 'node:os';
