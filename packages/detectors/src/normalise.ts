@@ -7,6 +7,21 @@ export interface Mapped {
 }
 
 const INVISIBLE = /[­᠎​-‏‪-‮⁠-⁤⁦-⁩﻿]/;
+// Emoji (and their variation selectors) used as spacers inside a word: "i🔥g🔥n🔥o🔥r🔥e".
+const EMOJI = /^[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\uFE0F]$/u;
+const WORDISH = /[\p{L}\p{M}]/u;
+
+/** True if position i starts a run of emoji that sits between two letters. */
+function emojiSpacer(input: string, i: number, prevKept: string | undefined): boolean {
+  if (!prevKept || !WORDISH.test(prevKept)) return false;
+  let j = i;
+  while (j < input.length) {
+    const ch = String.fromCodePoint(input.codePointAt(j)!);
+    if (!EMOJI.test(ch) && !INVISIBLE.test(ch)) break;
+    j += ch.length;
+  }
+  return j < input.length && WORDISH.test(String.fromCodePoint(input.codePointAt(j)!));
+}
 
 // Cyrillic and Greek letters that render like Latin ones.
 const HOMOGLYPHS: Record<string, string> = {
@@ -36,7 +51,7 @@ export function normalise(input: string): Mapped {
   for (let i = 0; i < input.length; ) {
     const cp = input.codePointAt(i)!;
     const ch = String.fromCodePoint(cp);
-    if (!INVISIBLE.test(ch)) {
+    if (!INVISIBLE.test(ch) && !(EMOJI.test(ch) && emojiSpacer(input, i, out[out.length - 1]))) {
       for (const c of ch.normalize('NFKC')) {
         const h = asciiDigit(c.codePointAt(0)!) ?? HOMOGLYPHS[c] ?? c;
         for (let k = 0; k < h.length; k++) {
@@ -170,8 +185,9 @@ export interface DecodedBlock {
 function mostlyPrintable(s: string): boolean {
   if (s.length < 8) return false;
   let ok = 0;
-  for (const c of s) if (/[\p{L}\p{N}\p{P}\p{Zs}\n\r\t]/u.test(c)) ok++;
-  return ok / [...s].length >= 0.9 && /\p{L}{3}/u.test(s);
+  for (const c of s) if (/[\p{L}\p{M}\p{N}\p{P}\p{Zs}\n\r\t]/u.test(c)) ok++;
+  // Letters or marks: Devanagari alternates consonants and vowel signs, so three letters in a row is rare.
+  return ok / [...s].length >= 0.9 && /\p{L}[\p{L}\p{M}]{2}/u.test(s);
 }
 
 // atob + TextDecoder instead of Buffer, so the package also runs in the browser extension.

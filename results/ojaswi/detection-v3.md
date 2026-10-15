@@ -15,3 +15,6 @@ Step 4 benign check: 110 benign prompts + 10 seed documents give 0 hits in the n
 | 5. Secrets: Stripe test/webhook, Slack app, GCP service account, Azure SAS/SharedAccessKey/SQL password, JDBC, more DB URLs, entropy fallback | 28 | 1 at warn only | 0 | 4/4 caught, 0 false (also with `--corpus`) |
 
 Step 5 benign check: the entropy fallback gives 0 hits on the 110 benign prompts and 10 seed documents. `test/secrets-v3.test.ts` has 19 formats and 12 lookalikes: hashes, UUIDs, base64 text, docs URLs, placeholders, and a random id without key context.
+| 6. Mutations (leet, fullwidth, zero-width, ROT13, emoji) + normaliser fixes | 28 | 1 at warn only | 0 | 4/4 caught, 0 false |
+
+Step 6, mutation retention on dev (`results/ojaswi/mutation-check-v3.md`): all 31 caught dev attacks survive every mutation. Before the normaliser fixes, emoji spacing kept only 4/28 dev-v3 attacks and base64 lost all 8 Devanagari ones. Each mutation leaves the 29 clean allowed cases clean. One known gap: in base64, a payment record still masks but reports one category per decoded block.

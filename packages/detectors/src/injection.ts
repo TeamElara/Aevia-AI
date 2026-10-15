@@ -261,11 +261,11 @@ const COMBINE = /\b[A-Za-z]\w{0,10}(?:\s*\+\s*[A-Za-z]\w{0,10}){1,5}\b/g;
 
 function joinedView(m: Mapped): View[] {
   const vars = new Map<string, string>();
-  for (const a of m.text.matchAll(ASSIGN)) vars.set(a[1], a[2]);
+  for (const a of m.text.matchAll(ASSIGN)) vars.set(a[1].toLowerCase(), a[2]);
   if (vars.size < 2) return [];
   const out: View[] = [];
   for (const c of m.text.matchAll(COMBINE)) {
-    const names = c[0].split('+').map((x) => x.trim());
+    const names = c[0].split('+').map((x) => x.trim().toLowerCase());
     if (!names.every((x) => vars.has(x))) continue;
     const text = names.map((x) => vars.get(x)).join(' ');
     const at = m.map[c.index!];
@@ -335,7 +335,8 @@ export function detectInjection(text: string, ctx: DetectorContext): Finding[] {
     { ...collapseSplitWords(norm), decoded: false },
   ];
   if (text.length <= DECODED_VIEWS_MAX) views.push(reversedView(norm), rot13View(norm));
-  views.push(...joinedView(norm));
+  views.push(...joinedView(norm), ...joinedView({ text: leetFold(norm.text), map: norm.map }));
+  if (text.length <= DECODED_VIEWS_MAX) views.push(...joinedView(rot13View(norm)));
 
   const findings: Finding[] = [];
   const seen = new Set<string>();

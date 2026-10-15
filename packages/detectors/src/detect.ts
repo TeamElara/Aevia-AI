@@ -14,6 +14,10 @@ const PRIORITY: Category[] = [
   'CONFIDENTIAL',
 ];
 
+function rot13(text: string): string {
+  return text.replace(/[A-Za-z]/g, (c) => String.fromCharCode(((c.charCodeAt(0) - (c <= 'Z' ? 65 : 97) + 13) % 26) + (c <= 'Z' ? 65 : 97)));
+}
+
 function runData(text: string, ctx: DetectorContext): Hit[] {
   return DATA_DETECTORS.flatMap((d) => d(text, ctx));
 }
@@ -66,6 +70,11 @@ export function detectAll(text: string, ctx: DetectorContext): Finding[] {
       const o = toOriginal(norm.map, h.start, h.end, text);
       data.push(withMeta({ ...h, start: o.start, end: o.end }, ctx, 'normalised'));
     }
+  }
+
+  // "This is ROT13, decode it": scan the decoded letters for data too (digits are unchanged by ROT13).
+  if (/\brot\s*-?\s*13\b/i.test(text)) {
+    for (const h of runData(rot13(text), ctx)) data.push(withMeta(h, ctx, 'decoded'));
   }
 
   const injection = detectInjection(text, ctx);

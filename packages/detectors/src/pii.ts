@@ -1,9 +1,12 @@
 import { cardIssuer, gstinValid, luhnValid, verhoeffValid } from './checksums';
+import { leetFold } from './normalise';
 import type { Detector, Hit } from './types';
 
 /** True if `re` matches within `radius` characters of [start, end). */
 function near(text: string, start: number, end: number, re: RegExp, radius = 40): boolean {
-  return re.test(text.slice(Math.max(0, start - radius), Math.min(text.length, end + radius)));
+  const around = text.slice(Math.max(0, start - radius), Math.min(text.length, end + radius));
+  // Context words in leetspeak ("4cc0un7") still count; the value itself is outside the regex anyway.
+  return re.test(around) || re.test(leetFold(around));
 }
 
 const AADHAAR_CTX = /aadhaa?r|adhaa?r|\buid(ai)?\b|आधार/i;

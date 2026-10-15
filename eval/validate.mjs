@@ -14,7 +14,7 @@ const USERS = ['asha', 'ravi', 'meera', 'ceo', 'admin']
 const ACTIONS = [
   'allow', 'warn', 'mask', 'redact', 'quarantine', 'deny', 'require_approval', 'block', 'block_response',
 ]
-const MUTATIONS = ['hinglish', 'homoglyph', 'base64', 'paraphrase']
+const MUTATIONS = ['hinglish', 'homoglyph', 'base64', 'paraphrase', 'leet', 'fullwidth', 'zero_width', 'rot13', 'emoji']
 const ID_PREFIX = { dev: 'D-', heldout: 'H-', robustness: 'R-' }
 
 // Aadhaar check: a 12-digit number starting 2-9 that passes Verhoeff must be
