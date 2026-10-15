@@ -40,6 +40,20 @@ For the judge: “Masked prompts and approved content do reach Groq. The real AP
 
 The key was disclosed in chat and should be rotated after testing; never paste it into the group, a deck or a GitHub comment. API authorization does not create a Groq console session. The earlier browser gate denial was not bypassed.
 
+## Account owner confirmation
+
+ZDR is recorded from the authenticated account check above: Global and Inference APIs ZDR are disabled in the checked Personal organization. The remaining fields are for the account owner to complete; demo-key association and project overrides retain the scope caveat above.
+
+| Field | Confirmation |
+| --- | --- |
+| Date | |
+| Verifier | |
+| ZDR on/off | Disabled |
+| RPM | |
+| RPD | |
+| TPM | |
+| TPD | |
+
 ## Historical records
 
 # Groq Q&A evidence — 15 October 2026
