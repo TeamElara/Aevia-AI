@@ -109,6 +109,11 @@ export class Gateway {
           const boundaries = last.slice(0, -1).map((_, i) => last.slice(0, i + 1).reduce((n, m) => n + m.content.length, 0));
           if (joined.some(f => boundaries.some(b => f.start < b && f.end > b))) actions.push('block');
         }
+        // Text copied from a document this person may not read stops here, before any model sees it.
+        if (this.deps.restrictedOverlap && await this.deps.restrictedOverlap(query, user)) {
+          findings.push({ category: 'FINGERPRINT', source: 'prompt', start: 0, end: query.length, score: 1, ruleId: 'fingerprint.restricted_prompt', via: 'raw' });
+          actions.push('block');
+        }
         const clean: Message[] = [];
         for (const [index, m] of messages.entries()) {
           const source = index < history.length ? 'history' : 'prompt';

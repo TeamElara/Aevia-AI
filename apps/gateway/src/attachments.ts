@@ -24,7 +24,36 @@ const OCR_TIMEOUT_MS = 45_000;
 export type FileKind = 'pdf' | 'png' | 'jpeg' | 'webp';
 type Box = { x0: number; y0: number; x1: number; y1: number };
 type Word = { start: number; end: number; bbox: Box };
-type Page = { number: number; text: string; ocr: boolean; png?: Buffer; width?: number; height?: number; words?: Word[] };
+type Page = { number: number; text: string; ocr: boolean; png?: Buffer; width?: number; height?: number; words?: Word[]; confidence?: number };
+type Piece = { text: string; bbox: Box };
+
+const PAN_AT_END = /^(.+?)[:#.\-]?([A-Z]{5}[0-9]{4}[A-Z])([.,;:]?)$/;
+const union = (boxes: Box[]): Box => ({ x0: Math.min(...boxes.map(b => b.x0)), y0: Math.min(...boxes.map(b => b.y0)), x1: Math.max(...boxes.map(b => b.x1)), y1: Math.max(...boxes.map(b => b.y1)) });
+/**
+ * Undo two common OCR spacing errors before detection, so values are recognised as they appear on
+ * the page: a label glued to a PAN ("PANABCPE1234F") and a 12-digit number grouped wrongly
+ * ("2345 67890124"). The pieces keep their word boxes, so black bars still land on the page.
+ */
+export function normaliseOcrLine(words: Piece[]): Piece[] {
+  const split: Piece[] = [];
+  for (const w of words) {
+    const m = w.text.length > 10 ? PAN_AT_END.exec(w.text) : null;
+    if (m) { split.push({ text: m[1]!, bbox: w.bbox }, { text: m[2]! + m[3]!, bbox: w.bbox }); continue; }
+    split.push(w);
+  }
+  const out: Piece[] = [];
+  for (let i = 0; i < split.length; i++) {
+    let j = i; let digits = '';
+    while (j < split.length && /^\d+$/.test(split[j]!.text) && (digits + split[j]!.text).length <= 12) digits += split[j++]!.text;
+    const grouped = j - i === 3 && split.slice(i, j).every(p => p.text.length === 4);
+    if (digits.length === 12 && !grouped) {
+      out.push({ text: `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8)}`, bbox: union(split.slice(i, j).map(p => p.bbox)) });
+      i = j - 1; continue;
+    }
+    out.push(split[i]!);
+  }
+  return out;
+}
 
 /** File type from its first bytes; the name and declared type are never trusted. */
 export function sniff(data: Buffer): FileKind | null {
@@ -58,20 +87,20 @@ class Ocr {
     }
     return this.worker;
   }
-  read(png: Buffer): Promise<{ text: string; words: Word[] }> {
+  read(png: Buffer): Promise<{ text: string; words: Word[]; confidence: number }> {
     const job = this.queue.then(async () => {
       const worker = await this.start();
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
         const result = await Promise.race([
-          worker.recognize(png, {}, { blocks: true }),
+          worker.recognize(png, { rotateAuto: true }, { blocks: true }),
           new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new GatewayError('OCR_TIMEOUT', 504)), OCR_TIMEOUT_MS); }),
         ]);
         // Rebuild the text from words so every character offset maps back to a box on the page.
         let text = ''; const words: Word[] = [];
         for (const block of result.data.blocks ?? []) for (const paragraph of block.paragraphs) {
           for (const line of paragraph.lines) {
-            const parts = line.words.filter(w => w.text.trim());
+            const parts = normaliseOcrLine(line.words.filter(w => w.text.trim()).map(w => ({ text: w.text, bbox: w.bbox })));
             parts.forEach((w, i) => {
               if (i) text += ' ';
               words.push({ start: text.length, end: text.length + w.text.length, bbox: w.bbox });
@@ -81,7 +110,7 @@ class Ocr {
           }
           text += '\n';
         }
-        return { text: text.trim() ? text : '', words };
+        return { text: text.trim() ? text : '', words, confidence: result.data.confidence };
       } catch (error) {
         // A stuck worker is replaced rather than left to block every later upload.
         if (error instanceof GatewayError) { const stale = this.worker; this.worker = undefined; void stale?.then(w => w.terminate()).catch(() => undefined); }
@@ -167,6 +196,8 @@ export interface AttachmentSummary {
   masked_text: string;
   /** Pages read by OCR, as PNG data URLs with black bars over what was hidden. */
   redacted_pages: { page: number; image: string }[];
+  /** Pages OCR could not read reliably; anything unreadable there was not checked. */
+  warnings: string[];
 }
 
 export class Attachments {
@@ -229,7 +260,10 @@ export class Attachments {
         redacted_pages.push({ page: page.number, image: await blackOut(page.png, boxes) });
       }
 
-      const summary: AttachmentSummary = { name, kind, pages: pages.length, ocr_pages: pages.filter(p => p.ocr).length, truncated, removed, found, masked_text, redacted_pages };
+      // Rotated, blurred or faint pages read badly; say so rather than imply they were fully checked.
+      const warnings = pages.filter(p => p.ocr && ((p.confidence ?? 100) < 70 || p.text.replace(/\s/g, '').length < 20))
+        .map(p => `${pages.length > 1 ? `Page ${p.number}` : 'This image'} could not be read clearly (it may be rotated, blurred or faint). Anything unreadable there was not checked, so review the redacted copy before sharing it.`);
+      const summary: AttachmentSummary = { name, kind, pages: pages.length, ocr_pages: pages.filter(p => p.ocr).length, truncated, removed, found, masked_text, redacted_pages, warnings };
       await this.record(user, summary);
       return { text: cleaned, summary };
     } finally { this.running--; }

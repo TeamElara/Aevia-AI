@@ -34,6 +34,8 @@ const UPLOAD_ERRORS: Record<string, string> = {
   OCR_TIMEOUT: 'Reading that file took too long. Try a clearer or smaller image.',
   ATTACHMENTS_UNAVAILABLE: 'This gateway does not accept files yet.',
   ATTACHMENTS_NEED_GATEWAY: 'Files need the live gateway; the offline demo cannot read them.',
+  GATEWAY_UNREACHABLE: "Can't reach the gateway. Check that it is running, then send again.",
+  INVALID_REQUEST: 'The gateway could not accept that message. Messages can be up to 30,000 characters.',
 }
 
 const greeting = () => {
@@ -212,7 +214,14 @@ function TurnView({
                   {r.provider_calls} model {r.provider_calls === 1 ? 'call' : 'calls'}
                 </span>
               </div>
-              {r.attachment && <AttachmentCard attachment={r.attachment} />}
+              {r.citations.length > 0 && (
+                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-faint">
+                  <Icon name="file" className="h-[14px] w-[14px]" />
+                  Sources:
+                  {r.citations.map((c) => <span key={c.doc_id} className="tag">{c.title}</span>)}
+                </p>
+              )}
+              {r.attachment && <AttachmentCard attachment={r.attachment} stopped={r.provider_calls === 0 && isStop(r.action)} />}
             </>
           )}
 
@@ -227,6 +236,9 @@ function TurnView({
     </div>
   )
 }
+
+// The gateway accepts messages up to this many characters.
+const MAX_MESSAGE = 30_000
 
 const hints = [
   'Message LeakShield…',
@@ -366,7 +378,7 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
       )}
       <div className="relative flex items-end gap-3">
         {!text && (
-          <span aria-hidden="true" className="pointer-events-none absolute left-0 top-2 text-[15.5px] leading-relaxed text-faint">
+          <span aria-hidden="true" className="pointer-events-none absolute left-0 right-[100px] top-2 text-[15.5px] leading-relaxed text-faint">
             {hint}
             {!focused && <span className="ml-px inline-block h-[1.1em] w-px translate-y-[3px] animate-pulse bg-faint" />}
           </span>
@@ -379,9 +391,13 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           rows={lines}
+          maxLength={MAX_MESSAGE}
           aria-label="Message"
           className="max-h-48 min-w-0 flex-1 resize-none self-center bg-transparent py-2 text-[15.5px] leading-relaxed text-fg focus:outline-none"
         />
+        {text.length > MAX_MESSAGE * 0.9 && (
+          <span className="self-center text-[11.5px] tabular-nums text-faint" aria-live="polite">{text.length.toLocaleString('en-IN')} / {MAX_MESSAGE.toLocaleString('en-IN')}</span>
+        )}
         <input ref={picker} type="file" accept={UPLOAD_TYPES} className="hidden" onChange={(e) => choose(e.target.files?.[0])} tabIndex={-1} aria-hidden="true" />
         <button
           type="button"

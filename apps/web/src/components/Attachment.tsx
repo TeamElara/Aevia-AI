@@ -38,7 +38,7 @@ function MaskedText({ text }: { text: string }) {
 }
 
 /** What the gateway read from a file, what it hid, and the redacted pages. */
-export function AttachmentCard({ attachment: a }: { attachment: AttachmentSummary }) {
+export function AttachmentCard({ attachment: a, stopped }: { attachment: AttachmentSummary; stopped?: boolean }) {
   const [showText, setShowText] = useState(false)
   const [page, setPage] = useState<AttachmentSummary['redacted_pages'][number] | null>(null)
   const found = Object.entries(a.found).filter(([k]) => k !== 'pages' && k !== 'ocr_pages')
@@ -51,11 +51,16 @@ export function AttachmentCard({ attachment: a }: { attachment: AttachmentSummar
         <span>{kind}{a.ocr_pages ? ` · read on this gateway (${a.ocr_pages} by OCR)` : ' · read on this gateway'}</span>
       </div>
       <p className="mt-3 text-[13px] leading-relaxed text-muted">
-        {found.length
-          ? 'Sensitive values in the file were hidden before anything reached the model.'
-          : 'Nothing sensitive was found in the file.'}
+        {stopped
+          ? 'The gateway stopped this request, so nothing from the file reached the model.'
+          : found.length
+          ? 'Sensitive values found in the file were hidden before anything reached the model.'
+          : a.warnings?.length ? 'Nothing sensitive was found in the text that could be read.' : 'Nothing sensitive was found in the file.'}
         {a.truncated && ' Only the first part of a long file was used.'}
       </p>
+      {a.warnings?.map((w) => (
+        <p key={w} role="alert" className="mt-2 rounded-[10px] bg-surface-2 px-3 py-2 text-[12.5px] leading-relaxed text-fg">{w}</p>
+      ))}
       {found.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-2" aria-label="Found in the file">
           {found.map(([category, n]) => (

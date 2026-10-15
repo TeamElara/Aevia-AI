@@ -28,9 +28,11 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  }).catch(() => { throw new ApiError('GATEWAY_UNREACHABLE') })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
+    // The dev proxy answers 5xx with no gateway error body when nothing is listening.
+    if (res.status >= 500 && !data.error) throw new ApiError('GATEWAY_UNREACHABLE', res.status)
     throw new ApiError(errorText(data.error, res.status), res.status)
   }
   return res.json()

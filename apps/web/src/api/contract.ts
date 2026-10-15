@@ -70,6 +70,8 @@ export interface AttachmentSummary {
   masked_text: string
   /** OCR pages as PNG data URLs with black bars over what was hidden. */
   redacted_pages: { page: number; image: string }[]
+  /** Pages OCR could not read reliably; anything unreadable there was not checked. */
+  warnings?: string[]
 }
 
 // Audit allowlist (PLAN.md §8). No prompt text, no values, no doc titles.
