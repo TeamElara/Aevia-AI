@@ -125,12 +125,17 @@ When data findings overlap, the more specific category wins (private key > secre
 
 ## Develop
 
+This package is an npm workspace of the repo root, so install from the root:
+
 ```bash
-npm install
-npm test
-npm run typecheck
-npm run tune -- ../../eval/dev.jsonl   # threshold sweep, category recall, misses
+npm install                                         # at the repo root
+npm test --workspace @leakshield/detectors
+npm run typecheck --workspace @leakshield/detectors
+npm run tune --workspace @leakshield/detectors -- ../../eval/dev.jsonl   # threshold sweep, category recall, misses
+npm run test:integration                            # gateway tests, incl. detector-handoff against this package
 ```
+
+The gateway imports `src/index.ts` directly (`DETECTOR_MODULE`) and validates every finding: no extra fields, `source` equal to the request's, `0 <= start < end <= text.length`, at most 1000 findings. Any violation fails the request closed.
 
 `test/benign-corpus.ts` holds 110 realistic prompts with no sensitive data and no attack: office work, Hinglish, code with `password`/`token` variables, IDs and numbers, security discussion, roleplay, trigger words, long text. `test/benign.test.ts` fails if any of them would trigger a warn or mask, so false positives can't creep back in. It was written independently of the held-out set.
 
