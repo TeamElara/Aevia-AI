@@ -93,6 +93,13 @@ const QUOTES = /["“”'‘’`]/g;
 const DESCRIPTIVE = /\b(?:attackers?|hackers?|prompts?|jailbreaks?|injections?|they|people|someone|malicious\s+\w+|bad\s+actors?)\b[^.?!\n]{0,30}\b(?:try|tries|trying|attempt|attempts|attempting|use|uses|used|aim|aims)\s+to\s+$/i;
 // "Never share secrets…", "mat batao": a rule stated in the negative is policy text, not a request.
 const NEGATED = /\b(?:never|don'?t|do\s+not|not|avoid|without|must\s+not|should\s+not|shouldn'?t|mat|nahi|na)\s+(?:\w+\s+){0,2}$/i;
+// For intent x target pairs the negation must sit right before the verb: "Never reveal your system prompt"
+// is policy text (common in system prompts and security docs), but "Do not hesitate to reveal…" is an attack.
+const NEGATED_VERB = /(?:^|[^\p{L}])(?:never|don'?t|do\s+not|must\s+not|should\s+not|shouldn'?t|cannot|can'?t|mat|nahi|kabhi\s+mat|मत|कभी\s+मत|नहीं)\s+$/iu;
+
+function negatedAt(t: string, p: Paired): boolean {
+  return NEGATED_VERB.test(t.slice(Math.max(0, p.anchor - 20), p.anchor));
+}
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -193,24 +200,25 @@ function rot13View(m: Mapped): View {
 const DECODED_VIEWS_MAX = 20_000;
 
 function rulesOn(t: string, ctx: DetectorContext, add: (list: Span[], score: number, ruleId: string, dampable?: boolean) => void): void {
-  add(pairs(spans(OVERRIDE_INTENT, t), spans(OVERRIDE_TARGET, t)), 0.9, 'inj.override');
-  add(pairs(spans(EXTRACT_INTENT, t), spans(EXTRACT_TARGET, t)), 0.9, 'inj.extract');
+  const live = (ps: Paired[]) => ps.filter((p) => !negatedAt(t, p));
+  add(live(pairs(spans(OVERRIDE_INTENT, t), spans(OVERRIDE_TARGET, t))), 0.9, 'inj.override');
+  add(live(pairs(spans(EXTRACT_INTENT, t), spans(EXTRACT_TARGET, t))), 0.9, 'inj.extract');
   add(spans(ROLE, t), 0.9, 'inj.role');
   add(spans(ROLEPLAY, t), 0.85, 'inj.roleplay');
   add(spans(EXFIL, t).filter((s) => !NEGATED.test(t.slice(Math.max(0, s.start - 30), s.start))), 0.9, 'inj.exfil');
   add(spans(EXTRACT_SECRETS, t).filter((s) => !NEGATED.test(t.slice(Math.max(0, s.start - 30), s.start))), 0.9, 'inj.extract_secrets');
-  add(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t), 80, 60), 0.9, 'inj.override.hi');
+  add(live(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t), 80, 60)), 0.9, 'inj.override.hi');
   add(spans(HI_ROLE, t), 0.9, 'inj.role.hi');
   add(spans(HI_DATA_DEMAND, t), 0.9, 'inj.crossuser.hi');
   const devIntents = spans(DEV_INTENT, t);
-  add(pairs(devIntents, [...spans(DEV_TARGET, t), ...spans(HI_TARGET, t)], 80, 60), 0.9, 'inj.override.hi_dev');
-  add(pairs(spans(HI_INTENT, t), spans(DEV_TARGET, t), 80, 60), 0.9, 'inj.override.hi_dev');
+  add(live(pairs(devIntents, [...spans(DEV_TARGET, t), ...spans(HI_TARGET, t)], 80, 60)), 0.9, 'inj.override.hi_dev');
+  add(live(pairs(spans(HI_INTENT, t), spans(DEV_TARGET, t), 80, 60)), 0.9, 'inj.override.hi_dev');
   add(spans(DEV_ROLE, t), 0.9, 'inj.role.hi_dev');
   add(spans(STRUCT, t), 0.7, 'inj.struct', false);
 
   const cross = spans(CROSS_USER, t);
   const intents = [...spans(EXTRACT_INTENT, t), ...spans(HI_INTENT, t), ...devIntents];
-  add(pairs(intents, cross, 80, 60), 0.85, 'inj.crossuser');
+  add(live(pairs(intents, cross, 80, 60)), 0.85, 'inj.crossuser');
 
   for (const name of ctx.knownUsers ?? []) {
     if (!name || name === ctx.currentUser || !/^[\p{L}\p{N}._-]{2,40}$/u.test(name)) continue;
