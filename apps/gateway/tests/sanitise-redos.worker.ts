@@ -1,6 +1,6 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { sanitiseLinks } from '../src/sanitise.js';
-import { findLinks } from '../../../packages/detectors/src/index';
+import { findLinks } from '../../../packages/detectors/src/links.js';
 
 const { text, helper } = workerData as { text: string; helper: boolean };
 const run = () => sanitiseLinks(text, [], helper ? findLinks : undefined);

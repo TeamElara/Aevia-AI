@@ -1,7 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import { describe, expect, it } from 'vitest';
 import { sanitiseLinks } from '../src/sanitise.js';
-import { findLinks } from '../../../packages/detectors/src/index';
+import { findLinks } from '../../../packages/detectors/src/links.js';
 
 function time(text: string, helper: boolean): Promise<number> {
   return new Promise((resolve, reject) => {
