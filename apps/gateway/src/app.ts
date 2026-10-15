@@ -37,7 +37,7 @@ export function createApp(options: Options) {
     next();
   });
   app.get('/health', (_req, res) => res.json({ status: 'alive' }));
-  app.get('/api/health', (_req, res) => res.json({ ok: true, ...(options.providerMode ? { provider_mode: options.providerMode } : {}) }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, provider_external: options.gateway.external, model: options.gateway.model, baseline_available: !!options.baseline, ...(options.providerMode ? { provider_mode: options.providerMode } : {}) }));
   app.get('/ready', (_req, res) => {
     let ready = options.ready();
     try { options.policies.snapshot(); } catch { ready = false; }
@@ -54,7 +54,7 @@ export function createApp(options: Options) {
   app.post('/api/auth/login', express.json({ limit: '1kb' }), async (req, res) => {
     if (!options.demoAuth || !options.signingSecret) throw new GatewayError('DEMO_AUTH_DISABLED', 403);
     if (Date.now() - loginWindow > 60_000) { loginWindow = Date.now(); logins = 0; }
-    if (++logins > 30) throw new GatewayError('RATE_LIMITED', 429);
+    if (++logins > 30) { res.setHeader('Retry-After', String(Math.max(1, Math.ceil((loginWindow + 60_000 - Date.now()) / 1000)))); throw new GatewayError('RATE_LIMITED', 429); }
     const body = z.object({ user: z.enum(['asha', 'ravi', 'meera', 'ceo', 'admin']) }).strict().parse(req.body);
     const user = demoUsers[body.user];
     res.json({ token: await issueToken({ id: user.id, groups: user.groups }, options.signingSecret), user });
@@ -71,7 +71,7 @@ export function createApp(options: Options) {
     const id = identity(res).id;
     const budget = budgets.get(id) ?? { reset: now + 60_000, count: 0 };
     budgets.set(id, budget);
-    if (++budget.count > 60) return res.status(429).json({ error: { code: 'RATE_LIMITED' } });
+    if (++budget.count > 60) { res.setHeader('Retry-After', String(Math.max(1, Math.ceil((budget.reset - now) / 1000)))); return res.status(429).json({ error: { code: 'RATE_LIMITED' } }); }
     next();
   });
   app.use(express.json({ limit: '256kb', strict: true }));
@@ -87,14 +87,14 @@ export function createApp(options: Options) {
     if (mode !== undefined && (mode !== 'passthrough' || !options.evalMode || !options.baseline)) throw new GatewayError('OFFLINE_BASELINE_REQUIRED', 501);
     const body = z.object({ message: z.string().min(1).max(30_000), conversation_id: z.uuid().nullable().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional(), attached_doc: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).nullable().optional() }).strict().parse(req.body);
     const result = mode === 'passthrough'
-      ? await options.baseline!.run(identity(res), body.message, body.conversation_id ?? undefined)
+      ? await options.baseline!.run(identity(res), body.message, body.conversation_id ?? undefined, body.attached_doc ?? undefined)
       : await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id, attachedDoc: body.attached_doc ?? undefined });
     const { findings, approval, captured_payload, ...rest } = result;
     res.json({ ...rest, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
       stage_ms: consoleStages(result.stage_ms),
       findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })),
       rule_ids: [...new Set(findings.map(f => f.ruleId))], ...(approval ? { approval_id: approval.id } : {}),
-      ...(options.evalMode && req.headers['x-eval-capture'] === '1' ? { eval: { provider_calls: result.provider_calls, provider_payload: captured_payload?.map(m => m.content).join('\n') ?? null } } : {}),
+      ...(options.evalMode && req.headers['x-eval-capture'] === '1' ? { eval: { provider_external: options.gateway.external, provider_calls: result.provider_calls, provider_payload: captured_payload?.map(m => m.content).join('\n') ?? null } } : {}),
     });
   });
   app.post('/v1/scan', async (req, res) => {

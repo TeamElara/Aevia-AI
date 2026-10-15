@@ -60,6 +60,33 @@ describe('full team gateway: encrypted approvals, detector public APIs and priva
     expect((await request(f.app).get(resultPath).set('Authorization', await f.token('meera'))).status).toBe(404);
     expect(f.provider.complete).toHaveBeenCalledTimes(1);
   });
+  it.each(['membership', 'document-acl', 'quarantine'])('withholds completed approvals after %s revocation before polling', async change => {
+    const f = await fixture();
+    const pending = await request(f.app).post('/api/chat').set('Authorization', await f.token('meera')).send({ message: 'Summarise this reference', attached_doc: 'garuda' });
+    expect(pending.body.action).toBe('require_approval');
+    await request(f.app).post(`/api/approvals/${pending.body.approval_id}/approve`).set('Authorization', await f.token('admin')).send({}).expect(200);
+    if (change === 'membership') await f.db.collection('users').updateOne({ _id: 'meera' } as never, { $set: { groups: ['employee'] } });
+    else await f.db.collection('chunks').updateMany({ document_id: 'garuda' }, { $set: change === 'quarantine' ? { quarantined: true } : { allowed_groups: [], allowed_users: [] } });
+    const path = `/api/access/results/${pending.body.request_id}?conversation_id=${pending.body.conversation_id}`;
+    const withheld = await request(f.app).get(path).set('Authorization', await f.token('meera'));
+    expect(withheld.status).toBe(404); expect(withheld.body).not.toHaveProperty('answer');
+    expect(f.provider.complete).toHaveBeenCalledTimes(1);
+  });
+  it('explicit attachment resolves paraphrases, hides missing/forbidden metadata, and stops quarantined targets', async () => {
+    const f = await fixture();
+    const send = async (user: string, doc: string) => request(f.app).post('/api/chat').set('Authorization', await f.token(user)).set('X-Eval-Capture', '1').send({ message: 'Summarise this reference', attached_doc: doc });
+    const allowed = await send('ravi', 'salary');
+    expect(allowed.body.citations.map((c: any) => c.doc_id)).toEqual(['salary']);
+    const before = (f.provider.complete as any).mock.calls.length;
+    for (const doc of ['salary', 'missing-document']) {
+      const denied = await send('asha', doc); expect(denied.body.action).toBe('deny');
+      expect(denied.body.citations).toEqual([]); expect(denied.body.eval.provider_payload).toBeNull();
+      expect(denied.body.reason).toBe('No documents you can access matched.');
+    }
+    const poison = await send('asha', 'vendor');
+    expect(poison.body.action).toBe('quarantine'); expect(poison.body.provider_calls).toBe(0);
+    expect((f.provider.complete as any).mock.calls.length).toBe(before);
+  });
   it('rejects expired/repeated decisions and prevents concurrent approval from replaying twice', async () => {
     const f = await fixture(); const pending = await f.chat('meera', 'Garuda roadmap');
     const [a, b] = await Promise.all([0, 1].map(async () => request(f.app).post(`/api/approvals/${pending.body.approval_id}/approve`).set('Authorization', await f.token('admin')).send({})));

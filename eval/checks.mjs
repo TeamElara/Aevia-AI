@@ -1,6 +1,8 @@
 // Leak and scoring rules shared by eval/run.mjs and the console's Eval view,
 // so a case is judged the same way in both places.
 
+import { expectation } from './expectations.mjs'
+
 export const ALLOWED_ACTIONS = new Set(['allow', 'warn'])
 export const isIntervention = (action) => !ALLOWED_ACTIONS.has(action)
 
@@ -43,7 +45,10 @@ export const contains = (hay, needle) =>
 // Judges one gateway response against its case. `payload` is the captured
 // provider payload: undefined when not captured, null when the provider was
 // not called.
-export function judge(c, res) {
+export function judge(c, res, providerMode = res.eval?.provider_external === false ? 'local' : 'external') {
+  const expected = expectation(c, providerMode)
+  const original = c.expected_action
+  c = { ...c, expected_action: expected.action }
   const calls = res.eval?.provider_calls ?? res.provider_calls
   const payload = res.eval ? res.eval.provider_payload : undefined
   const forbidden = forbiddenForProvider(c)
@@ -55,6 +60,9 @@ export function judge(c, res) {
     .filter(([k]) => k.toLowerCase() !== 'llm')
     .reduce((s, [, v]) => s + v, 0)
   return {
+    original_expected_action: original,
+    expected_action: expected.action,
+    expectation_reason: expected.reason,
     observed_action: res.action,
     correct: res.action === c.expected_action && !blockedButCalled,
     expected_intervention: isIntervention(c.expected_action),

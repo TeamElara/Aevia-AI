@@ -13,6 +13,7 @@ type Case = {
   user: string
   history?: string[]
   prompt: string
+  attached_doc?: string | null
   expected_action: Action
   expected_categories: string[]
   must_not_reach_provider?: string[]
@@ -33,6 +34,7 @@ type Row = {
 }
 
 type Summary = {
+  errors?: number
   precision: number | null
   recall: number | null
   false_positives_on_allowed: string
@@ -43,7 +45,7 @@ type Summary = {
   overhead_ms_p95: number | null
   cases: number
 }
-type Report = { file: string; mode: string; at: string; summary: Summary }
+type Report = { provenance?: { frozen?: boolean; provider_evidence?: string }; file: string; mode: string; at: string; summary: Summary }
 
 const parseJsonl = (raw: string): Case[] =>
   raw
@@ -56,7 +58,7 @@ const caseFiles = import.meta.glob('../../../../eval/{live_subset,heldout}.jsonl
   import: 'default',
   eager: true,
 }) as Record<string, string>
-const reportFiles = import.meta.glob('../../../../results/*.json', { import: 'default', eager: true }) as Record<string, Report>
+const reportFiles = import.meta.glob('../../../../results/**/*.json', { import: 'default', eager: true }) as Record<string, Report>
 
 function pickLiveSubset(): { cases: Case[]; source: string } {
   const subset = Object.entries(caseFiles).find(([p]) => p.endsWith('live_subset.jsonl'))
@@ -74,7 +76,8 @@ function pickLiveSubset(): { cases: Case[]; source: string } {
 }
 
 const { cases, source } = pickLiveSubset()
-const frozen = Object.values(reportFiles).filter((r) => r.file?.includes('heldout') && r.mode !== 'mock')
+const development = Object.values(reportFiles).filter((r) => r.provenance?.frozen === false && r.provenance?.provider_evidence === 'simulated' && r.summary)
+const frozen = Object.values(reportFiles).filter((r) => r.provenance?.frozen === true && r.file?.includes('heldout') && r.mode !== 'mock')
 const leakshieldReport = frozen.find((r) => r.mode === 'leakshield')
 const baselineReport = frozen.find((r) => r.mode === 'baseline')
 
@@ -99,7 +102,7 @@ export function EvalView() {
         for (const turn of c.history ?? []) {
           conversation_id = (await chat(s.backend, s.token, { conversation_id, message: turn })).conversation_id
         }
-        const res = await chat(s.backend, s.token, { conversation_id, message: c.prompt }, { evalCapture: true })
+        const res = await chat(s.backend, s.token, { conversation_id, message: c.prompt, attached_doc: c.attached_doc }, { evalCapture: true })
         setRows((r) => ({ ...r, [c.id]: { status: 'done', ...judge(c, res) } }))
       } catch (e) {
         setRows((r) => ({ ...r, [c.id]: { status: 'error', error: (e as Error).message } }))
@@ -197,6 +200,24 @@ export function EvalView() {
 
         <section className="ink min-w-0">
           <div className="space-y-8 px-5 py-6 sm:p-8">
+            {development.length > 0 && <div className="space-y-3">
+              <h2 className="text-[15px] text-fg">Simulated development reports</h2>
+              <p className="text-[12px] text-muted">Loopback fixture provider; no model-backed accuracy or coordinated freeze. Leaks count declared forbidden values only.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-[13px]">
+                  <thead><tr className="text-[11px] text-faint">
+                    {['Dataset / mode', 'Cases', 'Errors', 'Provider leaks'].map(label => <th key={label} className="border-b border-line py-2 pr-3 font-normal">{label}</th>)}
+                  </tr></thead>
+                  <tbody>{development.map(report => <tr key={`${report.file}-${report.mode}`} className="border-b border-line">
+                    <td className="py-2 pr-3 text-muted">{report.file.split('/').at(-1)?.replace('.jsonl', '')} / {report.mode}</td>
+                    <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.cases}</td>
+                    <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.errors ?? '–'}</td>
+                    <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.provider_leaks}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div>
+              <p className="text-[12px] text-muted">Stage timings exclude model time and uninstrumented audit/vault work; they are not total security overhead.</p>
+            </div>}
             <div>
               <h2 className="text-[15px] text-fg">Frozen report</h2>
               <p className="mt-1 text-[12px] text-faint">60 held-out cases at tag eval-freeze, with and without LeakShield</p>
@@ -254,7 +275,7 @@ export function EvalView() {
                 <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-fg">
                   node eval/run.mjs eval/heldout.jsonl{'\n'}node eval/run.mjs eval/heldout.jsonl --baseline
                 </pre>
-                <p className="text-[12px] text-faint">Reports written to results/ appear here automatically.</p>
+                <p className="text-[12px] text-faint">Only reports explicitly marked with verified freeze provenance belong here.</p>
               </div>
             )}
 

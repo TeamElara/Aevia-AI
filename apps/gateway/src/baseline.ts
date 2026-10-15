@@ -12,7 +12,7 @@ export class OfflineBaseline {
   private readonly key = randomBytes(32);
   private readonly states = new Map<string, State>();
   private readonly sweeper: ReturnType<typeof setInterval>;
-  constructor(private readonly provider: Provider, private readonly audit: Audit, private readonly naiveRetrieve: (query: string) => Promise<string[]>) {
+  constructor(private readonly provider: Provider, private readonly audit: Audit, private readonly naiveRetrieve: (query: string, documentId?: string) => Promise<string[]>) {
     this.sweeper = setInterval(() => { for (const [id, s] of this.states) if (s.expires <= Date.now()) this.states.delete(id); }, 60_000);
     this.sweeper.unref();
   }
@@ -22,7 +22,7 @@ export class OfflineBaseline {
     if (clear.length > 150_000) throw new GatewayError('BASELINE_CAPACITY');
     return { owner, expires, iv, ciphertext: Buffer.concat([cipher.update(clear), cipher.final()]), tag: cipher.getAuthTag(), busy: false };
   }
-  async run(user: User, prompt: string, requestedId?: string): Promise<ChatResult> {
+  async run(user: User, prompt: string, requestedId?: string, documentId?: string): Promise<ChatResult> {
     const requestId = randomUUID(); const started = performance.now(); const id = requestedId ?? randomUUID();
     let state = this.states.get(id);
     if (!state) {
@@ -41,7 +41,7 @@ export class OfflineBaseline {
       await log('baseline.accepted');
       const decipher = createDecipheriv('aes-256-gcm', this.key, state.iv); decipher.setAAD(Buffer.from(id)); decipher.setAuthTag(state.tag);
       const history = JSON.parse(Buffer.concat([decipher.update(state.ciphertext), decipher.final()]).toString('utf8')) as Message[];
-      const retrievalStarted = performance.now(); const chunks = await this.naiveRetrieve(prompt); stage_ms.retrieval = performance.now() - retrievalStarted;
+      const retrievalStarted = performance.now(); const chunks = await this.naiveRetrieve(prompt, documentId); stage_ms.retrieval = performance.now() - retrievalStarted;
       if (chunks.reduce((n, s) => n + s.length, prompt.length) > 100_000) throw new GatewayError('PAYLOAD_TOO_LARGE', 413);
       const payload: Message[] = [{ role: 'system', content: `You are a workplace assistant. Private marker LS-CANARY-${randomBytes(24).toString('hex')}.` },
         ...history, ...chunks.map(content => ({ role: 'user' as const, content: `Retrieved reference:\n${content}` })), { role: 'user', content: prompt }];

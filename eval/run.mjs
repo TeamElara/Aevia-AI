@@ -5,6 +5,9 @@
 //
 //   node eval/run.mjs eval/dev.jsonl [more.jsonl] [--gateway URL] [--baseline] [--mock] [--out results]
 
+import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
+import { CONTRACT_VERSION, expectation } from './expectations.mjs'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { isIntervention, judge } from './checks.mjs'
@@ -106,7 +109,7 @@ async function runCase(client, c) {
     source_id: c.source_id,
     mutation: c.mutation,
     expected_action: c.expected_action,
-    ...judge(c, res),
+    ...judge(c, res, providerMode),
     wall_ms: Math.round(wall),
   }
 }
@@ -178,6 +181,8 @@ function markdown(name, summary, rows, ret) {
   const lines = [
     `# Eval: ${name} (${MODE})`,
     '',
+    `Development run; not a coordinated evaluation freeze. Overhead is measured stages excluding model time, not total security overhead.`,
+    '',
     `Run at ${new Date().toISOString()} against ${MOCK ? 'the built-in mock (runner self-test only)' : GATEWAY}.`,
     '',
     '| Metric | Value |',
@@ -221,6 +226,19 @@ function markdown(name, summary, rows, ret) {
 
 // ---------------------------------------------------------------- main
 
+// Record the actual target configuration, never infer provider mode from labels.
+const health = MOCK ? { provider_mode: 'mock', provider_external: true, model: 'mock' }
+  : await fetch(GATEWAY + '/api/health').then(r => { if (!r.ok) throw new Error('Gateway health unavailable'); return r.json() })
+if (!MOCK && typeof health.provider_external !== 'boolean') throw new Error('Gateway must advertise provider_external for contract scoring')
+if (BASELINE && !health.baseline_available) throw new Error('Explicit offline baseline is not configured')
+const providerMode = health.provider_external ? 'external' : 'local'
+const provenance = {
+  contract: CONTRACT_VERSION, provider_mode: providerMode, provider_evidence: health.provider_mode ?? 'unverified', model: health.model,
+  source_commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  source_dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(),
+  frozen: false,
+  overhead_definition: 'Sum of instrumented stages excluding llm (case insensitive); excludes audit/vault work outside stages. Wall time includes HTTP and model time. Not total security overhead.',
+}
 const client = await makeClient()
 mkdirSync(OUT, { recursive: true })
 const allRows = []
@@ -238,7 +256,7 @@ for (const file of files) {
     try {
       row = await runCase(client, c)
     } catch (e) {
-      row = { id: c.id, split: c.split, category: c.category, expected_action: c.expected_action, source_id: c.source_id, mutation: c.mutation, expected_intervention: isIntervention(c.expected_action), observed_intervention: false, correct: false, error: e.message }
+      row = { id: c.id, split: c.split, category: c.category, original_expected_action: c.expected_action, expected_action: expectation(c, providerMode).action, source_id: c.source_id, mutation: c.mutation, expected_intervention: isIntervention(expectation(c, providerMode).action), observed_intervention: false, correct: false, error: 'REQUEST_FAILED' }
     }
     rows.push(row)
     const mark = row.error ? 'ERR' : row.correct ? 'ok ' : 'MISS'
@@ -250,7 +268,7 @@ for (const file of files) {
   const name = basename(file, '.jsonl')
   const summary = summarise(rows)
   const ret = rows.some((r) => r.split === 'robustness') ? retention(allRows) : null
-  const report = { file, mode: MODE, gateway: MOCK ? 'mock' : GATEWAY, at: new Date().toISOString(), summary, retention: ret, cases: rows }
+  const report = { file, provenance: { ...provenance, dataset_sha256: createHash('sha256').update(readFileSync(file)).digest('hex') }, mode: MODE, gateway: MOCK ? 'mock' : GATEWAY, at: new Date().toISOString(), summary, retention: ret, cases: rows }
   writeFileSync(join(OUT, `${name}-${MODE}.json`), JSON.stringify(report, null, 2) + '\n')
   writeFileSync(join(OUT, `${name}-${MODE}.md`), markdown(name, summary, rows, ret))
 

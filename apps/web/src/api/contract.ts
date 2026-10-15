@@ -50,7 +50,7 @@ export interface ChatResponse {
   citations: { doc_id: string; title: string }[]
   approval_id?: string
   // Only with EVAL_MODE=1 and X-Eval-Capture: 1 (docs/API.md, Eval mode).
-  eval?: { provider_calls: number; provider_payload: string | null }
+  eval?: { provider_external?: boolean; provider_calls: number; provider_payload: string | null }
 }
 
 // Audit allowlist (PLAN.md §8). No prompt text, no values, no doc titles.

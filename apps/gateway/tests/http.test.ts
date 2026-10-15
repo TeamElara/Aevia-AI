@@ -85,7 +85,9 @@ describe('authenticated HTTP API', () => {
   it('rate limits authenticated bursts', async () => {
     const h = setup(); const token = await bearer();
     for (let i = 0; i < 60; i++) await request(h.app).get('/missing').set('Authorization', token);
-    expect((await request(h.app).post('/chat').set('Authorization', token).send({ prompt: 'Hello' })).status).toBe(429);
+    const limited = await request(h.app).post('/chat').set('Authorization', token).send({ prompt: 'Hello' });
+    expect(limited.status).toBe(429); expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+    expect(Number(limited.headers['retry-after'])).toBeLessThanOrEqual(60);
     expect(h.provider.complete).not.toHaveBeenCalled();
   });
   it('explicitly refuses baseline headers rather than publishing misleading protected baseline metrics', async () => {

@@ -1,3 +1,5 @@
+> Current continuation evidence: [ALWAZ-CONTINUATION.md](ALWAZ-CONTINUATION.md). Earlier snapshots below are historical.
+
 # Full merged gateway status
 
 Mahatva’s gateway has now landed and is merged here. `approvals/gateway.js` bridges the encrypted queue into its `ApprovalService`. It holds only an ephemeral, one-use replay grant while calling the original Gateway with the original user/conversation; the gateway recomputes and verifies policy, provider, payload and ACL hashes before a provider call. Admin decisions never return the requester’s answer to the admin. Original-user polling rechecks current document read access. API routes expose list/approve/reject and scoped result retrieval. Use `APPROVALS_MODULE=apps/gateway/src/approvals/gateway.js` with the provided retrieval module and seeded database.
