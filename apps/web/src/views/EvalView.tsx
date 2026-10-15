@@ -14,7 +14,6 @@ type Case = {
   history?: string[]
   attached_doc?: string | null
   prompt: string
-  attached_doc?: string | null
   expected_action: Action
   expected_categories: string[]
   must_not_reach_provider?: string[]
@@ -48,7 +47,7 @@ type Summary = {
   overhead_ms_p95: number | null
   cases: number
 }
-type Report = { provenance?: { frozen?: boolean; provider_evidence?: string }; file: string; mode: string; at: string; summary: Summary }
+type Report = { provenance?: { frozen?: boolean; provider_evidence?: string; freeze_commit?: string; model?: string; baseline_contract?: string }; file: string; mode: string; at: string; summary: Summary }
 
 const parseJsonl = (raw: string): Case[] =>
   raw
@@ -84,7 +83,8 @@ const developmentReports = Object.values(reportFiles).filter((r) => r.provenance
 const development = [...new Map(developmentReports.sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map(report => [`${report.file}-${report.mode}`, report] as const)).values()]
 const frozen = Object.values(reportFiles).filter((r) => r.provenance?.frozen === true && r.file?.includes('heldout') && r.mode !== 'mock')
 const leakshieldReport = frozen.find((r) => r.mode === 'leakshield')
-const baselineReport = frozen.find((r) => r.mode === 'baseline')
+const baselineReport = frozen.find((r) => r.mode === 'baseline' && r.provenance?.freeze_commit === leakshieldReport?.provenance?.freeze_commit && r.provenance?.model === leakshieldReport?.provenance?.model)
+const frozenRobustness = Object.values(reportFiles).find(r => r.file === 'eval/robustness.jsonl' && r.provenance?.frozen === true && r.provenance?.freeze_commit === leakshieldReport?.provenance?.freeze_commit)
 
 const ratio = (a: number, b: number) => (b ? (a / b).toFixed(2) : '–')
 
@@ -224,8 +224,8 @@ export function EvalView() {
               <p className="text-[12px] text-muted">Stage timings exclude model time and uninstrumented audit/vault work; they are not total security overhead.</p>
             </div>}
             <div>
-              <h2 className="text-[15px] text-fg">Frozen report</h2>
-              <p className="mt-1 text-[12px] text-faint">60 held-out cases at tag eval-freeze, with and without LeakShield</p>
+              <h2 className="text-[15px] text-fg">Frozen team snapshot</h2>
+              <p className="mt-1 text-[12px] text-faint">{leakshieldReport ? `Historical eval-freeze ${leakshieldReport.provenance?.freeze_commit?.slice(0, 7)} · ${leakshieldReport.provenance?.model}. Predates current retrieval/API fixes.` : 'No verified frozen snapshot loaded.'}</p>
             </div>
 
             {leakshieldReport ? (
@@ -239,7 +239,7 @@ export function EvalView() {
                   <StatTile
                     label="Without LeakShield"
                     value={baselineReport ? String(baselineReport.summary.provider_leaks) : '–'}
-                    sub={baselineReport ? 'same cases, same model' : 'baseline not run yet'}
+                    sub={baselineReport ? 'same cases/model; naive query baseline' : 'baseline not run yet'}
                   />
                 </div>
                 <table className="w-full border-collapse text-left text-[13px]">
@@ -272,6 +272,8 @@ export function EvalView() {
                     ))}
                   </tbody>
                 </table>
+                <p className="text-[12px] text-muted">{baselineReport?.provenance?.baseline_contract} Stage overhead excludes uninstrumented audit/vault work; archived wall times include quota pacing.</p>
+                {frozenRobustness && <p className="text-[12px] text-muted">Historical robustness: {Math.round((frozenRobustness.summary.correct_action_rate ?? 0) * frozenRobustness.summary.cases)}/{frozenRobustness.summary.cases} exact actions; {frozenRobustness.summary.provider_leaks} declared provider leaks. Intervention recall is not injection-detection recall.</p>}
                 <p className="font-mono text-[10px] text-faint">Run at {new Date(leakshieldReport.at).toLocaleString('en-GB')}</p>
               </>
             ) : (

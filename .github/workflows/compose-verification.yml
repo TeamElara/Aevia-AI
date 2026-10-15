@@ -9,6 +9,8 @@ jobs:
   compose:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      COMPOSE_REPORT_FILE: results/integrated-validation/compose-verification.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,7 +31,7 @@ jobs:
         if: always()
         with:
           name: compose-verification
-          path: results/mahatva/compose-verification.json
+          path: results/integrated-validation/compose-verification.json
           if-no-files-found: ignore
       - name: Clean up isolated verification containers
         if: always()
