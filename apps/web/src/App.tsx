@@ -7,6 +7,10 @@ import { PayloadCard, type Exchange } from './components/PayloadCard'
 import { Starfield } from './components/Starfield'
 import { exampleExchanges, users } from './data/demo'
 import { initials, pad2 } from './lib/format'
+import { ApprovalsView } from './views/ApprovalsView'
+import { EvalView } from './views/EvalView'
+import { IncidentsView } from './views/IncidentsView'
+import { OverviewView } from './views/OverviewView'
 
 const views = ['Chat', 'Incidents', 'Overview', 'Approvals', 'Eval'] as const
 type View = (typeof views)[number]
@@ -133,13 +137,11 @@ export default function App() {
             />
           </main>
         ) : (
-          <main className="mt-3 flex-1">
-            <Chamfer className="grid h-full min-h-[60vh] place-items-center p-10">
-              <div className="text-center">
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-faint">{view}</p>
-                <p className="mt-3 text-muted">This view is wired to the gateway in hours 6–12.</p>
-              </div>
-            </Chamfer>
+          <main className="mt-3 flex-1 pb-6">
+            {view === 'Incidents' && <IncidentsView />}
+            {view === 'Overview' && <OverviewView />}
+            {view === 'Approvals' && <ApprovalsView />}
+            {view === 'Eval' && <EvalView />}
           </main>
         )}
 

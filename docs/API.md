@@ -96,7 +96,73 @@ Only when the gateway is started with `EVAL_MODE=1`. Without it, the gateway ign
 
 **Canaries.** Every canary marker the gateway plants starts with `LS-CANARY-`. If one appears in a delivered `answer`, the runner counts a user leak.
 
-## Still to agree
+## Dashboard endpoints (admin token only)
 
-- `GET /api/events`: SSE stream of `AuditEvent` for the Incidents view (hour 9)
-- `GET /api/approvals`, `POST /api/approvals/:id/approve|reject` (hour 12)
+The console signs in as `admin` for the Incidents, Overview and Approvals views. Every other user gets `403`.
+
+### `GET /api/events?token=<jwt>`
+
+A Server-Sent Events stream. `EventSource` cannot set headers, so the token goes in the query string. Each message's `data:` is one `AuditEvent`, using only the allowlisted fields in PLAN.md §8:
+
+```json
+{
+  "request_id": "req_01J…",
+  "ts": "2026-10-16T10:42:07.118Z",
+  "user_pseudo": "u_7f3a91c2",
+  "conversation_pseudo": "c_0b44e1d9",
+  "stage": "inspect",
+  "categories": ["AADHAAR", "PAN"],
+  "counts": { "AADHAAR": 1, "PAN": 1 },
+  "rule_ids": ["pii.aadhaar.verhoeff_ctx", "pii.pan"],
+  "policy_version": 3,
+  "action": "mask",
+  "model_called": true,
+  "via": ["raw"],
+  "stage_ms": { "PII": 3, "Inject": 41, "ACL": 2, "LLM": 620, "Out": 4 },
+  "total_ms": 670
+}
+```
+
+On connect, the gateway first sends the last 50 events, then sends new ones live.
+
+### `GET /api/stats?window=60`
+
+Aggregates over the last `window` minutes (default 60):
+
+```json
+{
+  "window_minutes": 60,
+  "requests": 128,
+  "blocked_pct": 18.8,
+  "masked_pct": 31.3,
+  "by_category": { "AADHAAR": 22, "SECRET": 6, "INJECTION": 14 },
+  "by_action": { "allow": 61, "mask": 40, "block": 24, "deny": 3 },
+  "per_5min": [{ "t": "2026-10-16T10:00:00Z", "incidents": 4 }],
+  "overhead_ms_p50": 46,
+  "overhead_ms_p95": 118,
+  "policy_version": 3
+}
+```
+
+`per_5min` lists every bucket in the window, including empty ones. An incident is any event whose action is not `allow`. Overhead excludes `LLM` time and approval waits.
+
+### `GET /api/approvals`
+
+Returns the approval metadata stored in Mongo, newest first, with no payload:
+
+```json
+[{
+  "approval_id": "apr_01J…",
+  "request_hash": "sha256:9c1e…",
+  "user_pseudo": "u_2c81aa07",
+  "doc_ids": ["garuda-roadmap"],
+  "reason": "Confidential document requires approval for external LLM",
+  "status": "pending",
+  "created_at": "2026-10-16T10:40:00Z",
+  "expires_at": "2026-10-16T10:50:00Z"
+}]
+```
+
+### `POST /api/approvals/:id/approve` and `POST /api/approvals/:id/reject`
+
+Return the updated `Approval`. Approving makes the gateway re-check policy and ACL against `request_hash` and then replay the request. Rejecting, or letting the request expire, deletes the in-memory copy. A decision on a request that is no longer pending returns `409`.
