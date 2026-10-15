@@ -49,10 +49,19 @@ async function start() {
   }
   const policies = new PolicyStore(config.POLICY_PATH);
   policies.snapshot();
-  const securityEscalation = config.SECURITY_ESCALATION_ENABLED
-    ? new SecurityEscalation(client.db(config.MONGODB_DB), audit, loadSecurityHierarchy(config.SECURITY_HIERARCHY_PATH)) : undefined;
-  if (securityEscalation && !principal) throw new GatewayError('SECURITY_ESCALATION_REQUIRES_DB_PRINCIPAL');
-  await securityEscalation?.initialise();
+  let securityEscalation: SecurityEscalation | undefined;
+  if (config.SECURITY_ESCALATION) {
+    try {
+      if (!principal) throw new GatewayError('SECURITY_ESCALATION_REQUIRES_DB_PRINCIPAL');
+      securityEscalation = new SecurityEscalation(client.db(config.MONGODB_DB), audit, loadSecurityHierarchy(config.SECURITY_HIERARCHY_PATH));
+      await securityEscalation.initialise();
+    } catch (error) {
+      // Asked for explicitly: refuse to start without it. On by default only: run without warnings.
+      if (config.SECURITY_ESCALATION_EXPLICIT) throw error;
+      securityEscalation?.close(); securityEscalation = undefined;
+      safeLog('SECURITY_WARNINGS_OFF');
+    }
+  }
   const vault = new ConversationVault();
   const provider = new HttpProvider(config.LLM_PROVIDER === 'groq'
     ? { kind: 'groq', baseURL: 'https://api.groq.com/openai/v1', apiKey: config.GROQ_API_KEY, model: config.GROQ_MODEL! }

@@ -49,6 +49,6 @@ export async function startGatewayDemo(port=8080, options: { baseline?: boolean;
  return {url:`http://127.0.0.1:${(server.address() as any).port}`,async close(){securityEscalation?.close();baseline?.close();await attachments.close();approvals.close();vault.close();policies.close();server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));upstream.closeAllConnections();await new Promise<void>(r=>upstream.close(()=>r()));await client.close();await mongo.stop();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const demo=await startGatewayDemo(8080,{securityEscalation:process.env.SECURITY_ESCALATION_ENABLED==='true'});process.stdout.write(`Merged gateway demo: ${demo.url} (SIMULATED HTTP PROVIDER; no cloud calls)\n`);
+ const demo=await startGatewayDemo(8080,{securityEscalation:process.env.SECURITY_ESCALATION_ENABLED!=='false'});process.stdout.write(`Merged gateway demo: ${demo.url} (SIMULATED HTTP PROVIDER; no cloud calls)\n`);
  let closing=false;const close=async()=>{if(closing)return;closing=true;await demo.close();};process.once('SIGINT',close);process.once('SIGTERM',close);
 }
