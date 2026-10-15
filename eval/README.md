@@ -9,7 +9,7 @@ One JSON object per line (JSONL). The eval runner reads these files and the dash
 | `robustness.jsonl` | 60 | Script (30) + Alwaz paraphrases (15) + Arihant Hinglish (15) | **Not Ojaswi** |
 | `live_subset.jsonl` | 10 | Arihant picks from held-out | **Not Ojaswi** |
 
-ID ranges, so nobody collides: dev `D-001`–`D-007` Mahatva, `D-008`–`D-013` Alwaz, `D-014`–`D-020` Arihant (done). Held-out `H-001`–`H-024` Mahatva, `H-025`–`H-040` Alwaz, `H-041`–`H-060` Arihant.
+ID ranges, so nobody collides: dev `D-001`–`D-007` Mahatva, `D-008`–`D-013` Alwaz, `D-014`–`D-020` Arihant (done). Held-out `H-001`–`H-024` Mahatva, `H-025`–`H-040` Alwaz, `H-041`–`H-060` Arihant. Robustness `R-001`–`R-030` script (`--start 1`), `R-031`–`R-045` Arihant Hinglish (`R-031`–`R-036` done, from H-053–H-056, H-059, H-060), `R-046`–`R-060` Alwaz paraphrase.
 
 Send your cases to Arihant, or append them to the file on your branch. Run `node eval/validate.mjs eval/dev.jsonl` before you merge.
 

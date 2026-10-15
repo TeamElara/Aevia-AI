@@ -73,6 +73,48 @@ Response `200`:
 
 Errors: `401` bad or missing token, `400` empty message, `503` provider down after retries. Body: `{ "error": "<short message>" }`, with no prompt text.
 
+## OpenAI-compatible drop-in: `POST /v1/chat/completions`
+
+Lets an existing app adopt the gateway by changing only `baseURL`; `demo/sdk-demo.mjs` shows this. The request and response bodies follow OpenAI's Chat Completions format.
+
+- **Auth:** `Authorization: Bearer <api key>`. Each demo API key maps to a seeded user, e.g. `ls_demo_asha` for `asha`. A JWT is not required on this path.
+- **Pipeline:** the full pipeline runs on the last user message; earlier messages count as history. The canary is appended to the app's own `system` message.
+- **Streaming:** with `stream: true`, the gateway buffers the whole model reply, inspects and restores it, and only then sends it as `chat.completion.chunk` SSE events, ending with `data: [DONE]`. Raw model tokens never stream through.
+- **LeakShield's decision** goes in an extra top-level field that OpenAI SDKs ignore:
+
+```json
+"leakshield": { "action": "mask", "reason": "2 values masked before sending", "rule_ids": ["pii.aadhaar.verhoeff_ctx"], "provider_calls": 1 }
+```
+
+- **When a request is blocked**, the gateway still returns `200` with a normal completion whose content is the block message (`finish_reason: "stop"`), so unmodified apps show the reason instead of crashing. `leakshield.provider_calls` is `0`.
+
+## Browser extension: `POST /v1/scan`
+
+Used by the Chrome extension on chatgpt.com (PLAN.md, stretch). It scans text **without calling any model**. Auth works the same way as for `/v1/chat/completions`.
+
+Request:
+
+```json
+{ "text": "KYC letter for Aadhaar 2345 6789 0124", "history": ["earlier user messages, oldest first"] }
+```
+
+Response:
+
+```json
+{
+  "action": "mask",
+  "reason": "1 value masked",
+  "rule_ids": ["pii.aadhaar.verhoeff_ctx"],
+  "findings": [{ "category": "AADHAAR", "source": "prompt", "via": "raw", "ruleId": "pii.aadhaar.verhoeff_ctx" }],
+  "masked_text": "KYC letter for Aadhaar [AADHAAR_K7Q2]",
+  "vault": { "[AADHAAR_K7Q2]": "2345 6789 0124" }
+}
+```
+
+- `vault` holds only values the caller typed in this request. The gateway does not keep it: the extension holds it in tab memory, so it can restore values in the rendered reply.
+- With `action: "block"`, `masked_text` and `vault` are `null`, and the extension stops the submit.
+- The gateway still writes the usual metadata-only audit event.
+
 ## Eval mode (used by `eval/run.mjs`)
 
 Only when the gateway is started with `EVAL_MODE=1`. Without it, the gateway ignores both headers below.
