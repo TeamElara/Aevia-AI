@@ -20,7 +20,9 @@ jobs:
           version: '11.25.0'
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - run: pnpm typecheck
       - run: pnpm typecheck:access
+      - run: pnpm test:integration
       - run: pnpm eval:validate
       - run: npm ci --prefix apps/web
       - run: npm run build --prefix apps/web

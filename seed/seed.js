@@ -24,7 +24,7 @@ if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').hre
     console.log('Demo JWTs written to ignored seed/tokens.json');
   } else {
     const { MongoClient } = await import('mongodb');
-    const client = new MongoClient(process.env.MONGO_URL ?? 'mongodb://localhost:27017');
-    try { await client.connect(); console.log(await seedDatabase(client.db('leakshield'))); } finally { await client.close(); }
+    const client = new MongoClient(process.env.MONGO_URL || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017');
+    try { await client.connect(); console.log(await seedDatabase(client.db(process.env.MONGODB_DB ?? 'aevia'))); } finally { await client.close(); }
   }
 }

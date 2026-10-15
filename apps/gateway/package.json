@@ -1,0 +1,5 @@
+{
+  "name": "@aevia/gateway",
+  "private": true,
+  "type": "module"
+}

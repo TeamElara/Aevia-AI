@@ -41,7 +41,7 @@ export function createApprovals({ metadata, revalidate, replay, now = Date.now, 
         if (now() >= item.expiresAt) throw new Error('Approval expired');
         await metadata.updateOne({ _id: id }, { $set: { status: 'replaying' } });
         if (now() >= item.expiresAt) throw new Error('Approval expired');
-        const result = await replay(payload, ctx); // Replay enters the full gateway policy + ACL pipeline.
+        const result = await replay(payload, ctx, { approvalId: id }); // Replay enters the full gateway policy + ACL pipeline.
         await metadata.updateOne({ _id: id }, { $set: { status: 'approved' } });
         return result;
       } catch (error) {

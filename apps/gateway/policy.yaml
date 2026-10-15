@@ -1,0 +1,9 @@
+version: "1"
+injection:
+  warn: 0.60
+  block: 0.85
+actions:
+  pii: mask
+  email: warn
+  secret: block
+allowed_link_hosts: []

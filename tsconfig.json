@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
+    "noEmit": true
+  },
+  "include": [
+    "types.ts",
+    "apps/gateway/**/*.ts",
+    "vitest*.config.ts"
+  ],
+  "exclude": [
+    "apps/gateway/src/retrieval/integration/**"
+  ]
+}

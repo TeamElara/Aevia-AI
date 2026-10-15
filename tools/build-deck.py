@@ -52,8 +52,8 @@ s=slide('Quarantine and approvals')
 text(s,'Ingest source → scan hidden carriers → quarantine whole document',.75,1.9,11.8,1.1,27,GREEN)
 text(s,'Comments, hidden CSS, white text, zero-width characters and alt/title attributes are checked before rendering.',.75,3.1,11.6,1.1,24)
 text(s,'Pending requests use AES-GCM in memory for ten minutes. Mongo stores metadata and request hash. Approval is single use and rechecks current permissions.',.75,4.7,11.6,1.5,24)
-s=slide('Measured access evidence','HTTP, JWT, real MongoDB and detectors · simulated provider')
-table(s,['Measurement','Observed'],[['Vitest security suite','143 passed · 0 failed'],['Expected access actions',f"{r['passed']} / {r['cases']}"],['Synthetic corpus','10 documents · 2 quarantined'],['HTTP integration p50 / p95',f"{h['p50_ms']:.3f} / {h['p95_ms']:.3f} ms"]])
+s=slide('Measured access evidence','Reference-host HTTP timing · merged suites use simulated providers')
+table(s,['Measurement','Observed'],[['Vitest security suite','219 + 21 passed · 0 failed'],['Expected access actions',f"{r['passed']} / {r['cases']}"],['Synthetic corpus','10 documents · 2 quarantined'],['HTTP integration p50 / p95',f"{h['p50_ms']:.3f} / {h['p95_ms']:.3f} ms"]])
 text(s,'Includes real detectors. Excludes model/network time and human approval wait. This is not the final frozen gateway evaluation.',.75,5.9,11.7,.9,19,MUTED)
 s.notes_slide.notes_text_frame.text='Source: results/alwaz/access-eval.json. Access-only fixtures are not detector precision/recall or full-team leak metrics.'
 s=slide('Classifier feasibility','Pinned ProtectAI DeBERTa model · local Node ONNX · English only')
@@ -66,7 +66,7 @@ table(s,['Control','Act reference'],[['Limit outbound personal data','Section 6(
 text(s,'These provisions have phased commencement; as of 15 Oct 2026, the cited substantive duties are scheduled for 13 May 2027.',.75,5.9,11.7,.9,19,MUTED)
 s.notes_slide.notes_text_frame.text='Primary source: https://www.indiacode.nic.in/bitstream/123456789/22037/1/a2023-22.pdf ; sections 6(1), 8(5)-(7), commencement footnote at page 5. Controls assist implementation but do not satisfy notice, consent, notification or erasure workflows on their own.'
 s=slide('Integration limits and next gates')
-text(s,'Ready: access, encrypted approvals, HTTP/JWT, scoped vault, actual detectors and connected approval UI.',.75,1.9,11.8,1.2,27,GREEN)
+text(s,'Ready: merged gateway, actual detectors, ACLs, encrypted approval replay, audit and connected UI.',.75,1.9,11.8,1.2,27,GREEN)
 text(s,'Remaining: team Groq settings, a real Groq/Ollama run, full frozen evaluation and real-model rehearsal.',.75,3.5,11.8,1.3,25)
 text(s,'Approved content reaches Groq. Fingerprints catch copying, not paraphrases. Team Groq settings still need account verification.',.75,5.25,11.8,1.1,23,MUTED)
 s.notes_slide.notes_text_frame.text='Groq policy source: https://console.groq.com/docs/your-data . Team-specific ZDR and rate limits have not been verified. Implementation published for review: https://github.com/TeamElara/Aevia-AI/pull/1 .'

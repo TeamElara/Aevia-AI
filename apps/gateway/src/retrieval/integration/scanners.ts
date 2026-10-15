@@ -1,4 +1,4 @@
-import { safeDetectAll, detectSplitSecrets, findLinks } from '../../../../../packages/detectors/src/index';
+import { safeDetectAll, detectSplitSecrets, findLinks } from '../../../../../packages/detectors/src/index.js';
 import { createConversationVault } from './vault.js';
 const pii = new Set(['AADHAAR','VID','PAN','PHONE','CARD','IFSC','UPI','BANK_ACCOUNT','EMAIL']);
 const dangerous = (f: any) => ['SECRET','PRIVATE_KEY','CANARY'].includes(f.category) || f.category === 'INJECTION' && f.score >= .85;

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { issueToken, verifyToken } from '../../../../../seed/auth.js';
 import { createAccessService } from '../service.js';
 import { createFingerprinter } from '../fingerprints.js';
-import { createBoundaryScanners } from './scanners';
+import { createBoundaryScanners } from './scanners.js';
 
 /** Local integration host. Production callers must install their own login/authentication flow. */
 export function createIntegrationServer({ db, jwtSecret, fingerprintKey, provider, demoLogin = false, evalMode = false, providerMode = 'configured', scan, log = (_: any) => {} }: any) {

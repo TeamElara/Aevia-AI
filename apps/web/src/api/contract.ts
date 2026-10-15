@@ -62,7 +62,7 @@ export interface AuditEvent {
   categories: string[]
   counts: Record<string, number>
   rule_ids: string[]
-  policy_version: number
+  policy_version: string | number
   action: Action
   model_called: boolean
   via: ('raw' | 'normalised' | 'decoded')[]
@@ -80,7 +80,7 @@ export interface Stats {
   per_5min: { t: string; incidents: number }[]
   overhead_ms_p50: number | null
   overhead_ms_p95: number | null
-  policy_version: number
+  policy_version: string | number
 }
 
 export interface Approval {
