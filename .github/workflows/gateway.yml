@@ -9,6 +9,8 @@ jobs:
   gateway:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      MONGOMS_VERSION: 8.0.16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,6 +19,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run typecheck --workspace @leakshield/detectors
+      - run: npm run typecheck:access
       - run: npm test
       - run: npm run test:integration
       - run: npm run build --workspace @leakshield/web

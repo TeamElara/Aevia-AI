@@ -43,10 +43,11 @@ describe('authenticated HTTP API', () => {
     expect(r.status).toBe(200); expect(r.headers['content-type']).toContain('text/event-stream');
     expect(r.text).toContain('chat.completion.chunk'); expect(r.text).toContain('[DONE]');
   });
-  it('never begins a stream for a policy-blocked prompt', async () => {
+  it('returns an inspected block message in compatible streaming format without a provider call', async () => {
     const h = setup();
     const r = await request(h.app).post('/v1/chat/completions').set('Authorization', await bearer()).send({ stream: true, messages: [{ role: 'user', content: 'AKIAABCDEFGHIJKLMNOP' }] });
-    expect(r.status).toBe(403); expect(r.body.provider_calls).toBe(0); expect(r.headers['content-type']).toContain('application/json');
+    expect(r.status).toBe(200); expect(r.text).toContain('"provider_calls":0'); expect(r.text).toContain('"action":"block"'); expect(r.text).not.toContain('AKIAABCDEFGHIJKLMNOP');
+    expect(h.provider.complete).not.toHaveBeenCalled();
   });
   it('rejects unsupported SDK parameters and provider model selection', async () => {
     const h = setup(); const token = await bearer();

@@ -17,7 +17,19 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "token": "tsx apps/gateway/scripts/token.ts",
-    "setup:env": "tsx apps/gateway/scripts/setup-env.ts"
+    "setup:env": "tsx apps/gateway/scripts/setup-env.ts",
+    "test:detectors": "vitest run packages/detectors/test",
+    "test:access": "vitest run tests/security tests/integration",
+    "seed": "node --import tsx apps/gateway/scripts/seed.ts",
+    "benchmark": "node tests/security/benchmark.js",
+    "eval:validate": "node eval/validate.mjs eval/dev.jsonl eval/heldout.jsonl eval/robustness.jsonl eval/live_subset.jsonl",
+    "classifier:spike": "node tools/classifier-spike.mjs",
+    "test:report": "WRITE_ACCESS_RESULTS=1 vitest run tests/security",
+    "demo:access": "node --import tsx seed/run-access-demo.mjs",
+    "demo:gateway": "node --import tsx seed/run-gateway-demo.ts",
+    "verify:ollama": "tsx seed/verify-ollama.ts",
+    "test:integration:report": "WRITE_GATEWAY_RESULTS=1 vitest run tests/integration",
+    "typecheck:access": "tsc -p tsconfig.access.json"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
@@ -37,6 +49,10 @@
     "supertest": "^7.1.4",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.4",
+    "@huggingface/transformers": "^4.3.1"
+  },
+  "overrides": {
+    "vitest": "$vitest"
   }
 }

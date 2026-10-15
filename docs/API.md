@@ -39,6 +39,8 @@ Request:
 
 `conversation_id` is `null` on the first turn. The gateway creates one and returns it, and the console sends it back on later turns. The vault is keyed by `(user_id, conversation_id)`.
 
+An optional `attached_doc` selects a synthetic corpus document by ID. It is resolved with the same ACL and quarantine checks; unknown or forbidden IDs return a denial without a document title. The evaluator forwards this field from its JSONL cases.
+
 Response `200`:
 
 ```json
@@ -48,9 +50,9 @@ Response `200`:
   "answer": "Dear customer, Aadhaar 2345 6789 0124 is verified…",
   "action": "mask",
   "reason": "3 values masked before sending",
-  "rule_ids": ["pii.aadhaar.verhoeff_ctx", "pii.pan"],
+  "rule_ids": ["pii.aadhaar.ctx", "pii.pan.ctx"],
   "findings": [
-    { "category": "AADHAAR", "source": "prompt", "via": "raw", "ruleId": "pii.aadhaar.verhoeff_ctx" }
+    { "category": "AADHAAR", "source": "prompt", "via": "raw", "ruleId": "pii.aadhaar.ctx" }
   ],
   "stage_ms": { "PII": 3, "Inject": 41, "ACL": 2, "LLM": 620, "Out": 4 },
   "sent_to_model": "Draft a KYC letter for Aadhaar [AADHAAR_K7Q2]",
@@ -83,7 +85,7 @@ Lets an existing app adopt the gateway by changing only `baseURL`; `demo/sdk-dem
 - **LeakShield's decision** goes in an extra top-level field that OpenAI SDKs ignore:
 
 ```json
-"leakshield": { "action": "mask", "reason": "2 values masked before sending", "rule_ids": ["pii.aadhaar.verhoeff_ctx"], "provider_calls": 1 }
+"leakshield": { "action": "mask", "reason": "2 values masked before sending", "rule_ids": ["pii.aadhaar.ctx"], "provider_calls": 1 }
 ```
 
 - **When a request is blocked**, the gateway still returns `200` with a normal completion whose content is the block message (`finish_reason: "stop"`), so unmodified apps show the reason instead of crashing. `leakshield.provider_calls` is `0`.
@@ -104,8 +106,8 @@ Response:
 {
   "action": "mask",
   "reason": "1 value masked",
-  "rule_ids": ["pii.aadhaar.verhoeff_ctx"],
-  "findings": [{ "category": "AADHAAR", "source": "prompt", "via": "raw", "ruleId": "pii.aadhaar.verhoeff_ctx" }],
+  "rule_ids": ["pii.aadhaar.ctx"],
+  "findings": [{ "category": "AADHAAR", "source": "prompt", "via": "raw", "ruleId": "pii.aadhaar.ctx" }],
   "masked_text": "KYC letter for Aadhaar [AADHAAR_K7Q2]",
   "vault": { "[AADHAAR_K7Q2]": "2345 6789 0124" }
 }
@@ -157,7 +159,7 @@ A Server-Sent Events stream authenticated with `Authorization: Bearer <jwt>`. Th
   "stage": "inspect",
   "categories": ["AADHAAR", "PAN"],
   "counts": { "AADHAAR": 1, "PAN": 1 },
-  "rule_ids": ["pii.aadhaar.verhoeff_ctx", "pii.pan"],
+  "rule_ids": ["pii.aadhaar.ctx", "pii.pan.ctx"],
   "policy_version": 3,
   "action": "mask",
   "model_called": true,
@@ -209,4 +211,6 @@ Returns the approval metadata stored in Mongo, newest first, with no payload:
 
 ### `POST /api/approvals/:id/approve` and `POST /api/approvals/:id/reject`
 
-Return the updated `Approval`. Approving makes the gateway re-check policy and ACL against `request_hash` and then replay the request. Rejecting, or letting the request expire, deletes the in-memory copy. A decision on a request that is no longer pending returns `409`.
+The decision body includes `{ "request_hash": "<listed SHA-256 request hash>" }`; a mismatched hash returns `409`. Return the updated `Approval`. Transient `replaying` and terminal `failed` states may also appear. Approving makes the gateway re-check policy and ACL against `request_hash` and then replay the request. Rejecting, or letting the request expire, deletes the in-memory copy. A decision on a request that is no longer pending returns `409`.
+
+The access integration host also supports `GET /api/access/results/:request_id?conversation_id=...` for the original user and conversation: `202` while pending, then a buffered ChatResponse once. Other users/conversations and consumed results receive `404`.

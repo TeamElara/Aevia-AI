@@ -1,67 +1,54 @@
 # Mahatva gateway hand-off
 
-Implemented against `docs/TEAM.md` and the existing `apps/web/src/api/contract.ts`. Gateway code stays under `apps/gateway`; root changes are shared setup/contracts. The two web API files have a minimal integration change for header-authenticated incident streaming and policy-version typing; components/design and detector/access implementations are untouched.
+The team branches are integrated with their authorship preserved. Canonical install/test commands use the root npm workspace and `package-lock.json`; legacy per-folder/pnpm locks are not used by CI.
 
-## Ojaswi → gateway
+## Detector boundary
 
-Export `detectAll(text, ctx)` from `packages/detectors/src/index.ts`. The gateway dynamically imports it at startup. A missing module, thrown exception, timeout, malformed result, invalid span, or invalid category/rule ID stops the request. Restart after adding/replacing the module.
+`apps/gateway/src/detector-adapter.ts` loads Ojaswi's public helpers from `packages/detectors/src/index.ts`:
 
-`ctx` includes `source`, `canaries`, `currentUser` and `knownUsers`, plus gateway request/user metadata. Results follow the existing detector contract, including offsets into the supplied text. Only metadata is returned to the console; original offsets remain internal.
+- Prompt, history, document and outbound inspection use `safeDetectAll`; `ok:false` stops processing. The gateway validates the returned schema/spans as well.
+- Output uses `detectResponse` with planted canaries.
+- Last-three-user-turn joins also use `detectSplitSecrets`; detected split keys stop before any provider call.
+- Post-restoration link sanitisation uses `findLinks`, followed by the gateway's additional plain-text URL/markup controls.
+- UI-facing findings contain exactly `category`, `source`, `via`, `ruleId`; offsets/scores remain internal. Existing detector rule IDs are preserved, including `pii.aadhaar.ctx`, and API examples match them.
 
-The gateway hides **only exact opaque tokens already minted by the authenticated conversation vault**, using same-length spaces in the inspection view. It similarly excludes the generated marker from input-side PII checks. This prevents random nonce digits from looking like PII without exempting attacker-written lookalikes. Output-side canary checks remain active. The gateway-authored system message is exempt from injection scoring; client text is not.
+Only exact opaque tokens minted by the current user's conversation vault are exempted from accidental numeric detection, using same-length inspection spaces. Attacker-written lookalikes remain scanned. The gateway-generated system marker is exempted only on input; output detection remains active. Trusted gateway instructions alone are exempt from injection scoring.
 
-Checksum-only Aadhaar (`score < 0.8`) warns in both directions. Strong Aadhaar and other PII are masked inbound and redacted outbound. Secrets/private keys always block. Registered confidential labels in documents are redacted; the document's external-provider flag still governs whether its contents may leave.
+Checksum-only Aadhaar warns; strong PII masks; email/IFSC default to configurable warn; credentials block. Document-derived PII is irreversibly redacted, never added to the user's reversible vault. Confidential document labels are redacted while `external_llm` governs the entire document's disclosure.
 
-## Alwaz → gateway
+## Access and approvals
 
-Your published `createRetriever`/`assembleChunks` API is now supported directly through `apps/gateway/src/access-adapter.ts`. Set `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` and `FINGERPRINT_KEY` to the seed key, and seed the configured `MONGODB_DB` (default `aevia`, while your standalone seed CLI currently defaults to `leakshield`). The adapter reloads users from Mongo, requests internal read-authorised chunks, rechecks their content hashes/ACLs, maps `document_id` to `doc_id`, and checks forbidden response shingles. JWTs from either the gateway issuer or `leakshield-seed` are supported when the database principal resolver is active. Token groups cannot override current Mongo memberships.
+Default sample settings:
 
-A standalone module can alternatively export:
-
-```ts
-retrieve(user: User, query: string): Promise<Chunk[]>
-restrictedOverlap(response: string, user: User): Promise<boolean>
+```dotenv
+RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js
+APPROVALS_MODULE=apps/gateway/src/approvals/index.js
 ```
 
-Use the shared `Chunk` type: `text`, `doc_id`, `allowed_groups`, `allowed_users`, `classification`, `external_llm`, `injection_score`, optional `title`/`canary`. Apply group OR user ACLs inside the Mongo query, before ranking/limiting. The gateway checks both arrays again; a missing ACL or forbidden returned chunk fails closed without exposing its title.
+With Mongo running, `npm run seed` uses `MONGODB_URI`, `MONGODB_DB` (default `aevia`) and the same `FINGERPRINT_KEY` as the gateway. It upserts the ten known **synthetic demo fixtures**; never run it on production data. This wrapper avoids the standalone legacy seed CLI's different database default.
 
-Any suspicious chunk removes the whole document from context. PII from documents is irreversibly redacted and never enters the user vault. `external_llm: deny` withholds an external call. Local Ollama can process read-authorised content under the local-provider policy. Provider permission is checked before approval, so an approval never overrides a deny.
+The access adapter uses `createRetriever`/`assembleChunks`, reloads current Mongo memberships, rechecks source hashes/ACLs, supports group and per-user grants, and checks forbidden output shingles. `attached_doc` selection is ACL-filtered; denied IDs expose no title; poisoned selected sources are quarantined. Prompt text never grants access. Existing seed JWTs and gateway JWTs are accepted only with current database membership enforcement.
 
-The queue factory on your branch has a different replay interface from the gateway's minimal approval port. **Do not set `APPROVALS_MODULE` directly to your factory file yet.** A bridge must inject `revalidate`/`replay` callbacks that re-enter the full gateway pipeline, provide the ephemeral one-use grant consumed by `verifyAndConsume`, and register authenticated approve/reject/result routes. Until that bridge exists, requests correctly remain `require_approval` with zero provider calls.
+`approval-bridge.ts` wraps Alwaz's AES-GCM queue. Admin approval creates a private one-use grant and re-enters the full gateway pipeline with the original encrypted request. Current identity, policy, retrieval, ACLs, source integrity, provider permissions, scans and canonical request hash are checked again. A disappearing/changed document or revoked membership causes denial before any provider call. Simultaneous decisions cannot replay twice.
 
-The gateway's standalone adapter port expects an `approvals` object:
+Mongo approval rows contain metadata/hash only. Payloads and original input stay encrypted in queue memory for ten minutes. Admin responses contain metadata, never the answer. The original user polls `/api/access/results/:requestId?conversation_id=...`; a result is owner/conversation-bound and returned once. Rejection/expiry/revalidation failure yields a denial. Restart invalidates pending in-memory state.
 
-```ts
-enqueue({ messages, chunks }, ctx): Promise<{ id: string; expires_at: string }>
-verifyAndConsume(id, ctx): Promise<boolean>
-```
+## Console and evaluation
 
-`ctx` contains `user`, `requestId`, `conversationId`, `policyVersion`, `requestHash`. Queue storage, AES-GCM encryption, 10-minute expiry, admin approve/reject endpoints and metadata-only Mongo records remain Alwaz's work.
+Gateway port is **8080**. Supported: `/api/health`, opt-in `/api/auth/login`, `/api/chat`, admin `/api/events`, `/api/stats`, `/api/approvals` and approval decisions/results. Incidents use header-authenticated streaming fetch, with recent-event replay. Statistics count final requests once and exclude LLM time from overhead. Approval polling is connected to the original chat; duplicate merge-added approval APIs/screens were resolved.
 
-An approved request is resubmitted to `/api/chat` or `/chat` with the original message, conversation ID and `approval_id`. The gateway reruns retrieval, ACL, scans and policy, hashes the assembled content plus identity/ACL/provider state, and calls `verifyAndConsume`. It must atomically verify approval status, expiry, owner, conversation and identical hash, then consume once. The random per-attempt system canary is excluded from the hash; actual model context, current policy version and destination are bound. Do not call the provider directly from the approval endpoint. Never store raw replay payloads in Mongo or logs.
+`/v1/chat/completions` accepts the `leakshield` alias or configured model, buffers before streaming, and returns `leakshield` metadata. A policy block returns HTTP 200 with a safe explanation and zero provider calls so the stock SDK can display it. Unsupported tools/images/options remain rejected. `demo/sdk-demo.mjs` defaults to the alias. Only explicit `DEMO_AUTH=true` with no configured real API keys enables its `ls_demo_asha` key.
 
-## Arihant → gateway
+`/v1/scan` accepts `{text, history}`, emits metadata audit and returns summaries, `masked_text` and a caller-owned temporary vault. Blocked scans return null text/vault. The gateway deletes that temporary vault after the response is constructed. It remains advisory: final assembled-payload inspection is mandatory on the actual gateway path.
 
-The existing console chat contract is supported: gateway port **8080**, `/api/health`, opt-in `/api/auth/login`, and `/api/chat` with `message`/nullable conversation ID. Chat replies include findings summaries, `rule_ids`, `citations`, `sent_to_model: string | null`, action and actual provider-call count. Responses blocked after a call use `block_response` on the console API. The lower-level `/chat` retains the internal `block` action and full numeric finding metadata for evaluation.
+`EVAL_MODE=1` or `true` enables `X-Eval-Capture: 1` only on loopback. The existing evaluator receives `eval.provider_calls` and `eval.provider_payload`, checks booleans, then discards the payload. It now forwards `attached_doc`. Baseline additionally requires a separate loopback process with `BASELINE_MODE=true` and synthetic fixtures; ordinary servers reject passthrough headers. Never commit captured payloads or confuse simulated generation with real inference results.
 
-`/api/events` and `/events` both require an admin bearer token. Connect with streaming `fetch`, not query-string JWTs. Events contain only the audit allowlist. Slow consumers are disconnected; reconnect reauthenticates. The stream is rotated every five minutes.
+Shared files now contain **20 dev cases (D-001–D-020), 60 held-out cases (H-001–H-060), 60 robustness cases and 10 live-subset cases**. Mahatva's contribution copies remain under `eval/contributions/mahatva/`. The shared benchmark files were assembled and schema-validated; gateway detector tuning used dev cases only. Existing access-package tests exercise their authored access fixtures, including their own held-out/robustness copies, and are not independent frozen evaluation evidence.
 
-The web client now uses that header-authenticated stream, and the server replays the last 50 metadata events before live events, without an initial-subscription gap. `/api/stats` counts final request records once rather than counting every pipeline stage. Its overhead subtracts LLM time, and it includes empty five-minute buckets. Approval dashboard routes remain part of the approval bridge dependency above.
+## Classifier and remaining live checks
 
-`POST /v1/scan` accepts `{ text }`; it is advisory and performs no provider call. It never proves the final assembled request is safe. `/v1/chat/completions` supports non-stream and buffered SSE text chat using the stock SDK and the `leakshield` model alias. Tools, images, arbitrary model destinations and unsupported options are rejected explicitly.
+See `docs/CLASSIFIER-GATEWAY.md`. Optional `CLASSIFIER_BACKEND=node` loads pinned fp32 ONNX and classifies only new user input, skipping rule-blocked prompts. Default is `none`. Alwaz's recorded Mac fp32 p50/p95 were 10.44/11.97 ms on six authored development prompts. Int8 loaded but misclassified the recorded attacks, so it is not enabled. These are not Windows gateway or frozen accuracy measurements.
 
-For evaluation, set `EVAL_MODE=true` or `1` while bound to loopback. `/api/chat` honors `X-Eval-Capture: 1` with the `eval.provider_calls`/`eval.provider_payload` object already used by your runner; `/chat` also exposes `captured_payload`. Store **only booleans/categories/timings**. API stage names include uppercase `LLM`, so the existing overhead calculation excludes model time correctly. Provider-call counts include actual retry attempts.
+The real-Mongo integration privacy test uses Ojaswi's `seededValues()`/`findSeededLeaks()` across audit, incidents, approval metadata, logs and an error path. Source corpus data is excluded by design. LLM generation in integration tests is simulated. Still needed: actual Groq key/model/account settings, real Ollama/Windows classifier inference, Docker startup, and the team's frozen evaluation and demonstration recording. Default GitHub branch has been checked and is already `main`.
 
-For your runner's `--baseline`, use a **separate local process** with `BASELINE_MODE=true`, `EVAL_MODE=1` and synthetic seeded data. Only then does `X-LeakShield-Mode: passthrough` run naive Mongo text retrieval without ACLs, masking, quarantine or output checks. This mode is impossible on a public bind address or in the Compose service. Normal servers reject the header instead of silently returning protected results and misleading the comparison. Baseline histories are AES-GCM encrypted in memory and never logged. Full pipeline/runner integration is tested on dev fixtures with a simulated model; no frozen metrics are claimed.
-
-Mahatva contributed `D-001`–`D-007` and `H-001`–`H-024` under `eval/contributions/mahatva/`. Merge those with the existing root sets while checking duplicate IDs. The held-out contribution has not been used to tune gateway policy or detectors. Do not expose it to Ojaswi before the team's freeze.
-
-## Pending live checks
-
-- Actual team Groq key/model, retention settings and request limits.
-- Real Ollama installation, selected model pull and inference.
-- Docker startup on a host with Docker installed.
-- Alwaz's live RAG and approval implementations, then security/eval runs across the complete system.
-- Arihant's baseline runner, frozen metrics and full demonstration recording.
-
-Tests use fixtures for LLM generation. They verify enforcement and integration; they do not establish detector precision/recall or real-model leak resistance.
+Alwaz separately recorded real local Ollama smoke/boundary evidence on macOS: `results/alwaz/OLLAMA-VERIFICATION.md`. That report preserves its fixture mismatches and scope; it does not establish Windows inference, browser E2E or frozen accuracy. Its reproducible `npm run verify:ollama` command requires the explicitly configured local model and replaces that metadata report.

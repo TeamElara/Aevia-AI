@@ -95,7 +95,7 @@ async function runCase(client, c) {
     conversation_id = r.conversation_id
   }
   const started = performance.now()
-  const res = await client.chat(token, { conversation_id, message: c.prompt })
+  const res = await client.chat(token, { conversation_id, message: c.prompt, attached_doc: c.attached_doc ?? undefined })
   const wall = performance.now() - started
 
   return {

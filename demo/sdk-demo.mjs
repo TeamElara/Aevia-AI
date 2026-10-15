@@ -11,7 +11,7 @@ const client = new OpenAI({
   baseURL: process.env.LEAKSHIELD_URL ?? 'http://localhost:8080/v1', // ← the one changed line
 })
 
-const model = process.env.MODEL ?? 'llama-3.3-70b-versatile'
+const model = process.env.MODEL ?? 'leakshield'
 const system = { role: 'system', content: 'You are a helpful assistant for a bank operations team.' }
 
 const prompts = [

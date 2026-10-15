@@ -51,9 +51,9 @@ export function ChatPanel({
           {backend && (
             <span
               className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-faint"
-              title={backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : 'Connected to apps/gateway'}
+              title={backend === 'simulated' ? 'Real local gateway with a simulated provider' : backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : 'Connected to apps/gateway'}
             >
-              {backend === 'mock' ? '● mock gateway' : '● live gateway'}
+              {backend === 'simulated' ? '● simulated provider' : backend === 'mock' ? '● mock gateway' : '● live gateway'}
             </span>
           )}
           {turns.length > 0 && (

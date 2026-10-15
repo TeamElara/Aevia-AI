@@ -162,6 +162,9 @@ npm test --workspace @leakshield/detectors
 npm run typecheck --workspace @leakshield/detectors
 npm run tune --workspace @leakshield/detectors -- ../../eval/dev.jsonl --corpus ../../seed/corpus.js   # sweep, recall, misses
 npm run test:integration                            # gateway tests, incl. detector-handoff against this package
+npm run bench --workspace @leakshield/detectors -- --out ../../results/ojaswi/detector-bench.md   # latency p50/p95
+# After the hour-15 freeze only (refuses without the eval-freeze tag, or if src changed since it):
+npm run misses --workspace @leakshield/detectors -- ../../eval/heldout.jsonl ../../eval/robustness.jsonl --corpus ../../seed/corpus.js --out ../../results/ojaswi/misses.md
 ```
 
 The gateway imports `src/index.ts` directly (`DETECTOR_MODULE`) and validates every finding: no extra fields, `source` equal to the request's, `0 <= start < end <= text.length`, at most 1000 findings. Any violation fails the request closed.

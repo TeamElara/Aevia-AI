@@ -23,15 +23,20 @@ export async function loadAccessAdapter(db: Db, modulePath: string, fingerprintK
     return z.object({ id: z.string().min(1), groups: z.array(z.string().regex(/^[a-z][a-z0-9-]{0,39}$/)).max(20) })
       .parse({ id: record.id, groups: [...new Set([...record.groups, ...(record.roles?.includes('admin') ? ['admin'] : [])])] });
   };
-  const retrieve: Retrieve = async (user, query) => {
+  const retrieve: Retrieve = async (user, query, options) => {
     const current = await principal(user.id);
-    const found = await retrieveRaw(current, query.slice(0, 4000), { external: false });
-    const fresh = await loaded.assembleChunks(collection, current, found, { external: false });
+    if (options?.documentId) await loaded.quarantineHighScores(collection);
+    const found = options?.documentId
+      ? await collection.find({ document_id: options.documentId, $or: [{ allowed_users: current.id }, { allowed_groups: { $in: current.groups } }] }).limit(30).toArray()
+      : await retrieveRaw(current, query.slice(0, 4000), { external: false });
+    const quarantined = found.filter((c: Record<string, unknown>) => c.quarantined === true);
+    const fresh = [...await loaded.assembleChunks(collection, current, found.filter((c: Record<string, unknown>) => !c.quarantined), { external: false }), ...quarantined];
     return fresh.map((c: Record<string, unknown>): Chunk => ({
       doc_id: c.document_id as string, title: c.title as string, text: c.text as string,
       allowed_groups: c.allowed_groups as string[], allowed_users: c.allowed_users as string[],
       classification: c.classification as Chunk['classification'], external_llm: c.external_llm as Chunk['external_llm'],
       injection_score: c.injection_score as number,
+      quarantined: c.quarantined as boolean,
       canary: typeof c.text === 'string' ? c.text.match(/LS-CANARY-[a-zA-Z0-9-]+/)?.[0] : undefined,
     }));
   };

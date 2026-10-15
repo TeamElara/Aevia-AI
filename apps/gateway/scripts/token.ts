@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { issueToken } from '../src/auth.js';
 
-const users: Record<string, string[]> = { asha: ['employee'], ravi: ['employee', 'hr'], meera: ['employee', 'engineering'], ceo: ['employee', 'admin-exec'], admin: ['admin'] };
+const users: Record<string, string[]> = { asha: ['employee'], ravi: ['employee', 'hr'], meera: ['employee', 'engineering'], ceo: ['employee', 'executive'], admin: ['admin'] };
 const name = process.argv[2];
 const secret = process.env.JWT_SECRET;
 if (!name || !users[name] || !secret || secret.length < 32) {

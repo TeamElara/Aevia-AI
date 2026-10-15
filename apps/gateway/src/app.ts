@@ -8,13 +8,18 @@ import { GatewayError } from './errors.js';
 import { Gateway } from './pipeline.js';
 import type { OfflineBaseline } from './baseline.js';
 import { PolicyStore } from './policy.js';
+import type { ApprovalBridge } from './approval-bridge.js';
 
 const messages = z.array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().min(1).max(30_000) }).strict()).min(1).max(20);
 const chatSchema = z.object({ prompt: z.string().min(1).max(30_000), conversation_id: z.uuid().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict();
-const completionSchema = z.object({ model: z.literal('leakshield').default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
-interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; }
+const completionSchema = z.object({ model: z.string().min(1).max(100).default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
+interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated'; }
 const identity = (res: Response): User => res.locals.user as User;
 const admin = (res: Response): void => { if (!identity(res).groups.includes('admin')) throw new GatewayError('FORBIDDEN', 403); };
+const consoleStages = (stages: Record<string, number>) => {
+  const names: Record<string, string> = { prompt: 'PII', retrieval: 'ACL', documents: 'Docs', outbound: 'Outbound', llm: 'LLM', response: 'Out', restore: 'Restore' };
+  return Object.fromEntries(Object.entries(stages).map(([key, ms]) => [names[key] ?? key, Math.round(ms * 100) / 100]));
+};
 export function createApp(options: Options) {
   const app = express();
   app.disable('x-powered-by');
@@ -32,7 +37,7 @@ export function createApp(options: Options) {
     next();
   });
   app.get('/health', (_req, res) => res.json({ status: 'alive' }));
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, ...(options.providerMode ? { provider_mode: options.providerMode } : {}) }));
   app.get('/ready', (_req, res) => {
     let ready = options.ready();
     try { options.policies.snapshot(); } catch { ready = false; }
@@ -42,7 +47,7 @@ export function createApp(options: Options) {
     asha: { id: 'asha', name: 'Asha Rao', role: 'Employee', groups: ['employee'] },
     ravi: { id: 'ravi', name: 'Ravi', role: 'HR', groups: ['employee', 'hr'] },
     meera: { id: 'meera', name: 'Meera', role: 'Engineering', groups: ['employee', 'engineering'] },
-    ceo: { id: 'ceo', name: 'CEO', role: 'Executive', groups: ['employee', 'admin-exec'] },
+    ceo: { id: 'ceo', name: 'CEO', role: 'Executive', groups: ['employee', 'executive'] },
     admin: { id: 'admin', name: 'Admin', role: 'Administrator', groups: ['admin'] },
   };
   let loginWindow = Date.now(); let logins = 0;
@@ -80,24 +85,45 @@ export function createApp(options: Options) {
     // Never silently execute protected requests when the runner thinks it is measuring a baseline.
     const mode = req.headers['x-leakshield-mode'];
     if (mode !== undefined && (mode !== 'passthrough' || !options.evalMode || !options.baseline)) throw new GatewayError('OFFLINE_BASELINE_REQUIRED', 501);
-    const body = z.object({ message: z.string().min(1).max(30_000), conversation_id: z.uuid().nullable().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict().parse(req.body);
+    const body = z.object({ message: z.string().min(1).max(30_000), conversation_id: z.uuid().nullable().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional(), attached_doc: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).nullable().optional() }).strict().parse(req.body);
     const result = mode === 'passthrough'
       ? await options.baseline!.run(identity(res), body.message, body.conversation_id ?? undefined)
-      : await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id });
+      : await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id, attachedDoc: body.attached_doc ?? undefined });
     const { findings, approval, captured_payload, ...rest } = result;
-    const stageNames: Record<string, string> = { prompt: 'PII', retrieval: 'ACL', documents: 'Docs', outbound: 'Outbound', llm: 'LLM', response: 'Out', restore: 'Restore' };
     res.json({ ...rest, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
-      stage_ms: Object.fromEntries(Object.entries(result.stage_ms).map(([key, ms]) => [stageNames[key] ?? key, Math.round(ms * 100) / 100])),
+      stage_ms: consoleStages(result.stage_ms),
       findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })),
       rule_ids: [...new Set(findings.map(f => f.ruleId))], ...(approval ? { approval_id: approval.id } : {}),
       ...(options.evalMode && req.headers['x-eval-capture'] === '1' ? { eval: { provider_calls: result.provider_calls, provider_payload: captured_payload?.map(m => m.content).join('\n') ?? null } } : {}),
     });
   });
   app.post('/v1/scan', async (req, res) => {
-    const body = z.object({ text: z.string().min(1).max(30_000) }).strict().parse(req.body);
-    res.json(await options.gateway.inspect(identity(res), body.text));
+    const body = z.object({ text: z.string().min(1).max(30_000), history: z.array(z.string().max(30_000)).max(20).default([]) }).strict().parse(req.body);
+    const { findings, ...result } = await options.gateway.inspect(identity(res), body.text, body.history);
+    res.json({ ...result, findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })), rule_ids: [...new Set(findings.map(f => f.ruleId))] });
   });
   app.get('/policy', (_req, res) => { admin(res); res.json(options.policies.snapshot()); });
+  app.get('/api/approvals', async (_req, res) => {
+    admin(res); if (!options.approvalBridge) throw new GatewayError('APPROVAL_UNAVAILABLE');
+    res.json(await options.approvalBridge.list(identity(res)));
+  });
+  app.post('/api/approvals/:id/:decision', async (req, res) => {
+    admin(res); if (!options.approvalBridge) throw new GatewayError('APPROVAL_UNAVAILABLE');
+    const params = z.object({ id: z.uuid(), decision: z.enum(['approve', 'reject']) }).parse(req.params);
+    const body = z.object({ request_hash: z.string().regex(/^[a-f0-9]{64}$/).optional() }).strict().parse(req.body ?? {});
+    res.json(await options.approvalBridge.decide(identity(res), params.id, params.decision, body.request_hash));
+  });
+  app.get('/api/access/results/:id', async (req, res) => {
+    if (!options.approvalBridge) throw new GatewayError('APPROVAL_UNAVAILABLE');
+    const params = z.object({ id: z.uuid() }).parse(req.params);
+    const query = z.object({ conversation_id: z.uuid() }).strict().parse(req.query);
+    const result = await options.approvalBridge.result(identity(res), params.id, query.conversation_id);
+    if (!result) return res.status(202).json({ status: 'pending' });
+    const { findings, captured_payload: _payload, approval: _approval, ...safe } = result;
+    res.json({ ...safe, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
+      stage_ms: consoleStages(result.stage_ms),
+      findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })), rule_ids: [...new Set(findings.map(f => f.ruleId))] });
+  });
   app.get('/api/stats', async (req, res) => {
     admin(res);
     const query = z.object({ window: z.coerce.number().int().min(5).max(1440).default(60) }).strict().parse(req.query);
@@ -133,22 +159,21 @@ export function createApp(options: Options) {
   });
   app.post('/v1/chat/completions', async (req, res) => {
     const body = completionSchema.parse(req.body);
+    if (!['leakshield', options.gateway.model].includes(body.model)) throw new GatewayError('UNSUPPORTED_MODEL', 400);
     const result = await options.gateway.run(identity(res), { messages: body.messages });
-    if (['block', 'deny', 'require_approval'].includes(result.action)) {
-      return res.status(result.action === 'require_approval' ? 409 : 403).json({
-        error: { code: result.action, message: result.reason }, request_id: result.request_id, provider_calls: result.provider_calls,
-      });
-    }
+    const action = result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action;
+    const content = ['block', 'deny', 'require_approval'].includes(result.action) ? result.reason : result.answer;
+    const leakshield = { action, reason: result.reason, rule_ids: [...new Set(result.findings.map(f => f.ruleId))], provider_calls: result.provider_calls };
     const id = `chatcmpl-${result.request_id}`;
     const created = Math.floor(Date.now() / 1000);
     res.setHeader('X-Aevia-Action', result.action);
     res.setHeader('X-Aevia-Request-Id', result.request_id);
-    if (!body.stream) return res.json({ id, object: 'chat.completion', created, model: 'leakshield', choices: [{ index: 0, message: { role: 'assistant', content: result.answer }, finish_reason: 'stop' }] });
+    if (!body.stream) return res.json({ id, object: 'chat.completion', created, model: body.model, choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }], leakshield });
     // Compatibility streaming begins ONLY after the complete answer passes every output check.
     res.setHeader('Content-Type', 'text/event-stream');
     res.flushHeaders();
-    const emit = (delta: Record<string, string>, finish_reason: string | null) => res.write(`data: ${JSON.stringify({ id, object: 'chat.completion.chunk', created, model: 'leakshield', choices: [{ index: 0, delta, finish_reason }] })}\n\n`);
-    emit({ role: 'assistant', content: result.answer }, null);
+    const emit = (delta: Record<string, string>, finish_reason: string | null) => res.write(`data: ${JSON.stringify({ id, object: 'chat.completion.chunk', created, model: body.model, choices: [{ index: 0, delta, finish_reason }], leakshield })}\n\n`);
+    emit({ role: 'assistant', content }, null);
     emit({}, 'stop');
     res.end('data: [DONE]\n\n');
   });

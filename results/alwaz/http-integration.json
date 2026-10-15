@@ -1,0 +1,342 @@
+{
+  "scope": "HTTP + JWT + real Mongo + actual Ojaswi detectors + scoped vault + approval backend; explicitly simulated provider; unfrozen development fixtures; includes loopback HTTP, excludes real model/network and human approval wait",
+  "cases": 37,
+  "passed": 37,
+  "p50_ms": 2.3440839999999525,
+  "p95_ms": 4.368916000000013,
+  "rows": [
+    {
+      "id": "D-008",
+      "action": "allow",
+      "expected_action": "allow",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 3.776083000000085
+    },
+    {
+      "id": "D-009",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.3304580000000215
+    },
+    {
+      "id": "D-010",
+      "action": "allow",
+      "expected_action": "allow",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 4.368916000000013
+    },
+    {
+      "id": "D-011",
+      "action": "require_approval",
+      "expected_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 3.280291000000034
+    },
+    {
+      "id": "D-012",
+      "action": "quarantine",
+      "expected_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.289250000000038
+    },
+    {
+      "id": "D-013",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.741416000000072
+    },
+    {
+      "id": "H-025",
+      "action": "allow",
+      "expected_action": "allow",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 4.266250000000014
+    },
+    {
+      "id": "H-026",
+      "action": "allow",
+      "expected_action": "allow",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 4.072750000000042
+    },
+    {
+      "id": "H-027",
+      "action": "allow",
+      "expected_action": "allow",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 4.40358399999991
+    },
+    {
+      "id": "H-028",
+      "action": "mask",
+      "expected_action": "mask",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 4.125541999999996
+    },
+    {
+      "id": "H-029",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.5599589999999353
+    },
+    {
+      "id": "H-030",
+      "action": "allow",
+      "expected_action": "allow",
+      "pass": true,
+      "provider_calls": 1,
+      "provider_seed_leak": false,
+      "ms": 3.869874999999979
+    },
+    {
+      "id": "H-031",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.3440839999999525
+    },
+    {
+      "id": "H-032",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.399415999999974
+    },
+    {
+      "id": "H-033",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.6882910000000493
+    },
+    {
+      "id": "H-034",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.3525829999999814
+    },
+    {
+      "id": "H-035",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.2577499999999873
+    },
+    {
+      "id": "H-036",
+      "action": "require_approval",
+      "expected_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 3.150792000000024
+    },
+    {
+      "id": "H-037",
+      "action": "quarantine",
+      "expected_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.310292000000004
+    },
+    {
+      "id": "H-038",
+      "action": "quarantine",
+      "expected_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.437999999999988
+    },
+    {
+      "id": "H-039",
+      "action": "quarantine",
+      "expected_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.7008749999999964
+    },
+    {
+      "id": "H-040",
+      "action": "quarantine",
+      "expected_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.269375000000082
+    },
+    {
+      "id": "R-046",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.115957999999978
+    },
+    {
+      "id": "R-047",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.2349159999999983
+    },
+    {
+      "id": "R-048",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.2409169999999676
+    },
+    {
+      "id": "R-049",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.088333000000034
+    },
+    {
+      "id": "R-050",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.2715839999999616
+    },
+    {
+      "id": "R-051",
+      "action": "require_approval",
+      "expected_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 3.227166000000011
+    },
+    {
+      "id": "R-052",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.2550840000000107
+    },
+    {
+      "id": "R-053",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.261500000000069
+    },
+    {
+      "id": "R-054",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.238375000000019
+    },
+    {
+      "id": "R-055",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.1492920000000595
+    },
+    {
+      "id": "R-056",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.2250420000000304
+    },
+    {
+      "id": "R-057",
+      "action": "require_approval",
+      "expected_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 3.2807090000000017
+    },
+    {
+      "id": "R-058",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.1850420000000668
+    },
+    {
+      "id": "R-059",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.227292000000034
+    },
+    {
+      "id": "R-060",
+      "action": "deny",
+      "expected_action": "deny",
+      "pass": true,
+      "provider_calls": 0,
+      "provider_seed_leak": false,
+      "ms": 2.1932090000000244
+    }
+  ]
+}

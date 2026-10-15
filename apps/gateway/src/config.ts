@@ -12,6 +12,8 @@ const envSchema = z.object({
   OLLAMA_URL: z.url().default('http://127.0.0.1:11434/v1'), OLLAMA_MODEL: z.string().optional(),
   POLICY_PATH: z.string().default('apps/gateway/policy.yaml'),
   DETECTOR_MODULE: z.string().default('packages/detectors/src/index.ts'),
+  CLASSIFIER_BACKEND: z.enum(['none', 'node']).default('none'),
+  CLASSIFIER_CACHE_DIR: z.string().default('.cache/classifier'),
   FINGERPRINT_KEY: z.string().min(32).optional(),
   RETRIEVAL_MODULE: z.string().optional(), APPROVALS_MODULE: z.string().optional(),
   EVAL_MODE: z.enum(['true', 'false', '1', '0']).default('false').transform(v => v === 'true' || v === '1'),
@@ -28,5 +30,6 @@ export function loadConfig() {
   if (env.LLM_PROVIDER === 'groq' && (!env.GROQ_API_KEY || !env.GROQ_MODEL)) throw new Error('Groq key and model required');
   if (env.LLM_PROVIDER === 'ollama' && !env.OLLAMA_MODEL) throw new Error('Ollama model required');
   const apiKeys = z.array(z.object({ key: z.string().min(32), user: z.object({ id: z.string().min(1).max(100), groups: z.array(z.string().regex(/^[a-z][a-z0-9-]{0,39}$/)).max(20) }).strict() }).strict()).max(100).parse(JSON.parse(env.API_KEYS_JSON));
+  if (env.DEMO_AUTH && apiKeys.length === 0) apiKeys.push({ key: 'ls_demo_asha', user: { id: 'asha', groups: ['employee'] } });
   return { ...env, apiKeys };
 }

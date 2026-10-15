@@ -1,0 +1,268 @@
+{
+  "scope": "real local Mongo; injected deterministic provider and pass-through scan callbacks; access behavior only, not PII or frozen headline metrics",
+  "cases": 37,
+  "passed": 37,
+  "p50_ms": 0.4303339999999025,
+  "p95_ms": 1.915208000000007,
+  "rows": [
+    {
+      "id": "D-008",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "D-009",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "D-010",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "D-011",
+      "action": "require_approval",
+      "expected_access_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "D-012",
+      "action": "quarantine",
+      "expected_access_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "D-013",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-025",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "H-026",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "H-027",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "H-028",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "H-029",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-030",
+      "action": "allow",
+      "expected_access_action": "allow",
+      "pass": true,
+      "provider_calls": 1
+    },
+    {
+      "id": "H-031",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-032",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-033",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-034",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-035",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-036",
+      "action": "require_approval",
+      "expected_access_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-037",
+      "action": "quarantine",
+      "expected_access_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-038",
+      "action": "quarantine",
+      "expected_access_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-039",
+      "action": "quarantine",
+      "expected_access_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "H-040",
+      "action": "quarantine",
+      "expected_access_action": "quarantine",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-046",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-047",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-048",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-049",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-050",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-051",
+      "action": "require_approval",
+      "expected_access_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-052",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-053",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-054",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-055",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-056",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-057",
+      "action": "require_approval",
+      "expected_access_action": "require_approval",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-058",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-059",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    },
+    {
+      "id": "R-060",
+      "action": "deny",
+      "expected_access_action": "deny",
+      "pass": true,
+      "provider_calls": 0
+    }
+  ]
+}

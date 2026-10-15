@@ -48,7 +48,7 @@ export function ApprovalsView() {
     setBusy(a.approval_id)
     setNotice(null)
     try {
-      const updated = await decideApproval(admin.backend, admin.token, a.approval_id, decision)
+      const updated = await decideApproval(admin.backend, admin.token, a.approval_id, decision, a.request_hash)
       setItems((xs) => xs.map((x) => (x.approval_id === updated.approval_id ? updated : x)))
       setNotice(
         decision === 'approve'
@@ -72,7 +72,7 @@ export function ApprovalsView() {
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-6 py-4 sm:px-8">
           <h2 className="text-[15px] text-fg">Approvals</h2>
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-            {error ? `error: ${error}` : `${pending.length} pending${admin?.backend === 'mock' ? ' · mock' : ''}`}
+            {error ? `error: ${error}` : `${pending.length} pending${admin?.backend === 'mock' ? ' · mock' : admin?.backend === 'simulated' ? ' · simulated provider' : ''}`}
           </span>
         </div>
 

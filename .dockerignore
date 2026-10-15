@@ -5,3 +5,8 @@ node_modules
 tmp
 coverage
 *.log
+
+.cache
+**/node_modules
+**/dist
+seed/tokens.json

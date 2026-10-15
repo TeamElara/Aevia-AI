@@ -75,6 +75,8 @@ export class ConversationVault {
   }
   history(id: string, owner: string): Message[] { return structuredClone(this.get(id, owner).history); }
   tokens(id: string, owner: string): string[] { return [...this.get(id, owner).entries.keys()]; }
+  exportValues(id: string, owner: string): Record<string, string> { return Object.fromEntries([...this.get(id, owner).entries].map(([token, entry]) => [token, entry.value])); }
+  delete(id: string, owner: string): void { if (this.conversations.get(id)?.owner === owner) this.conversations.delete(id); }
   append(id: string, owner: string, messages: Message[]): void {
     const c = this.get(id, owner);
     c.history.push(...structuredClone(messages));

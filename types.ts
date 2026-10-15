@@ -19,6 +19,7 @@ export interface DetectionContext {
   protectedPhrases?: string[];
   knownUsers?: string[];
   currentUser?: string;
+  classify?: boolean;
 }
 export type DetectAll = (text: string, ctx: DetectionContext) => Finding[] | Promise<Finding[]>;
 export interface Message { role: 'system' | 'user' | 'assistant'; content: string; }
@@ -32,8 +33,9 @@ export interface Chunk {
   injection_score: number;
   canary?: string;
   title?: string;
+  quarantined?: boolean;
 }
-export type Retrieve = (user: User, query: string) => Promise<Chunk[]>;
+export type Retrieve = (user: User, query: string, options?: { documentId?: string }) => Promise<Chunk[]>;
 export interface ProviderResult { content: string; model: string; }
 export interface Provider {
   readonly external: boolean;
@@ -63,6 +65,8 @@ export interface ApprovalContext {
   conversationId: string;
   policyVersion: string;
   requestHash: string;
+  replayMessages?: Message[];
+  attachedDoc?: string;
 }
 /** Approval is a pause. Never call the provider directly from approve(); replay through Gateway. */
 export interface ApprovalService {

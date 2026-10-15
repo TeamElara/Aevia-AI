@@ -1,0 +1,26 @@
+name: Alwaz access security
+on:
+  push:
+    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'tests/integration/**', 'packages/detectors/**', 'apps/web/**', 'package.json', 'pnpm-lock.yaml', 'eval/**', '.github/workflows/access-security.yml']
+  pull_request:
+    paths: ['apps/gateway/src/retrieval/**', 'apps/gateway/src/approvals/**', 'seed/**', 'tests/security/**', 'tests/integration/**', 'packages/detectors/**', 'apps/web/**', 'package.json', 'pnpm-lock.yaml', 'eval/**', '.github/workflows/access-security.yml']
+permissions:
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MONGOMS_VERSION: 8.0.16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:integration
+      - run: npm run typecheck:access
+      - run: npm run eval:validate
+      - run: npm run build --workspace @leakshield/web
+      - run: npm run lint --workspace @leakshield/web

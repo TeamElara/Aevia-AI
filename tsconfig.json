@@ -10,5 +10,6 @@
     "types": ["node", "vitest/globals"],
     "noEmit": true
   },
-  "include": ["types.ts", "apps/gateway/**/*.ts", "vitest*.config.ts"]
+  "include": ["types.ts", "apps/gateway/**/*.ts", "vitest*.config.ts"],
+  "exclude": ["apps/gateway/src/retrieval/**"]
 }

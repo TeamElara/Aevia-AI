@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+  mongodb-memory-server: true
+  onnxruntime-node: true
+  protobufjs: true
+minimumReleaseAgeExclude:
+  - openai@7.34.0
