@@ -21,21 +21,26 @@ const OVERRIDE_TARGET = new RegExp(
 
 // Extraction intents: show me what you were given.
 const EXTRACT_INTENT =
-  /\b(?:reveal|show|print|repeat|output|display|dump|leak|expose|reproduce|recite|echo(?:\s+back)?|spell\s+out|tell\s+me|give\s+me|share|paste|write\s+out|copy|return|list|quote|translate|summari[sz]e|paraphrase|rephrase|encode|complete|continue|finish|need)\b/gi;
+  /\b(?:reveal|show|print|repeat|output|display|dump|leak|expose|reproduce|recite|echo(?:\s+back)?|spell\s+out|tell\s+me|give\s+me|share|paste|write\s+out|copy|return|list|quote|translate|summari[sz]e|paraphrase|rephrase|encode|complete|continue|finish)\b/gi;
 const EXTRACT_TARGET = new RegExp(
   [
-    String.raw`\b(?:system|developer|hidden|secret|initial|original|internal|underlying|first)\s+(?:prompt|message|instructions?|rules|context|configuration|config)\b`,
+    // Not settings UI: "the hidden configuration options in VS Code", "initial config file".
+    String.raw`\b(?:system|developer|hidden|secret|initial|original|internal|underlying|first)\s+(?:prompt|message|instructions?|rules|context|configuration|config)\b(?!\s+(?:options?|settings|menu|file|files|panel|tab|page|flags?|parameters?|values?|screen|dialog)\b)`,
     String.raw`\byour\s+(?:instructions|rules|prompt|guidelines|configuration|config|directives|system\s+message)\b`,
-    String.raw`\b(?:instructions|text|content|configuration|config|message|prompt|context|words|everything|whatever)\s+(?:(?:that|which)\s+(?:was|were)\s+)?(?:you\s+(?:were\s+)?(?:given|received|told)|given\s+to\s+you|above|before\s+(?:my|this|the\s+user'?s?))`,
+    // "…you were given" is about the model's own setup unless it goes on "for/from/about …" ("the instructions you were given for the expense form").
+    String.raw`\b(?:instructions|text|content|configuration|config|message|prompt|context|words|everything|whatever)\s+(?:(?:that|which)\s+(?:was|were)\s+)?(?:you\s+(?:were\s+)?(?:given|received|told)(?!\s+(?:for|from|about|in|on|by|regarding)\b)|given\s+to\s+you(?!\s+(?:for|from|about|in|on|by|regarding)\b)|above|before\s+(?:my|this|the\s+user'?s?))`,
     String.raw`\b(?:text|content|message|instructions|words)\s+(?:that|which)\s+(?:appears?|is|was|were|came|comes)\s+(?:above|before)\s+(?:my|this|the)\b`,
     String.raw`\b(?:supplied|given|provided|written|sent|placed)\s+(?:to\s+you\s+)?(?:before|above|ahead\s+of|prior\s+to)\s+(?:my|this|the\s+user'?s?)\s+(?:message|prompt|question|input)`,
     String.raw`\beverything\s+(?:above|before\s+(?:my|this))`,
     String.raw`\b(?:what|everything)\s+(?:you\s+were|you've\s+been|you\s+have\s+been)\s+told\s+(?:before|earlier|at\s+the\s+start|initially|first)`,
     String.raw`\bbefore\s+(?:this|our|the)\s+conversation(?:\s+(?:started|began))?`,
-    // "the hidden setup text", "the exact preamble you received", "whatever configuration you were initialised with"
-    String.raw`\b(?:hidden|secret|initial|original|exact|full|complete|underlying)\s+(?:setup|preamble|configuration|config|context|instructions|prompt)(?:\s+(?:text|message|block))?\b`,
-    String.raw`\b(?:setup|preamble|configuration|config|instructions|prompt|context|rules)\s+(?:that\s+)?you\s+(?:were|have\s+been|got|received)\s*(?:initiali[sz]ed|configured|set\s+up|primed|loaded|given|received)?\s*(?:with|before)?\b`,
-    String.raw`\b(?:preamble|setup\s+text)\b`,
+    // The model's own setup, named self-referentially: "your initial configuration", "the hidden setup text",
+    // "the preamble you received", "whatever configuration you were initialised with". Not "the preamble of
+    // the Constitution", "the config you were using", or "the configuration you got from the doc".
+    String.raw`\byour\s+(?:(?:hidden|secret|initial|original|exact|full|complete|underlying|starting)\s+){0,2}(?:setup(?:\s+text)?|preamble|configuration|config|context|instructions|prompt)\b`,
+    String.raw`\b(?:hidden|secret)\s+(?:setup|preamble|configuration|config|context|instructions|prompt)(?:\s+(?:text|message|block))?\b(?!\s+(?:of|for|in|on|from|options?|settings|menu|file|panel)\b)`,
+    String.raw`\b(?:setup|preamble|configuration|config|instructions|prompt|context|rules)\s+(?:that\s+)?you\s+(?:were|have\s+been|'ve\s+been)\s+(?:initiali[sz]ed|configured|set\s+up|primed|loaded|trained)(?:\s+with)?\b(?!\s+(?:for|from|in|by|about|on)\b)`,
+    String.raw`\b(?:preamble|setup\s+text)\s+(?:that\s+)?you\s+(?:received|were\s+given|got)\b(?!\s+(?:for|from|about|in|on|by)\b)`,
   ].join('|'),
   'gi',
 );
