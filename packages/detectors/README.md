@@ -112,6 +112,11 @@ A `Finding` never contains the matched value, so it is safe to put in audit even
 
 When data findings overlap, the more specific category wins (private key > secret > canary > Aadhaar > VID > card > PAN > bank account > phone > UPI > email > IFSC > confidential).
 
+## Differences from PLAN.md
+
+- **Phone numbers use a regex, not `libphonenumber-js`.** It covers Indian mobiles (`+91`/`0` prefix, 6–9 start, 5-5 split), is deterministic for tests, and adds no dependency. Landlines are not detected.
+- **Browser-safe.** No `Buffer` or other Node-only APIs in `src/`, so the stretch Chrome extension can import the same detectors. `createHttpClassifier` uses `fetch`. `createTransformersClassifier` is the only part that needs extra installs.
+
 ## Not here yet
 
 - Choosing the classifier backend: waits for Alwaz's spike. The integration code is ready.
