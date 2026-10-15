@@ -717,3 +717,96 @@ textarea { caret-color: var(--color-fg); }
 .covering-posts { display: grid; gap: 8px; text-align: left; }
 .covering-post { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-radius: 12px; padding: 10px 12px; background: var(--color-surface-2); color: var(--color-fg); font-size: 12px; }
 @media (max-width: 400px) { .assign-post-modal { padding: 18px; } .post-list > li > .btn { min-height: 40px; } }
+
+/* ---------------------------------------------------------------------------------------------
+   Beam composer. The message is a beam of mint light: it runs into the gateway's lens on the
+   left, a highlight circles the field, and a send fires a pulse down the beam and fans out into
+   strands from the send button. Colours are theme tokens; motion stops under reduced motion.
+   --------------------------------------------------------------------------------------------- */
+:root { --beam: #0e9f74; --beam-2: #6fe3bd; --beam-ink: #032a1d; --beam-glow: rgb(14 159 116 / .26); }
+:root[data-theme="dark"] { --beam: #4ff0b9; --beam-2: #c3ffe9; --beam-ink: #032a1d; --beam-glow: rgb(79 240 185 / .34); }
+
+.composer.beam, .home-workspace .composer.beam {
+  overflow: visible; padding-left: 62px; border-radius: 24px;
+  border-color: color-mix(in srgb, var(--beam) 32%, var(--color-line));
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--beam) 6%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--beam) 10%, transparent), 0 18px 48px -26px var(--beam-glow), 0 2px 10px -6px rgb(0 0 0 / .18);
+  transition: box-shadow .5s var(--ease-soft), border-color .5s var(--ease-soft), background .5s var(--ease-soft);
+}
+.composer-large.beam { padding-left: 70px; }
+.composer.beam::before { display: none; }
+.composer.beam:focus-within, .home-workspace .composer.beam:focus-within, .composer.beam[data-dragging="true"] {
+  border-color: color-mix(in srgb, var(--beam) 70%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--beam) 14%, transparent), 0 22px 60px -22px var(--beam-glow), 0 0 40px -12px var(--beam-glow);
+}
+
+/* A highlight that travels around the border, faster on focus and while a reply is checked. */
+.beam-ring {
+  position: absolute; inset: -1px; z-index: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; opacity: .5;
+  background: conic-gradient(from var(--angle), transparent 0 64%, color-mix(in srgb, var(--beam) 60%, transparent) 76%, var(--beam-2) 84%, var(--beam) 88%, transparent 96%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: beam-spin 7s linear infinite; transition: opacity .5s;
+}
+.composer.beam:focus-within .beam-ring { opacity: 1; animation-duration: 3.2s; }
+.composer.beam[data-busy="true"] .beam-ring { opacity: 1; animation-duration: 1.1s; }
+
+/* The lens: a glowing orb with a slow halo, breathing faster while busy. */
+.beam-lens {
+  position: absolute; z-index: 1; left: 20px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 42% 38%, #fff 0 16%, var(--beam-2) 34%, var(--beam) 62%, color-mix(in srgb, var(--beam) 0%, transparent) 72%);
+  box-shadow: 0 0 14px 2px var(--beam-glow), 0 0 44px 12px var(--beam-glow);
+  animation: lens-breathe 4.2s ease-in-out infinite;
+}
+.composer-large .beam-lens { left: 24px; width: 28px; height: 28px; margin-top: -14px; }
+.beam-lens::before, .beam-lens::after {
+  content: ''; position: absolute; inset: -9px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--beam) 55%, transparent);
+  opacity: 0; animation: lens-halo 3.6s ease-out infinite;
+}
+.beam-lens::after { animation-delay: 1.8s; }
+.composer.beam:focus-within .beam-lens { animation-duration: 2.6s; }
+.composer.beam[data-busy="true"] .beam-lens { animation: lens-busy .9s ease-in-out infinite; }
+.beam-flash { position: absolute; inset: -4px; border-radius: 50%; background: radial-gradient(circle, var(--beam-2), transparent 70%); animation: lens-flash .9s .45s var(--ease-soft) both; }
+
+/* The beam: a thin line arriving from the left into the lens (large composer on wide screens). */
+.beam-track {
+  position: absolute; z-index: 0; right: calc(100% - 34px); top: 50%; width: min(22vw, 300px); height: 1.5px; margin-top: -.75px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--beam) 75%, transparent) 70%, var(--beam-2));
+  -webkit-mask: linear-gradient(90deg, transparent, #000 35%); mask: linear-gradient(90deg, transparent, #000 35%);
+  animation: beam-shimmer 5s ease-in-out infinite;
+}
+.composer:not(.composer-large) .beam-track { width: 0; }
+.beam-pulse, .beam-spark { position: absolute; top: 50%; border-radius: 99px; pointer-events: none; }
+.beam-pulse { height: 4px; width: 90px; margin-top: -2px; background: linear-gradient(90deg, transparent, var(--beam-2), #fff); box-shadow: 0 0 12px 2px var(--beam-glow); animation: beam-shot .55s cubic-bezier(.55, 0, .25, 1) both; }
+.beam-spark { height: 3px; width: 18px; margin-top: -1.5px; background: linear-gradient(90deg, transparent, var(--beam-2)); animation: beam-spark .5s cubic-bezier(.4, 0, .2, 1) both; }
+
+/* Strands: the beam fans out from the send button once a message leaves. */
+.beam-strands { position: absolute; z-index: 0; right: -168px; top: 50%; width: 200px; height: 120px; margin-top: -60px; overflow: visible; pointer-events: none; }
+.composer-large .beam-strands { top: auto; bottom: -32px; }
+.beam-strands path {
+  fill: none; stroke: var(--beam); stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 260; opacity: 0;
+  filter: drop-shadow(0 0 4px var(--beam-glow));
+  animation: strand-draw 1.25s cubic-bezier(.3, 0, .2, 1) both; animation-delay: calc(.12s + var(--i) * 45ms);
+}
+
+/* The send button: a small mint orb. */
+.beam-send { background: radial-gradient(circle at 34% 28%, var(--beam-2), var(--beam) 70%); color: var(--beam-ink); box-shadow: 0 0 0 1px color-mix(in srgb, var(--beam) 40%, transparent), 0 8px 22px -6px var(--beam-glow); }
+.beam-send:not(:disabled):hover { box-shadow: 0 0 0 1px var(--beam), 0 0 26px 2px var(--beam-glow); }
+.beam-send:disabled { background: color-mix(in srgb, var(--beam) 25%, var(--color-surface-2)); box-shadow: none; }
+
+@keyframes beam-spin { to { --angle: 360deg; } }
+@keyframes lens-breathe { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.08); filter: brightness(1.15); } }
+@keyframes lens-busy { 0%, 100% { transform: scale(.92); } 50% { transform: scale(1.18); filter: brightness(1.3); } }
+@keyframes lens-halo { 0% { opacity: .6; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.9); } }
+@keyframes lens-flash { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(3.2); } }
+@keyframes beam-shimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes beam-shot { from { left: -90px; opacity: 0; } 25% { opacity: 1; } to { left: calc(100% - 40px); opacity: 1; } }
+@keyframes beam-spark { from { left: 35%; opacity: 0; } 30% { opacity: 1; } to { left: calc(100% - 18px); opacity: 0; } }
+@keyframes strand-draw { 0% { stroke-dashoffset: 260; opacity: 0; } 15% { opacity: .9; } 60% { stroke-dashoffset: 0; opacity: .85; } 100% { stroke-dashoffset: -260; opacity: 0; } }
+
+@media (max-width: 1023px) { .beam-track, .beam-strands { display: none; } }
+@media (max-width: 767px) { .composer.beam, .home-workspace .composer.beam, .composer-large.beam { padding-left: 52px; } .beam-lens, .composer-large .beam-lens { left: 16px; } }
+@media (prefers-reduced-motion: reduce) {
+  .beam-ring, .beam-lens, .beam-lens::before, .beam-lens::after, .beam-track, .beam-pulse, .beam-spark, .beam-flash, .beam-strands path { animation: none !important; }
+  .beam-pulse, .beam-spark, .beam-flash, .beam-strands { display: none; }
+  .beam-ring { opacity: .7; }
+}

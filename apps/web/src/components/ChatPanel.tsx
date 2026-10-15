@@ -132,7 +132,7 @@ export function ChatPanel({
 
       <div className="sticky bottom-0 z-10 w-screen -translate-x-1/2 bg-gradient-to-t from-paper via-paper/85 to-transparent px-4 pb-5 pt-10 [margin-left:50%] sm:px-8 lg:w-[calc(100vw-264px)] lg:px-12">
         <div className="mx-auto max-w-[760px]">
-          <Composer onSend={onSend} disabled={!ready || busy} busy={busy} />
+          <Composer onSend={onSend} disabled={!ready || busy} busy={busy} fired={turns.length} />
         </div>
       </div>
     </section>
@@ -278,7 +278,7 @@ function useTypewriter(active: boolean) {
   return shown
 }
 
-function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (t: string, file?: File) => void; disabled: boolean; busy: boolean; big?: boolean; focusRequest?: number }) {
+function Composer({ onSend, disabled, busy, big, focusRequest = 0, fired }: { onSend: (t: string, file?: File) => void; disabled: boolean; busy: boolean; big?: boolean; focusRequest?: number; fired?: number }) {
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
   const [launches, setLaunches] = useState(0)
@@ -343,6 +343,11 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
     return () => { stop(); events.forEach(event => window.removeEventListener(event, stop)) }
   }, [focusRequest])
   const hint = useTypewriter(!text && !focused)
+  // Each keystroke sends a spark along the beam into the lens; each send fires a pulse and strands.
+  const [sparks, setSparks] = useState(0)
+  // The thread composer mounts as the first message leaves the home page, so it counts sent
+  // messages rather than its own clicks; the send animation then plays on that first message too.
+  const shots = fired ?? launches
   const submit = () => {
     const t = text.trim()
     if ((!t && !file) || disabled) return
@@ -367,9 +372,26 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]) }}
       data-busy={busy ? 'true' : undefined}
-      className={`composer ${big ? 'composer-large' : ''} cursor-text rounded-[24px] border bg-surface/90 p-2 pl-5 text-left shadow-[var(--shadow-lg)] backdrop-blur-xl transition-[border-color] duration-300 focus-within:border-transparent ${dragging ? 'border-accent' : 'border-line'}`}
+      data-dragging={dragging ? 'true' : undefined}
+      className={`composer beam ${big ? 'composer-large' : ''} cursor-text rounded-[24px] border p-2 text-left backdrop-blur-xl`}
     >
       {big && <span className="composer-arrival" aria-hidden="true" />}
+      {/* The message as a beam of light: it runs into the gateway's lens and leaves as strands. */}
+      <span className="beam-ring" aria-hidden="true" />
+      <span className="beam-track" aria-hidden="true">
+        {sparks > 0 && <span key={`s${sparks}`} className="beam-spark" />}
+        {shots > 0 && <span key={`p${shots}`} className="beam-pulse" />}
+      </span>
+      <span className="beam-lens" aria-hidden="true">
+        {shots > 0 && <span key={shots} className="beam-flash" />}
+      </span>
+      {shots > 0 && (
+        <svg key={shots} className="beam-strands" viewBox="0 0 200 120" aria-hidden="true">
+          {[8, 34, 60, 86, 112].map((y, i) => (
+            <path key={y} d={`M0 60 C 60 60, 90 60, 200 ${y}`} style={{ ['--i' as string]: i }} />
+          ))}
+        </svg>
+      )}
       {(file || fileError) && (
         <div className="flex flex-wrap items-center gap-2 pb-1 pr-2 pt-1">
           {file && <FileChip name={file.name} size={file.size} onRemove={() => { setFile(null); if (picker.current) picker.current.value = '' }} />}
@@ -386,7 +408,7 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
         <textarea
           ref={box}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { if (e.target.value.length > text.length) setSparks((n) => n + 1); setText(e.target.value) }}
           onKeyDown={onKey}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -414,7 +436,7 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
             onClick={submit}
             disabled={disabled || (!text.trim() && !file)}
             aria-label="Send"
-            className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-fg text-void shadow-[0_6px_20px_-6px_var(--tone)] transition duration-300 [transition-timing-function:var(--ease-spring)] hover:scale-110 active:scale-90 disabled:scale-90 disabled:opacity-20 disabled:shadow-none"
+            className="beam-send grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full transition duration-300 [transition-timing-function:var(--ease-spring)] hover:scale-110 active:scale-90 disabled:scale-90 disabled:opacity-30"
           >
             <span key={launches} className={launches ? 'launch' : ''}>
               <Icon name="up" className="h-[18px] w-[18px]" />
