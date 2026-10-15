@@ -1,11 +1,10 @@
 import type { Backend } from '../api/client'
 import type { DemoUser } from '../data/demo'
 import { backendLabel, initials } from '../lib/format'
-import type { Tone } from '../lib/tone'
 import { avatarTone, type View } from '../lib/views'
 import { useState, type PointerEvent } from 'react'
 import { useSlider } from '../lib/useSlider'
-import { BrandMark, Icon, Magnetic, ThemeToggle, Wordmark } from './ui'
+import { BrandMark, Icon, Magnetic, ThemeToggle } from './ui'
 import type { ActingPosts } from '../lib/useActingPosts'
 
 
@@ -31,7 +30,6 @@ export function Avatar({ user, index, size = 32 }: { user: DemoUser; index: numb
 
 export function Sidebar({
   view,
-  tone,
   user,
   userIndex,
   backend,
@@ -43,7 +41,6 @@ export function Sidebar({
   onAssign,
 }: {
   view: View
-  tone: Tone
   user: DemoUser
   userIndex: number
   backend: Backend | null
@@ -64,8 +61,8 @@ export function Sidebar({
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <button onClick={() => onGo('Chat')} className="flex items-center gap-2.5 px-2 pt-1" aria-label="LeakShield, open Chat">
-        <BrandMark size={30} tone={tone} />
-        <Wordmark className="text-[18px]" />
+        <BrandMark size={34} />
+        <span className="font-display text-[18px] font-semibold tracking-[-0.03em]">LeakShield</span>
       </button>
 
       <Magnetic strength={0.08} className="w-full">
