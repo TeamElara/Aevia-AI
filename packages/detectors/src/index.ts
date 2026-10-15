@@ -23,6 +23,7 @@ export {
   type InjectionClassifier,
 } from './classifier';
 export { seededValues, findSeededLeaks, type SeededValue } from './privacy';
+export { toFindingSummary, summariseFindings, type FindingSummary, type FindingDigest } from './summary';
 
 const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECTORS];
 
