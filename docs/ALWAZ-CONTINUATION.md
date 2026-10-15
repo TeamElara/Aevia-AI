@@ -75,12 +75,13 @@ there were discarded and the checks repeated against explicit IPv4 addresses.
 No unrelated service was stopped. Browser evidence stays local; committed
 reports contain no prompts, payloads, answers or secrets.
 
-`docs/Alwaz-LeakShield-continued.pptx` supersedes the original deck for current
-combined test evidence. It keeps eight editable slides and four native tables,
-updates historical/current distinctions and labels int8 as refused in the
-production gateway. Structural validation and rendered visual inspection passed.
-`tools/update-deck.mjs` edits the original template using Artifact Tool; the old
-Python builder is explicitly historical. Original reports and deck are retained.
+The sole team deck is [LeakShield-Freeze-v2.pptx](LeakShield-Freeze-v2.pptx).
+It keeps eight editable slides and four native tables, with frozen metrics,
+known misses and the first-freeze/v2 provenance distinction. Earlier deck copies
+and their dedicated builders have been removed to avoid competing presentations.
+`tools/build-freeze-deck.mjs` reads and updates this canonical deck through
+Artifact Tool, validating a private copy before replacing it. Historical reports
+remain preserved; see [the v2 results](../results/freeze-v2-groq/RESULTS.md).
 
 ## External dependencies and honest limits
 
