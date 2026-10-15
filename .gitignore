@@ -9,3 +9,7 @@ tmp/
 .DS_Store
 seed/tokens.json
 .cache/
+.vercel/
+
+.vercel
+.env*

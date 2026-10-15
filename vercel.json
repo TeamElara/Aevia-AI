@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm ci --workspace @leakshield/web --include-workspace-root=false",
+  "buildCommand": "npm run build --workspace @leakshield/web",
+  "outputDirectory": "apps/web/dist",
+  "functions": {
+    "api/gateway.js": { "maxDuration": 300 }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/gateway?route=/api/:path*" },
+    { "source": "/v1/:path*", "destination": "/api/gateway?route=/v1/:path*" },
+    { "source": "/((?!api/|v1/).*)", "destination": "/index.html" }
+  ]
+}
