@@ -33,6 +33,7 @@ export interface LoginResponse {
 export interface ChatRequest {
   conversation_id: string | null
   message: string
+  attached_doc?: string | null
 }
 
 export interface ChatResponse {

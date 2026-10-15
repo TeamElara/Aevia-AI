@@ -4,7 +4,7 @@ import type { Action, ApprovalService, ChatResult, Chunk, DetectionContext, Find
 import { Audit } from './audit.js';
 import { GatewayError } from './errors.js';
 import { findingAction, PolicyStore, strictest } from './policy.js';
-import { sanitiseLinks } from './sanitise.js';
+import { sanitiseLinks, type FindLinks } from './sanitise.js';
 import { Scanner } from './scanner.js';
 import { ConversationVault, redact } from './vault.js';
 
@@ -19,8 +19,10 @@ interface Dependencies {
   /** Alwaz's restricted-content overlap checker: returns true only for unauthorised overlap. */
   restrictedOverlap?: (text: string, user: User) => Promise<boolean>;
   evalMode?: boolean;
+  splitSecrets?: (messages: string[]) => Finding[];
+  findLinks?: FindLinks;
 }
-export interface ChatInput { messages: Message[]; conversationId?: string; approvalId?: string; }
+export interface ChatInput { messages: Message[]; conversationId?: string; approvalId?: string; attachedDoc?: string; }
 function permitted(chunk: Chunk, user: User): boolean {
   // Classification alone never grants access, including "public". Missing ACL is deny.
   return Array.isArray(chunk.allowed_groups) && Array.isArray(chunk.allowed_users)
@@ -73,13 +75,13 @@ export class Gateway {
       await log('accepted', 'allow'); // Audit must be writable before processing can disclose anything.
       const marker = `LS-CANARY-${randomBytes(24).toString('hex')}`;
       const context = (source: DetectionContext['source'], canaries: readonly string[] = []): DetectionContext => ({ source, user, requestId, canaries, knownUsers: ['asha', 'ravi', 'meera', 'ceo', 'admin'], currentUser: user.id });
-      const scan = async (text: string, source: DetectionContext['source'], canaries: readonly string[] = [], trustedSystem = false): Promise<Finding[]> => {
+      const scan = async (text: string, source: DetectionContext['source'], canaries: readonly string[] = [], trustedSystem = false, classify = false): Promise<Finding[]> => {
         // Random opaque IDs can accidentally contain a phone-like digit run. Exempt only
         // exact tokens minted by THIS user's vault, never arbitrary token-shaped user input.
         let inspection = text;
         const opaque = [...this.deps.vault.tokens(id, user.id), ...(trustedSystem ? [marker] : [])];
         for (const token of opaque) inspection = inspection.split(token).join(' '.repeat(token.length));
-        const found = (await this.deps.scanner.scan(inspection, context(source, canaries)))
+        const found = (await this.deps.scanner.scan(inspection, { ...context(source, canaries), classify }))
           .filter(f => !trustedSystem || f.category !== 'INJECTION');
         findings.push(...found);
         return found;
@@ -93,6 +95,11 @@ export class Gateway {
       await time('prompt', async () => {
         // Inspect joins as well as individual messages so a secret split over turns cannot escape.
         const userTurns = messages.filter(m => m.role === 'user').slice(-3);
+        if (this.deps.splitSecrets) {
+          const split = this.deps.splitSecrets(userTurns.map(m => m.content));
+          findings.push(...split);
+          if (split.length) actions.push('block');
+        }
         const joined = await scan(userTurns.map(m => m.content).join(''), 'prompt');
         const joinedAction = strictest(joined.map(f => findingAction(f, policy)));
         if (joinedAction === 'block') actions.push('block');
@@ -113,7 +120,7 @@ export class Gateway {
               findings.push({ category, source, start: at, end: at + token.length, score: 1, ruleId: 'vault.existing_mask', via: 'raw' });
             }
           }
-          const found = await scan(m.content, source);
+          const found = await scan(m.content, source, [], false, index >= history.length && m.role === 'user');
           actions.push(...found.map(f => findingAction(f, policy)));
           const toMask = found.filter(f => findingAction(f, policy) === 'mask');
           // Client-supplied system text is untrusted data and cannot override gateway instructions.
@@ -126,8 +133,12 @@ export class Gateway {
       await log('prompt', strictest(actions));
 
       let chunks: Chunk[] = [];
-      if (this.deps.retrieve) chunks = await time('retrieval', async () => this.deps.retrieve!(user, query));
+      if (this.deps.retrieve) chunks = await time('retrieval', async () => this.deps.retrieve!(user, query, { documentId: input.attachedDoc }));
       if (!Array.isArray(chunks) || chunks.length > 30) throw new GatewayError('RETRIEVAL_UNAVAILABLE');
+      if (input.attachedDoc) {
+        chunks = chunks.filter(c => c.doc_id === input.attachedDoc);
+        if (!chunks.length) return await result('deny', '', 'No documents you can access matched.');
+      }
       const approvedChunks: Chunk[] = [];
       const quarantined = new Set<string>();
       await time('documents', async () => {
@@ -135,6 +146,7 @@ export class Gateway {
           if (!permitted(chunk, user)) throw new GatewayError('RETRIEVAL_PERMISSION_VIOLATION');
           if (typeof chunk.text !== 'string' || chunk.text.length > 30_000 || !Number.isFinite(chunk.injection_score)
             || !['allow', 'deny', 'approval'].includes(chunk.external_llm)) throw new GatewayError('RETRIEVAL_UNAVAILABLE');
+          if (chunk.quarantined) { quarantined.add(chunk.doc_id); actions.push('quarantine'); continue; }
           const found = await scan(chunk.text, 'document');
           if (chunk.injection_score >= policy.injection.warn || found.some(f => f.category === 'INJECTION' && f.score >= policy.injection.warn)) {
             quarantined.add(chunk.doc_id); actions.push('quarantine'); continue;
@@ -172,6 +184,9 @@ export class Gateway {
         if (joined.some(f => ['block', 'mask', 'redact'].includes(findingAction(f, policy)))) actions.push('block');
       });
       if (actions.includes('block')) return await result('block', '', 'Final outbound inspection withheld the request.');
+      if (input.approvalId && (!this.deps.approvals || !this.deps.provider.external || !chunks.some(c => c.external_llm === 'approval'))) {
+        return await result('deny', '', 'The approved request changed and must be requested again.');
+      }
       citations = chunks.map(c => ({ doc_id: c.doc_id, title: c.title ?? c.doc_id }));
       if (this.deps.provider.external && chunks.some(c => c.external_llm === 'approval')) {
         if (!this.deps.approvals) return await result('require_approval', '', 'Approval is required; the approval service is not connected.');
@@ -181,7 +196,7 @@ export class Gateway {
           payload: payload.map((m, i) => i === 0 ? { ...m, content: m.content.replace(marker, '[PRIVATE_MARKER]') } : m),
           user, policyVersion: version, chunks, provider: { external: this.deps.provider.external, model: this.deps.provider.model },
         }));
-        const ctx = { user, requestId, conversationId: id, policyVersion: version, requestHash };
+        const ctx = { user, requestId, conversationId: id, policyVersion: version, requestHash, replayMessages: structuredClone(input.messages), attachedDoc: input.attachedDoc };
         if (input.approvalId) {
           if (!await this.deps.approvals.verifyAndConsume(input.approvalId, ctx)) return await result('deny', '', 'Approval is expired, changed or unavailable.');
         } else {
@@ -209,10 +224,10 @@ export class Gateway {
       if (actions.includes('block')) return await result('block', '', 'Response withheld by output inspection.');
       let answer = '';
       await time('restore', async () => {
-        answer = sanitiseLinks(this.deps.vault.restore(id, user.id, maskedAnswer), policy.allowed_link_hosts);
+        answer = sanitiseLinks(this.deps.vault.restore(id, user.id, maskedAnswer), policy.allowed_link_hosts, this.deps.findLinks);
       });
       // Keep the model-side answer masked. Rehydrated PII never enters conversation history.
-      this.deps.vault.append(id, user.id, [...messages.slice(-1), { role: 'assistant', content: sanitiseLinks(maskedAnswer, policy.allowed_link_hosts) }]);
+      this.deps.vault.append(id, user.id, [...messages.slice(-1), { role: 'assistant', content: sanitiseLinks(maskedAnswer, policy.allowed_link_hosts, this.deps.findLinks) }]);
       return await result(strictest(actions), answer, actions.length ? 'Disclosure controls applied.' : 'Allowed.');
     } catch (error) {
       try { await log('failed', 'block'); } catch { /* Never release data when audit persistence fails. */ }
@@ -221,9 +236,27 @@ export class Gateway {
     } finally { release(); captured = undefined; }
   }
   /** Extension preflight is advisory only: it neither calls a model nor replaces final inspection. */
-  async inspect(user: User, text: string): Promise<{ action: Action; findings: Finding[]; policy_version: string }> {
-    const policy = this.deps.policies.snapshot();
-    const findings = await this.deps.scanner.scan(text, { source: 'prompt', user, requestId: randomUUID(), canaries: [] });
-    return { action: strictest(findings.map(f => findingAction(f, policy))), findings, policy_version: policy.version };
+  get model(): string { return this.deps.provider.model; }
+  async inspect(user: User, text: string, history: string[] = []) {
+    const policy = this.deps.policies.snapshot(); const requestId = randomUUID(); const started = performance.now();
+    const lease = this.deps.vault.acquire(user.id);
+    try {
+      const findings: Finding[] = []; let promptFindings: Finding[] = [];
+      for (const [index, content] of [...history, text].entries()) {
+        const found = await this.deps.scanner.scan(content, { source: index === history.length ? 'prompt' : 'history', user, requestId, canaries: [] });
+        findings.push(...found); if (index === history.length) promptFindings = found;
+      }
+      if (this.deps.splitSecrets) findings.push(...this.deps.splitSecrets([...history, text]));
+      findings.push(...await this.deps.scanner.scan([...history, text].slice(-3).join(''), { source: 'history', user, requestId, canaries: [] }));
+      const action = strictest(findings.map(f => findingAction(f, policy)));
+      const stopped = action === 'block';
+      const masked_text = stopped ? null : this.deps.vault.mask(lease.id, user.id, text, promptFindings.filter(f => findingAction(f, policy) === 'mask'));
+      const vault = stopped ? null : this.deps.vault.exportValues(lease.id, user.id);
+      const categories = [...new Set(findings.map(f => f.category))];
+      await this.deps.audit.write({ request_id: requestId, ts: new Date(), user_pseudo: this.deps.audit.pseudo(user), conversation_pseudo: this.deps.audit.fingerprint('conversation', lease.id), stage: 'preflight',
+        categories, counts: Object.fromEntries(categories.map(c => [c, findings.filter(f => f.category === c).length])), rule_ids: [...new Set(findings.map(f => f.ruleId))], policy_version: policy.version,
+        action, model_called: false, via: [...new Set(findings.map(f => f.via))], stage_ms: {}, total_ms: performance.now() - started });
+      return { action, reason: stopped ? 'Request blocked by disclosure policy.' : action === 'allow' ? 'Allowed.' : 'Disclosure controls applied.', findings, policy_version: policy.version, masked_text, vault };
+    } finally { lease.release(); this.deps.vault.delete(lease.id, user.id); }
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { chat, login, type Backend } from './api/client'
+import { chat, login, pollApprovalResult, type Backend } from './api/client'
 import { actionLabel, isStop } from './api/contract'
 import { Chamfer } from './components/Chamfer'
 import { ChatPanel, type Turn } from './components/ChatPanel'
@@ -41,6 +41,26 @@ export default function App() {
     }
   }, [activeUser])
 
+  useEffect(() => {
+    if (!session || session.backend === 'mock') return
+    const pending = turns.filter(turn => turn.response?.action === 'require_approval')
+    if (!pending.length) return
+    let cancelled = false
+    let polling = false
+    const timer = setInterval(async () => {
+      if (polling) return
+      polling = true
+      await Promise.all(pending.map(async turn => {
+        const response = turn.response!
+        await pollApprovalResult(session.token, response.request_id, response.conversation_id)
+          .then(result => { if (result && !cancelled) setTurns(rows => rows.map(row => row.id === turn.id ? { ...row, response: result } : row)) })
+          .catch(() => { if (!cancelled) setTurns(rows => rows.map(row => row.id === turn.id ? { ...row, status: 'error', error: 'Approval result unavailable or expired.' } : row)) })
+      }))
+      polling = false
+    }, 2000)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [session, turns])
+
   function resetChat() {
     setTurns([])
     setConversationId(null)
@@ -72,7 +92,7 @@ export default function App() {
     reply: t.response!.answer,
     providerCalls: t.response!.provider_calls,
     stages: Object.entries(t.response!.stage_ms),
-    tag: session?.backend === 'mock' ? 'mock' : undefined,
+    tag: session?.backend === 'mock' ? 'mock' : session?.backend === 'simulated' ? 'simulated' : undefined,
   }))
   const showingLive = live.length > 0
   const cards = showingLive ? live : exampleExchanges
@@ -147,7 +167,7 @@ export default function App() {
 
         <footer className="relative mt-3 flex min-h-14 items-start border-t border-line pt-4 pr-28">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
-            policy v1 · provider groq · audit metadata only
+            policy v1 · provider {session?.backend === 'simulated' ? 'simulated' : session?.backend === 'mock' ? 'mock' : 'gateway configured'} · audit metadata only
           </p>
           <GlowButton label="Run eval" onClick={() => setView('Eval')} />
         </footer>

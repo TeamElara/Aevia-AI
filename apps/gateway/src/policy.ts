@@ -11,6 +11,7 @@ const schema = z.object({
   actions: z.object({
     pii: z.enum(['mask', 'block']),
     email: z.enum(['warn', 'mask', 'block']),
+    ifsc: z.enum(['warn', 'mask', 'block']).default('warn'),
     secret: z.literal('block'),
   }).strict(),
   allowed_link_hosts: z.array(z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/)).max(30),
@@ -29,6 +30,7 @@ export function findingAction(f: Finding, policy: Policy): Action {
   if (f.category === 'AADHAAR' && f.score < 0.8) return 'warn';
   if (f.source === 'response') return 'redact';
   if (f.category === 'EMAIL') return policy.actions.email;
+  if (f.category === 'IFSC') return policy.actions.ifsc;
   // Document disclosure is additionally governed by its external_llm flag; the label is never reversible.
   if (f.category === 'CONFIDENTIAL') return f.source === 'document' ? 'redact' : 'block';
   return policy.actions.pii;

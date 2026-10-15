@@ -75,7 +75,9 @@ describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
   });
   it('rejects blocked prompts through the SDK without making an additional provider call', async () => {
     const callsBefore = upstreamCalls;
-    await expect(sdk.chat.completions.create({ model: 'leakshield', messages: [{ role: 'user', content: 'AKIAABCDEFGHIJKLMNOP' }] })).rejects.toMatchObject({ status: 403 });
+    const blocked = await sdk.chat.completions.create({ model: 'leakshield', messages: [{ role: 'user', content: 'AKIAABCDEFGHIJKLMNOP' }] });
+    expect(blocked.choices[0]?.message.content).toContain('blocked');
+    expect((blocked as unknown as { leakshield: { action: string; provider_calls: number } }).leakshield).toMatchObject({ action: 'block', provider_calls: 0 });
     expect(upstreamCalls).toBe(callsBefore);
   });
   it('persists metadata-only audit records with HMAC identity and a 30-day TTL index', async () => {

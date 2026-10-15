@@ -2,7 +2,7 @@
 
 CyberCUP 6.0 · CC6-AI03 · an inspection gateway between workplace applications and an LLM.
 
-This branch implements **Mahatva's request lifecycle**. It builds on Arihant's console, with a small HTTP-client change for header-authenticated incidents and flexible policy-version types. Ojaswi owns production detection; Alwaz owns document retrieval, seeded data and approval storage. See [team assignments](docs/TEAM.md), [plan](docs/PLAN.md), [console API](docs/API.md) and [gateway hand-off](docs/MAHATVA_HANDOFF.md).
+The team implementations are integrated: **Mahatva's gateway**, **Ojaswi's detectors**, **Alwaz's retrieval/encrypted approval queue**, and **Arihant's console/evaluator**. See [team assignments](docs/TEAM.md), [plan](docs/PLAN.md), [console API](docs/API.md) and [gateway hand-off](docs/MAHATVA_HANDOFF.md).
 
 ## What works
 
@@ -15,7 +15,7 @@ This branch implements **Mahatva's request lifecycle**. It builds on Arihant's c
 - Metadata-only Mongo audit records, HMAC identities, a 30-day TTL index and authenticated SSE incidents.
 - Console chat APIs, advisory `/v1/scan`, and text-only `/v1/chat/completions`, including **buffered** SSE compatibility.
 
-No detector module means `/ready` returns 503 and chat requests fail closed. No retrieval module means prompt-only operation, with no document access. No approval backend means approval-required content is withheld. These states are deliberate; they are not completed detection/RAG/approval features.
+The production adapter uses `safeDetectAll`, `detectResponse`, `detectSplitSecrets` and `findLinks`. Missing or failed scanners stop processing. The approval bridge re-enters the full pipeline after admin approval; revoked permissions, changed policy/content, hash mismatch and repeat approval cannot authorise a provider call. Results are available once to the original user/conversation. [Classifier decision and measured limits](docs/CLASSIFIER-GATEWAY.md).
 
 ## Local setup
 
@@ -30,9 +30,9 @@ Edit the generated `.env` locally:
 
 1. For Groq, set `GROQ_API_KEY` and an available `GROQ_MODEL` from the team's account. For local inference, set `LLM_PROVIDER=ollama` and `OLLAMA_MODEL` to a model already pulled on that machine. The gateway never silently falls back to another destination.
 2. Set `MONGODB_URI` for your MongoDB instance; the default is local Mongo on port 27017.
-3. Ensure Ojaswi's detector implementation is present at `packages/detectors/src/index.ts`, or set `DETECTOR_MODULE` to its module path. It must export `detectAll(text, ctx)`.
+3. The detector module is included at `packages/detectors/src/index.ts`. `CLASSIFIER_BACKEND=none` uses its rules; optional `node` loads the pinned fp32 classifier. Int8 is not enabled because the recorded attack predictions failed.
 4. For the **local synthetic demo only**, set `DEMO_AUTH=true` to enable the console's user switcher. This endpoint issues privileged demo identities without passwords; keep it disabled outside an isolated demo.
-5. For Alwaz's published retrieval factory, set `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` after his branch is merged, and seed the **same Mongo database** with the same `FINGERPRINT_KEY`. The adapter maps his chunks, rechecks hashes/ACLs, reloads user memberships and checks restricted-output fingerprints. A standalone `retrieve`/`restrictedOverlap` module is also supported. Approval storage still needs the bridge described in the hand-off notes; setting the factory module directly is not supported.
+5. The sample config sets `RETRIEVAL_MODULE=apps/gateway/src/retrieval/index.js` and `APPROVALS_MODULE=apps/gateway/src/approvals/index.js`. Existing `.env` files should use these paths too. Both modules and the bridge are now included. With Mongo running, seed the dedicated synthetic demo database using `npm run seed`; it uses the same `MONGODB_URI`, `MONGODB_DB` and `FINGERPRINT_KEY` as the gateway. Do not seed a production database.
 
 ```sh
 npm run dev
@@ -46,7 +46,7 @@ npm run dev --workspace @leakshield/web
 
 Open `http://localhost:5173`. Set the web app's `VITE_API_MODE=live` for rehearsals so a missing gateway cannot be mistaken for a real result. The UI's mock mode is a separate frontend feature, not evidence of gateway operation.
 
-For JWT-only use, leave demo login disabled and run `npm run token -- asha`. Tokens expire after one hour and exist only in terminal/session memory. API keys are mapped to identities through `API_KEYS_JSON`; prompts never grant permissions.
+For JWT-only use, leave demo login disabled and run `npm run token -- asha`. Tokens expire after one hour and exist only in terminal/session memory. API keys are mapped to identities through `API_KEYS_JSON`; prompts never grant permissions. Only when `DEMO_AUTH=true` and no real API keys are configured, `ls_demo_asha` is enabled for the existing SDK demo; it is not a production credential.
 
 ## Container setup
 
@@ -66,12 +66,13 @@ Docker and Ollama were not installed on the development host used for this imple
 - `GET /ready`: scanner/policy readiness at startup; audit failures independently stop requests.
 - `POST /api/auth/login`: opt-in synthetic demo login.
 - `POST /api/chat`: existing console contract, with `message` and nullable `conversation_id`.
+- `GET /api/approvals`, `POST /api/approvals/:id/approve|reject`: admin metadata and decisions; `GET /api/access/results/:requestId?conversation_id=...` returns the approved result to its original owner once.
 - `POST /chat`: programmatic contract, with `prompt` and optional `conversation_id`/`approval_id`.
-- `POST /v1/scan`: advisory preflight `{ "text": "..." }`, never a provider call.
+- `POST /v1/scan`: advisory preflight `{ "text": "...", "history": [] }`; returns summaries, masked text and a temporary caller-only vault, writes metadata audit and never calls a provider.
 - `GET /api/events` or `/events`: admin-only SSE. Use authenticated `fetch`; native `EventSource` cannot add an Authorization header.
 - `GET /api/stats?window=60`: admin-only completed-request statistics, category/action counts, five-minute buckets and overhead percentiles excluding model time. Windows are bounded to 5–1440 minutes.
 - `GET /policy`: admin-only policy snapshot. Edit and increment the version in `apps/gateway/policy.yaml` to reload.
-- `POST /v1/chat/completions`: use model alias `leakshield`; supported fields are `model`, string-content `messages`, `stream`, and `n: 1`. Unsupported fields are rejected rather than silently discarded. Only a supported text-chat subset is claimed. Client system text is inspected as untrusted context; the gateway owns the privileged system instructions.
+- `POST /v1/chat/completions`: use model alias `leakshield` (or the configured provider model); supported fields are `model`, string-content `messages`, `stream`, and `n: 1`. Decisions are returned in `leakshield`; policy-blocked requests return a safe completion with HTTP 200 and zero provider calls, including buffered streaming. Unsupported fields are rejected. Client system text remains untrusted context; the gateway owns the privileged system instructions.
 
 Both chat routes return final **plain text**. Never render answers with `innerHTML` or permit automatic remote image fetching. The existing console already renders plain text. `/v1` callers must enforce the same rule.
 
@@ -86,13 +87,14 @@ npm run typecheck
 npm test
 npm run test:integration
 npm audit
-node eval/validate.mjs eval/contributions/mahatva/dev.jsonl eval/contributions/mahatva/heldout.jsonl
+npm run typecheck:access
+npm run eval:validate
 ```
 
 Unit tests inject a deterministic fixture detector/provider. Integration tests use **real MongoDB**, the real HTTP provider adapter, and the stock OpenAI client, against a **simulated LLM HTTP server**. The first Mongo integration run may download a large MongoDB binary into a local cache. Detector hand-off tests run when the production detector module exists; otherwise they are explicitly skipped. `TEST_DETECTOR_MODULE` can point to a checkout of Ojaswi's branch without merging or editing it.
 
-The implementation was also checked against Ojaswi's published detector commit `21751c4` and Alwaz's published retrieval implementation using development-only examples and real Mongo. The existing evaluator was run end to end on Mahatva's **dev cases only**, in protected and baseline modes with a simulated model HTTP server; generated reports remained temporary. No held-out cases were run for tuning. Mahatva's 7 dev and 24 held-out contributions live under `eval/contributions/mahatva/` for Arihant to assemble.
+Ojaswi's detector branch and Alwaz's access branch are included with their authorship preserved. The existing evaluator was run end to end on Mahatva's **dev cases only**, in protected and baseline modes with a simulated model HTTP server; generated reports remained temporary. Root datasets now contain **20 dev, 60 held-out and 21 robustness cases**. The remaining robustness cases belong to the dataset owners. No held-out cases were run for tuning. Mahatva's contribution copies remain under `eval/contributions/mahatva/`.
 
 ## Limits
 
-This is a single-process hackathon gateway: restart discards conversations and pending in-memory state; horizontal scaling needs shared secure session storage. Scanner timeouts cannot interrupt synchronous code that blocks Node's event loop, so detector implementations must bound their computation. ACL effectiveness depends on Alwaz enforcing it inside retrieval as well as this gateway's assembly checks. Canaries/fingerprints are extra checks, not proof against paraphrased leaks. Document-derived PII is irreversibly redacted in this implementation. Real-provider latency, precision/recall, baseline leak reduction, and end-to-end approvals still require the team's live integration and frozen evaluation.
+This is a single-process hackathon gateway: restart discards conversations and pending in-memory state; horizontal scaling needs shared secure session storage. Scanner timeouts cannot interrupt synchronous code that blocks Node's event loop, so detector implementations must bound their computation. Canaries/fingerprints are extra checks, not proof against paraphrased leaks. Document-derived PII is irreversibly redacted. Real-provider latency, precision/recall and baseline leak reduction still require live inference and frozen evaluation. LLM generation in integration tests is simulated; real Groq/Ollama and Windows fp32 inference remain unverified.

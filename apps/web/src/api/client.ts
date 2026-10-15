@@ -5,7 +5,7 @@ import { mockApprovals, mockChat, mockDecide, mockLogin, mockStats, mockSubscrib
 // "auto" (default) = gateway, falling back to the mock if it is not running.
 const MODE = (import.meta.env.VITE_API_MODE ?? 'auto') as 'auto' | 'live' | 'mock'
 
-export type Backend = 'live' | 'mock'
+export type Backend = 'live' | 'mock' | 'simulated'
 
 export class ApiError extends Error {}
 
@@ -31,7 +31,7 @@ let backendProbe: Promise<Backend> | null = null
 export function detectBackend(): Promise<Backend> {
   if (MODE !== 'auto') return Promise.resolve(MODE)
   backendProbe ??= fetch('/api/health')
-    .then((r) => (r.ok ? 'live' : 'mock') as Backend)
+    .then(async (r) => !r.ok ? 'mock' : (await r.json()).provider_mode === 'simulated' ? 'simulated' : 'live')
     .catch(() => 'mock' as Backend)
   return backendProbe
 }
@@ -121,4 +121,19 @@ export function listApprovals(backend: Backend, token: string): Promise<Approval
 export function decideApproval(backend: Backend, token: string, id: string, decision: 'approve' | 'reject'): Promise<Approval> {
   if (backend === 'mock') return mockDecide(id, decision)
   return request<Approval>('POST', `/api/approvals/${encodeURIComponent(id)}/${decision}`, {}, token)
+}
+
+export interface PendingApproval { id: string; request_hash: string; expires_at: string }
+export async function listPendingApprovals(token: string): Promise<PendingApproval[]> {
+  const rows = await request<Approval[]>('GET', '/api/approvals', undefined, token)
+  return rows.filter(row => row.status === 'pending').map(row => ({ id: row.approval_id, request_hash: row.request_hash, expires_at: row.expires_at }))
+}
+export async function decidePendingApproval(token: string, approval: PendingApproval, decision: 'approve' | 'reject') {
+  return request<Approval>('POST', `/api/approvals/${encodeURIComponent(approval.id)}/${decision}`, { request_hash: approval.request_hash }, token)
+}
+export async function pollApprovalResult(token: string, requestId: string, conversationId: string): Promise<ChatResponse | null> {
+  const res = await fetch(`/api/access/results/${encodeURIComponent(requestId)}?conversation_id=${encodeURIComponent(conversationId)}`, { headers: { Authorization: `Bearer ${token}` } })
+  if (res.status === 202) return null
+  if (!res.ok) throw new ApiError('Approval result is unavailable or expired.')
+  return res.json()
 }

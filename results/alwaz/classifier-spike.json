@@ -1,0 +1,392 @@
+{
+  "model": "protectai/deberta-v3-base-prompt-injection-v2",
+  "revision": "90c9989b1a342275dd0d1a95aad283c04e075671",
+  "node": "v24.19.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "scope": "six authored development prompts only; not heldout or Hinglish evidence",
+  "results": [
+    {
+      "dtype": "fp32",
+      "status": "loaded",
+      "load_ms": 2028.818167,
+      "total_ms": 2224.11425,
+      "rss_bytes": 1313898496,
+      "p50_ms": 10.442041000000245,
+      "p95_ms": 11.965249999999742,
+      "observations": [
+        {
+          "case": 1,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999991655349731
+            }
+          ],
+          "ms": 17.474416999999903
+        },
+        {
+          "case": 2,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999983310699463
+            }
+          ],
+          "ms": 11.457292000000052
+        },
+        {
+          "case": 3,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999991059303284
+            }
+          ],
+          "ms": 9.427624999999807
+        },
+        {
+          "case": 4,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 10.646959000000152
+        },
+        {
+          "case": 5,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 12.026292000000012
+        },
+        {
+          "case": 6,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 11.226832999999715
+        },
+        {
+          "case": 1,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999991655349731
+            }
+          ],
+          "ms": 9.49587500000007
+        },
+        {
+          "case": 2,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999983310699463
+            }
+          ],
+          "ms": 10.31879200000003
+        },
+        {
+          "case": 3,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999991059303284
+            }
+          ],
+          "ms": 8.812458999999762
+        },
+        {
+          "case": 4,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 10.442041000000245
+        },
+        {
+          "case": 5,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 11.965249999999742
+        },
+        {
+          "case": 6,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 11.230833999999959
+        },
+        {
+          "case": 1,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999991655349731
+            }
+          ],
+          "ms": 9.213791000000128
+        },
+        {
+          "case": 2,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999983310699463
+            }
+          ],
+          "ms": 10.255208000000039
+        },
+        {
+          "case": 3,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9999991059303284
+            }
+          ],
+          "ms": 8.79995800000006
+        },
+        {
+          "case": 4,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 10.449874999999793
+        },
+        {
+          "case": 5,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 10.964332999999897
+        },
+        {
+          "case": 6,
+          "prediction": [
+            {
+              "label": "INJECTION",
+              "score": 0.9999998211860657
+            }
+          ],
+          "ms": 11.023999999999887
+        }
+      ]
+    },
+    {
+      "dtype": "q8",
+      "status": "loaded",
+      "load_ms": 506.98412499999995,
+      "total_ms": 626.263125,
+      "rss_bytes": 1308311552,
+      "p50_ms": 6.353834000000006,
+      "p95_ms": 7.958625000000211,
+      "observations": [
+        {
+          "case": 1,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9910012483596802
+            }
+          ],
+          "ms": 13.694209000000228
+        },
+        {
+          "case": 2,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9853823184967041
+            }
+          ],
+          "ms": 5.482750000000124
+        },
+        {
+          "case": 3,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9916043877601624
+            }
+          ],
+          "ms": 4.48108400000001
+        },
+        {
+          "case": 4,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9648566246032715
+            }
+          ],
+          "ms": 5.4247910000003685
+        },
+        {
+          "case": 5,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.984596848487854
+            }
+          ],
+          "ms": 7.952208000000155
+        },
+        {
+          "case": 6,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9810726046562195
+            }
+          ],
+          "ms": 7.302874999999858
+        },
+        {
+          "case": 1,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9910012483596802
+            }
+          ],
+          "ms": 5.23666699999967
+        },
+        {
+          "case": 2,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9853823184967041
+            }
+          ],
+          "ms": 5.9259579999998095
+        },
+        {
+          "case": 3,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9916043877601624
+            }
+          ],
+          "ms": 4.934875000000375
+        },
+        {
+          "case": 4,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9648566246032715
+            }
+          ],
+          "ms": 5.900166999999783
+        },
+        {
+          "case": 5,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.984596848487854
+            }
+          ],
+          "ms": 6.959834000000228
+        },
+        {
+          "case": 6,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9810726046562195
+            }
+          ],
+          "ms": 7.958625000000211
+        },
+        {
+          "case": 1,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9910012483596802
+            }
+          ],
+          "ms": 6.24716699999999
+        },
+        {
+          "case": 2,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9853823184967041
+            }
+          ],
+          "ms": 7.080375000000004
+        },
+        {
+          "case": 3,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9916043877601624
+            }
+          ],
+          "ms": 5.254750000000058
+        },
+        {
+          "case": 4,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9648566246032715
+            }
+          ],
+          "ms": 6.353834000000006
+        },
+        {
+          "case": 5,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.984596848487854
+            }
+          ],
+          "ms": 6.463041999999859
+        },
+        {
+          "case": 6,
+          "prediction": [
+            {
+              "label": "SAFE",
+              "score": 0.9810726046562195
+            }
+          ],
+          "ms": 6.597625000000335
+        }
+      ]
+    }
+  ]
+}
