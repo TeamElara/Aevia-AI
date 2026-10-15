@@ -36,7 +36,24 @@ if (!scan.ok) {
 
 `safeDetectAll` never throws, and its error never contains the input text. Inputs that made earlier versions backtrack for seconds now take under 100 ms at 100 KB (`test/robustness.test.ts`).
 
-### Classifier (after Alwaz's spike)
+### Classifier in the gateway (no gateway code change)
+
+Alwaz's spike (`docs/CLASSIFIER-DECISION.md`) found Node ONNX works: fp32 warm p95 ≈ 12 ms, q8 ≈ 8 ms per prompt, ~2 s load. To turn it on:
+
+```bash
+npm install @huggingface/transformers          # optional peer dependency
+DETECTOR_MODULE=packages/detectors/src/gateway.ts \
+LEAKSHIELD_CLASSIFIER=fp32 \
+npm start
+```
+
+- `LEAKSHIELD_CLASSIFIER`: `off` (default, rules only), `fp32` (pinned upstream revision, ~713 MB download on first run), or `q8` together with `LEAKSHIELD_CLASSIFIER_MODEL=<local int8 model>`. `LEAKSHIELD_CLASSIFIER_CACHE` sets the cache directory.
+- The model loads once when the gateway imports the module. If it fails to load, the import throws and the gateway reports not-ready. It does not silently fall back to rules only.
+- Only user text (`prompt`, `history`) is classified, and only when the rules haven't already blocked. Documents are scored at ingest; responses aren't classified.
+- A window over 512 tokens is split again rather than truncated, so an attack at the end of a dense Hinglish or code prompt is still read.
+- A classifier error or timeout makes `detectAll` throw, so the gateway scanner fails the request closed.
+
+### Classifier API (lower level)
 
 ```ts
 import { classifyInjection, combineInjection, createHttpClassifier, createTransformersClassifier, shouldRunClassifier } from '@leakshield/detectors';
