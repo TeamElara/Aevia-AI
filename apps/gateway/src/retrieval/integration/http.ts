@@ -30,6 +30,7 @@ export function createIntegrationServer({ db, jwtSecret, fingerprintKey, provide
     ...(result.id?{approval_id:result.id,approval_expires_at:result.expires_at}:{}),
     ...(evalMode&&capture?{eval:{provider_calls:result.provider_calls,provider_payload:result._provider_payload??null}}:{}),
   });
+  const approvalView = (row:any) => ({ approval_id:row._id, request_hash:row.request_hash, user_pseudo:row.user_pseudo, doc_ids:row.doc_ids??[], reason:row.reason??'External approval required', status:Date.now()>=new Date(row.expires_at).getTime()&&row.status==='pending'?'expired':row.status, created_at:new Date(row.created_at).toISOString(), expires_at:new Date(row.expires_at).toISOString() });
   const server=createServer(async (req,res)=> {
     const url=new URL(req.url??'/', 'http://localhost');purge();
     try {
@@ -56,14 +57,14 @@ export function createIntegrationServer({ db, jwtSecret, fingerprintKey, provide
         if(result.id)requests.set(result.request_id,{user:user.id,conversation_id,approval_id:result.id,expires:Date.parse(result.expires_at)});
         return reply(res,200,format(result,conversation_id,result.request_id,req.headers['x-eval-capture']==='1'));
       }
-      if(req.method==='GET'&&url.pathname==='/api/approvals')return reply(res,200,await access.list(user.id));
+      if(req.method==='GET'&&url.pathname==='/api/approvals'){ await access.list(user.id);return reply(res,200,(await db.collection('approvals').find().sort({created_at:-1}).limit(100).toArray()).map(approvalView)); }
       const decision=url.pathname.match(/^\/api\/approvals\/([^/]+)\/(approve|reject)$/);
       if(req.method==='POST'&&decision) {
         if(decision[2]==='approve') {
           if(typeof body.request_hash!=='string'||!/^[a-f0-9]{64}$/.test(body.request_hash))return reply(res,400,{error:'Request hash required'});
-          return reply(res,200,await access.approve(decision[1],user.id,body.request_hash));
+          await access.approve(decision[1],user.id,body.request_hash);return reply(res,200,approvalView(await db.collection('approvals').findOne({_id:decision[1]})));
         }
-        await access.reject(decision[1],user.id);return reply(res,200,{status:'rejected'});
+        await access.reject(decision[1],user.id);return reply(res,200,approvalView(await db.collection('approvals').findOne({_id:decision[1]})));
       }
       const resultPath=url.pathname.match(/^\/api\/access\/results\/([^/]+)$/);
       if(req.method==='GET'&&resultPath) {
@@ -78,6 +79,7 @@ export function createIntegrationServer({ db, jwtSecret, fingerprintKey, provide
       return reply(res,404,{error:'Unavailable'});
     } catch(error) {
       if((error as Error)?.message==='Admin required')return reply(res,403,{error:'Admin required'});
+      if(/Approval missing|Approval hash mismatch/.test((error as Error)?.message))return reply(res,409,{error:'Approval is no longer pending or changed'});
       log({category:'request_failed'});return reply(res,503,{error:'Request could not be completed'});
     }
   });

@@ -9,7 +9,7 @@ One JSON object per line (JSONL). The eval runner reads these files and the dash
 | `robustness.jsonl` | 60 | Script (30) + Alwaz paraphrases (15) + Arihant Hinglish (15) | **Not Ojaswi** |
 | `live_subset.jsonl` | 10 | Arihant picks from held-out | **Not Ojaswi** |
 
-ID ranges, so nobody collides: dev `D-001`–`D-007` Mahatva, `D-008`–`D-013` Alwaz, `D-014`–`D-020` Arihant (done). Held-out `H-001`–`H-024` Mahatva, `H-025`–`H-040` Alwaz, `H-041`–`H-060` Arihant.
+ID ranges, so nobody collides: dev `D-001`–`D-007` Mahatva, `D-008`–`D-013` Alwaz, `D-014`–`D-020` Arihant (done). Held-out `H-001`–`H-024` Mahatva, `H-025`–`H-040` Alwaz, `H-041`–`H-060` Arihant. Robustness `R-001`–`R-030` script (`--start 1`), `R-031`–`R-045` Arihant Hinglish (`R-031`–`R-036` done, from H-053–H-056, H-059, H-060), `R-046`–`R-060` Alwaz paraphrase.
 
 Send your cases to Arihant, or append them to the file on your branch. Run `node eval/validate.mjs eval/dev.jsonl` before you merge.
 
@@ -66,3 +66,5 @@ node eval/mutate.mjs eval/heldout.jsonl --sources H-053,H-054 >> eval/robustness
 - Allowed cases (`allow`, `warn`) must be realistic work that a strict filter could wrongly block. Those are the cases that measure false positives.
 - Write the prompt the way an employee or an attacker actually would. Do not tune it to the rules.
 - One behaviour per case. If a case needs two actions, the strictest one is `expected_action`.
+
+Robustness ID allocation: `R-001`–`R-030` scripted mutations, `R-031`–`R-045` Arihant Hinglish, `R-046`–`R-060` Alwaz paraphrases.

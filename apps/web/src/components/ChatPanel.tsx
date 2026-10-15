@@ -4,6 +4,7 @@ import { actionLabel, isStop, type ChatResponse } from '../api/contract'
 import { pipeline, starters, type DemoUser } from '../data/demo'
 import { Chamfer } from './Chamfer'
 import { ActionBadge } from './PayloadCard'
+import { replaceSecrets } from '../lib/secrets'
 
 export type Turn = {
   id: string
@@ -66,7 +67,14 @@ export function ChatPanel({
             <EmptyState onPick={onSend} disabled={!ready} />
           ) : (
             turns.map((t) => (
-              <TurnView key={t.id} turn={t} selected={t.id === selectedId} onSelect={() => onSelect(t.id)} backend={backend} />
+              <TurnView
+                key={t.id}
+                turn={t}
+                selected={t.id === selectedId}
+                onSelect={() => onSelect(t.id)}
+                onResend={busy || !ready ? undefined : onSend}
+                backend={backend}
+              />
             ))
           )}
         </div>
@@ -111,14 +119,18 @@ function TurnView({
   turn,
   selected,
   onSelect,
+  onResend,
   backend,
 }: {
   turn: Turn
   selected: boolean
   onSelect: () => void
+  onResend?: (text: string) => void
   backend: Backend | null
 }) {
   const r = turn.response
+  const safer = r?.action === 'block' && r.findings.some((f) => f.category === 'SECRET') ? replaceSecrets(turn.prompt) : null
+  const canReplace = safer !== null && safer !== turn.prompt
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -155,6 +167,16 @@ function TurnView({
               {' · '}calls <span className="text-fg">{r.provider_calls}</span>
             </span>
           </div>
+        </button>
+      )}
+
+      {canReplace && (
+        <button
+          onClick={() => onResend?.(safer!)}
+          disabled={!onResend}
+          className="ml-3.5 rounded-full border border-line-strong px-3 py-1 font-mono text-[11px] text-fg transition hover:border-fg disabled:opacity-40"
+        >
+          Replace with [SECRET_…] and send
         </button>
       )}
     </div>

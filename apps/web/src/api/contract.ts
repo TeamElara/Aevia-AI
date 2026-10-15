@@ -52,6 +52,48 @@ export interface ChatResponse {
   eval?: { provider_calls: number; provider_payload: string | null }
 }
 
+// Audit allowlist (PLAN.md §8). No prompt text, no values, no doc titles.
+export interface AuditEvent {
+  request_id: string
+  ts: string
+  user_pseudo: string
+  conversation_pseudo: string
+  stage: string
+  categories: string[]
+  counts: Record<string, number>
+  rule_ids: string[]
+  policy_version: number
+  action: Action
+  model_called: boolean
+  via: ('raw' | 'normalised' | 'decoded')[]
+  stage_ms: Record<string, number>
+  total_ms: number
+}
+
+export interface Stats {
+  window_minutes: number
+  requests: number
+  blocked_pct: number
+  masked_pct: number
+  by_category: Record<string, number>
+  by_action: Partial<Record<Action, number>>
+  per_5min: { t: string; incidents: number }[]
+  overhead_ms_p50: number | null
+  overhead_ms_p95: number | null
+  policy_version: number
+}
+
+export interface Approval {
+  approval_id: string
+  request_hash: string
+  user_pseudo: string
+  doc_ids: string[]
+  reason: string
+  status: 'pending' | 'replaying' | 'approved' | 'rejected' | 'expired' | 'failed'
+  created_at: string
+  expires_at: string
+}
+
 export const actionLabel: Record<Action, string> = {
   allow: 'ALLOWED',
   warn: 'WARNED',

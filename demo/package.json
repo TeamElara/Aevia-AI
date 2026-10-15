@@ -1,0 +1,11 @@
+{
+  "name": "@leakshield/demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sdk": "node sdk-demo.mjs"
+  },
+  "dependencies": {
+    "openai": "4.104.0"
+  }
+}

@@ -78,7 +78,7 @@ export function createAccessService({ db, inspectOutbound, inspectResponse, prov
       if (prepared.action === 'require_approval') {
         const preview = await inspectOutbound({ messages: messagesFor(input, prepared.chunks) }, { user, chunks: prepared.chunks, input });
         if (!preview || !['allow','warn','mask','block'].includes(preview.action)) throw new Error('Outbound scanner failed');
-        result = preview.action === 'block' ? { action:'block', provider_calls:0, findings:preview.findings ?? [] } : { action: prepared.action, provider_calls: 0, ...await approvals.enqueue({ input, prepared }, { user, request_id }) };
+        result = preview.action === 'block' ? { action:'block', provider_calls:0, findings:preview.findings ?? [] } : { action: prepared.action, provider_calls: 0, ...await approvals.enqueue({ input, prepared }, { user, request_id, doc_ids: [...new Set(prepared.chunks.map(c=>c.document_id))] }) };
       }
       else if (prepared.action !== 'allow') result = { action: prepared.action, provider_calls: 0 };
       else result = await send(user, input, prepared);
