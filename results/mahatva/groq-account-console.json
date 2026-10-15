@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-15T13:31:47.479Z",
+  "scope": {
+    "organization_display_name": "Personal",
+    "project_display_name": "Default Project",
+    "organization_applies_to_current_demo_key": "not independently established"
+  },
+  "page": "https://console.groq.com/settings/data-controls",
+  "authenticated": true,
+  "global_zdr": false,
+  "inference_apis_zdr": false,
+  "batch_storage_enabled": true,
+  "fine_tuning_lora_storage_enabled": true,
+  "settings_changed": false,
+  "organization_base_limits": {
+    "page": "https://console.groq.com/settings/limits",
+    "models": [
+      {
+        "model": "openai/gpt-oss-120b",
+        "requests_per_minute": 30,
+        "requests_per_day": 1000,
+        "tokens_per_minute": 8000,
+        "tokens_per_day": 200000
+      },
+      {
+        "model": "openai/gpt-oss-20b",
+        "requests_per_minute": 30,
+        "requests_per_day": 1000,
+        "tokens_per_minute": 8000,
+        "tokens_per_day": 200000
+      }
+    ],
+    "project_overrides_verified": false,
+    "evidence_source": "Authenticated organization Current Limits table; headings explicitly label requests/minute, requests/day, tokens/minute, tokens/day."
+  }
+}

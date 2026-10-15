@@ -18,9 +18,9 @@ HMAC shingles detect copying, not arbitrary paraphrases. Database state can stil
 
 ## Groq and privacy
 
-Masked prompts and approved reference content do reach Groq. Never answer that no data leaves the gateway. Real API inference and quota headers are verified; the organization's ZDR on/off state and complete RPM/RPD/TPM/TPD settings remain unverified. API credentials and response headers do not prove authenticated Data Controls settings. The account's console was not authenticated in the previous continuation, and the original session also had a browser approval denial. We did not bypass those restrictions or change organization settings.
+Masked prompts and approved reference content do reach Groq. Never answer that no data leaves the gateway. On 15 October 2026 at 19:01 IST, the signed-in Personal organization / Default Project showed both Global ZDR and Inference APIs ZDR **Disabled**. Its organization base limits for both Groq 20b/120b were RPM 30, RPD 1,000, TPM 8,000 and TPD 200,000. Project overrides and association of the demo API key with that organization were not independently established, so do not extrapolate to other accounts. No settings were changed. See docs/GROQ-ACCOUNT-CHECK.md and results/mahatva/groq-account-console.json; historical unauthenticated checks remain as history.
 
-Groq's public policy distinguishes usage metadata from inference data and allows retention exceptions unless the relevant controls are enabled. Source: https://console.groq.com/docs/your-data (checked 15 October 2026). This is provider documentation, not confirmation of the team's account configuration. Test data is synthetic. Keys remain local and must never appear in reports, deck notes or Git commits.
+Groq's public policy distinguishes usage metadata from inference data and allows retention exceptions unless the relevant controls are enabled. Source: https://console.groq.com/docs/your-data (rechecked 15 October 2026). Provider policy and the account-specific observations above are separate evidence. Test data is synthetic. Keys remain local and must never appear in reports, deck notes or Git commits.
 
 ## Timing and deployment
 
