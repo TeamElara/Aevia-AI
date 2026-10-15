@@ -673,3 +673,21 @@ textarea { caret-color: var(--color-fg); }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
 @keyframes hero-fade { from { opacity: .35; } to { opacity: 1; } }
+
+/* Constrained, text-only markdown in chat replies. */
+.answer-markdown { min-width: 0; font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
+.answer-markdown > * + * { margin-top: 12px; }
+.answer-markdown strong, .answer-markdown th { font-weight: 600; }
+.answer-markdown :is(h3, h4, h5, h6) { font-size: 1em; font-weight: 600; }
+.answer-markdown ul, .answer-markdown ol { padding-left: 1.5em; }
+.answer-markdown ul { list-style: disc; }
+.answer-markdown ol { list-style: decimal; }
+.answer-markdown li + li { margin-top: 4px; }
+.answer-markdown code { font-family: var(--font-mono); font-size: .88em; white-space: pre-wrap; background: var(--color-surface-2); border-radius: 4px; padding: 1px 4px; }
+.answer-markdown pre { max-width: 100%; overflow-x: auto; padding: 12px; border-radius: 10px; background: var(--color-surface-2); }
+.answer-markdown pre code { padding: 0; white-space: pre; }
+.answer-table { max-width: 100%; overflow-x: auto; border: 1px solid var(--color-line); border-radius: 10px; }
+.answer-table table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.answer-table :is(th, td) { min-width: 96px; padding: 8px 12px; border-bottom: 1px solid var(--color-line); vertical-align: top; }
+.answer-table th { background: var(--color-surface-2); }
+.answer-table tbody tr:last-child td { border-bottom: 0; }

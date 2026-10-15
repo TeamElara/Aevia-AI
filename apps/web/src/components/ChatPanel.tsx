@@ -6,8 +6,9 @@ import { replaceSecrets } from '../lib/secrets'
 import { toneOf, type Tone } from '../lib/tone'
 import { ActionBadge } from './PayloadCard'
 import { reducedMotion } from '../lib/motion'
-import { Arrow, Icon, Magnetic, Orb, Reveal, Tokens } from './ui'
+import { Arrow, Icon, Magnetic, Orb, Tokens } from './ui'
 import { HandButterfly } from './HandButterfly'
+import { Markdown } from './Markdown'
 
 export type Turn = {
   id: string
@@ -166,10 +167,7 @@ function TurnView({
 
           {r && (
             <>
-              {/* Plain text only: answers are never rendered as HTML. */}
-              <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.7] text-fg">
-                <Reveal text={answerText(r)} animate={fresh} />
-              </p>
+              <Markdown text={answerText(r)} animate={fresh} />
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12.5px] text-faint">
                 <ActionBadge label={actionLabel[r.action]} stop={isStop(r.action)} className={fresh ? 'verdict' : ''} />
                 {backend === 'mock' && <span className="chip py-0.5">mock</span>}
