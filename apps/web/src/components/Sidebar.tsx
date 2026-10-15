@@ -5,7 +5,7 @@ import type { Tone } from '../lib/tone'
 import { avatarTone, type View } from '../lib/views'
 import { useState, type PointerEvent } from 'react'
 import { useSlider } from '../lib/useSlider'
-import { Icon, Magnetic, Orb, ThemeToggle } from './ui'
+import { BrandMark, Icon, Magnetic, ThemeToggle, Wordmark } from './ui'
 import type { ActingPosts } from '../lib/useActingPosts'
 
 
@@ -64,8 +64,8 @@ export function Sidebar({
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <button onClick={() => onGo('Chat')} className="flex items-center gap-2.5 px-2 pt-1" aria-label="LeakShield, open Chat">
-        <Orb tone={tone} size={28} />
-        <span className="font-display text-[18px] font-semibold tracking-[-0.03em]">LeakShield</span>
+        <BrandMark size={30} tone={tone} />
+        <Wordmark className="text-[18px]" />
       </button>
 
       <Magnetic strength={0.08} className="w-full">

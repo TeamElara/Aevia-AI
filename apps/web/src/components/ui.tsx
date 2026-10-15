@@ -3,6 +3,31 @@ import { reducedMotion, TOKEN, withTransition } from '../lib/motion'
 import type { Tone } from '../lib/tone'
 import { useSlider } from '../lib/useSlider'
 
+// The LeakShield logo's robot head (public/brand/leakshield-mark.png). Decorative: the button around it
+// carries the label. `tone` tints its ring when it sits outside a [data-tone] area, e.g. the sign-in sheet.
+export function BrandMark({ size, tone, busy }: { size: number; tone?: Tone; busy?: boolean }) {
+  return (
+    <img
+      src="/brand/leakshield-mark.png"
+      alt=""
+      width={size}
+      height={size}
+      data-tone={tone}
+      data-busy={busy ? 'true' : undefined}
+      className="brand-mark"
+    />
+  )
+}
+
+// "Leak" in the text colour, "Shield" in the logo's teal, as on the logo.
+export function Wordmark({ className = '' }: { className?: string }) {
+  return (
+    <span className={`font-display font-semibold tracking-[-0.03em] ${className}`}>
+      Leak<span className="text-brand">Shield</span>
+    </span>
+  )
+}
+
 export function Arrow() {
   return (
     <span className="arr" aria-hidden="true">
