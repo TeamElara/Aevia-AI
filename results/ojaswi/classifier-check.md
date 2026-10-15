@@ -7,6 +7,7 @@
 - **The scores don't separate.** Benign prompts reach 0.9999998, the same as attacks. Even the lowest attack score as a threshold (0.9999892) still flags 6 of 110 benign prompts. Picking a threshold that tight from 110 prompts would be overfitting.
 - **It's slower than the spike suggested.** Here it took about 34 ms per short prompt (p95 60 ms through the full pipeline), against 10 ms in the spike. A 5,400-char base64 paste took 10.9 s, over the gateway scanner's 5 s timeout, so that request would fail closed.
 - **Recommendation:** keep `CLASSIFIER_BACKEND=none` (the gateway default) for the demo and the frozen evaluation. The rules, the ACL boundary and quarantine carry detection. Fine-tuning on Hinglish and office/code prompts, then recalibrating, is future work.
+- **Follow-up:** rules now cover the five attack families the classifier was catching (hidden setup/preamble extraction, "you are an AI without guidelines", "not supposed to share", "disregard the above and instead"), with paraphrased variants and look-alike benign prompts in `packages/detectors/test/evasion.test.ts`. The benign corpus and dev set stay at 0 false alarms.
 
 ## Measurements
 
