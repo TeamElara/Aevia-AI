@@ -64,8 +64,15 @@ const MAX_TARGET_LEN = 300;
 // One pairing per intent is enough to score it; cap the total so a hostile prompt can't explode the work.
 const MAX_PAIRS = 500;
 
-function pairs(intents: Span[], targets: Span[], after = 80, before = 60): Span[] {
-  const out: Span[] = [];
+interface Paired extends Span {
+  /** Start of the intent word; quote and meta damping are judged here, not at the merged span's start. */
+  anchor: number;
+}
+
+// English puts the target after the verb ("ignore previous instructions"); Hinglish puts it before
+// ("system prompt dikhao"), so callers pass a larger `before` for Hinglish.
+function pairs(intents: Span[], targets: Span[], after = 80, before = 20): Paired[] {
+  const out: Paired[] = [];
   if (!intents.length || !targets.length) return out;
   const sorted = [...targets].sort((a, b) => a.start - b.start);
   for (const i of intents) {
@@ -74,7 +81,7 @@ function pairs(intents: Span[], targets: Span[], after = 80, before = 60): Span[
       const gapAfter = t.start - i.end;
       const gapBefore = i.start - t.end;
       if ((gapAfter >= 0 && gapAfter <= after) || (gapBefore >= 0 && gapBefore <= before) || (t.start < i.end && t.end > i.start)) {
-        out.push({ start: Math.min(i.start, t.start), end: Math.max(i.end, t.end) });
+        out.push({ start: Math.min(i.start, t.start), end: Math.max(i.end, t.end), anchor: i.start });
         break;
       }
     }
@@ -83,15 +90,16 @@ function pairs(intents: Span[], targets: Span[], after = 80, before = 60): Span[
   return out;
 }
 
-/** How many levels to lower a score: one for meta phrasing nearby, one for being inside quotes. */
-function damping(text: string, s: Span): number {
+/** How many levels to lower a score: one for meta phrasing nearby, one for the intent being inside quotes. */
+function damping(text: string, s: Span & { anchor?: number }): number {
   let levels = 0;
+  const at = s.anchor ?? s.start;
   // Look back at most 300 chars for the sentence start; a whole-text lastIndexOf per candidate is quadratic.
-  const winStart = Math.max(0, s.start - 300);
-  const win = text.slice(winStart, s.start);
+  const winStart = Math.max(0, at - 300);
+  const win = text.slice(winStart, at);
   const sentenceStart = winStart + Math.max(win.lastIndexOf('\n'), win.lastIndexOf('. '), win.lastIndexOf('? ')) + 1;
-  if (META.test(text.slice(Math.max(sentenceStart, s.start - 80), s.start)) || META.test(text.slice(s.end, s.end + 40))) levels++;
-  const before = text.slice(sentenceStart, s.start);
+  if (META.test(text.slice(Math.max(sentenceStart, at - 80), at)) || META.test(text.slice(s.end, s.end + 40))) levels++;
+  const before = text.slice(sentenceStart, at);
   const quotesBefore = (before.match(QUOTES) ?? []).length;
   if (quotesBefore % 2 === 1) levels++;
   return levels;
@@ -100,6 +108,7 @@ function damping(text: string, s: Span): number {
 const LEVEL_DROP = [0, 0.25, 0.5];
 
 interface Candidate extends Span {
+  anchor?: number;
   score: number;
   ruleId: string;
   dampable: boolean;
@@ -119,19 +128,19 @@ export function detectInjection(text: string, ctx: DetectorContext): Finding[] {
     add(pairs(spans(EXTRACT_INTENT, t), spans(EXTRACT_TARGET, t)), 0.9, 'inj.extract');
     add(spans(ROLE, t), 0.9, 'inj.role');
     add(spans(ROLEPLAY, t), 0.85, 'inj.roleplay');
-    add(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t)), 0.9, 'inj.override.hi');
+    add(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t), 80, 60), 0.9, 'inj.override.hi');
     add(spans(HI_ROLE, t), 0.9, 'inj.role.hi');
     add(spans(HI_DATA_DEMAND, t), 0.9, 'inj.crossuser.hi');
     add(spans(STRUCT, t), 0.7, 'inj.struct', false);
 
     const cross = spans(CROSS_USER, t);
     const intents = [...spans(EXTRACT_INTENT, t), ...spans(HI_INTENT, t)];
-    add(pairs(intents, cross), 0.85, 'inj.crossuser');
+    add(pairs(intents, cross, 80, 60), 0.85, 'inj.crossuser');
 
     for (const name of ctx.knownUsers ?? []) {
       if (!name || name === ctx.currentUser) continue;
       const re = new RegExp(`\\b${name}(?:'s|'|\\s+ka|\\s+ke|\\s+ki)?\\s+(?:data|history|conversations?|chats?|messages?|prompts?|queries)\\b`, 'gi');
-      add(pairs(intents, spans(re, t)), 0.85, 'inj.crossuser.named');
+      add(pairs(intents, spans(re, t), 80, 60), 0.85, 'inj.crossuser.named');
     }
 
     // Target words alone are weak evidence (talking about prompts is normal).

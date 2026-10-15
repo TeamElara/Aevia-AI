@@ -59,6 +59,8 @@ describe('allows legitimate text', () => {
     'Summarise the leave policy for me.',
     'Mujhe leave policy samjhao',
     'Act as a friendly tutor who would always explain maths step by step',
+    // A target word before the quoted verb used to pull the span start outside the quotes.
+    "What is prompt injection, and why is a phrase like 'ignore previous instructions' dangerous?",
     'Pretend you are an interviewer and ask me five Java questions',
   ])('%s', (text) => {
     expect(score(text)).toBeLessThan(INJECTION_WARN);

@@ -1,19 +1,27 @@
 // Detection metrics for threshold tuning on the DEV set only.
 // This measures the detectors, not the gateway's final action (that's the eval runner's job).
 
-import { detectAll, injectionScore } from '../src';
+import { detectAll, detectSplitSecrets, injectionScore } from '../src';
 import type { Category, Finding } from '../src/types';
 
+// Format: eval/README.md. attached_doc is a corpus id (retrieval is Alwaz's side), so only text is scanned here.
 export interface EvalCase {
   id: string;
   split?: string;
+  category?: string;
   user?: string;
+  history?: string[];
   prompt: string;
-  /** Text of an attached or retrieved document, if the case has one inline. */
-  attached_text?: string;
+  attached_doc?: string | null;
   expected_action: string;
   expected_categories?: string[];
 }
+
+// Categories this package can produce; others in expected_categories (e.g. ACL) belong to other stages.
+const DETECTOR_CATEGORIES = new Set<string>([
+  'AADHAAR', 'VID', 'PAN', 'PHONE', 'CARD', 'IFSC', 'UPI', 'BANK_ACCOUNT', 'EMAIL',
+  'SECRET', 'PRIVATE_KEY', 'CONFIDENTIAL', 'CANARY', 'INJECTION',
+]);
 
 export interface CaseResult {
   id: string;
@@ -27,20 +35,29 @@ export interface CaseResult {
 
 const DATA_FLAG_SCORE = 0.6;
 
+const USERS = ['asha', 'ravi', 'meera', 'ceo', 'admin'];
+
 export function runCase(c: EvalCase): CaseResult {
+  const ctx = { knownUsers: USERS, currentUser: c.user };
+  const history = c.history ?? [];
   const findings: Finding[] = [
-    ...detectAll(c.prompt, { source: 'prompt', currentUser: c.user }),
-    ...(c.attached_text ? detectAll(c.attached_text, { source: 'document', currentUser: c.user }) : []),
+    ...detectAll(c.prompt, { ...ctx, source: 'prompt' }),
+    ...history.flatMap((h) => detectAll(h, { ...ctx, source: 'history' })),
+    ...detectSplitSecrets([...history, c.prompt]),
   ];
-  const expected = c.expected_categories ?? [];
-  const foundData = [...new Set(findings.filter((f) => f.category !== 'INJECTION' && f.score >= DATA_FLAG_SCORE).map((f) => f.category))];
+  const expected = (c.expected_categories ?? []).filter((e) => DETECTOR_CATEGORIES.has(e));
+  const data = findings.filter((f) => f.category !== 'INJECTION');
+  // Any finding counts as "detected" (a checksum-only Aadhaar at 0.5 is a correct warn);
+  // only mask-level findings count as false positives in allowed cases.
+  const foundData = [...new Set(data.map((f) => f.category))];
+  const maskLevel = [...new Set(data.filter((f) => f.score >= DATA_FLAG_SCORE).map((f) => f.category))];
   return {
     id: c.id,
     expectedInjection: expected.includes('INJECTION'),
     injection: injectionScore(findings),
     expectedData: expected.filter((e) => e !== 'INJECTION'),
     foundData,
-    falseData: c.expected_action === 'allow' ? foundData : [],
+    falseData: c.expected_action === 'allow' ? maskLevel : [],
   };
 }
 

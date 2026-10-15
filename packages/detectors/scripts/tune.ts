@@ -26,7 +26,7 @@ console.table(
   })),
 );
 
-console.log('Data categories (found at score >= 0.6)');
+console.log('Data categories (any finding)');
 console.table(Object.fromEntries(Object.entries(categoryRecall(results)).map(([c, v]) => [c, { ...v, recall: (v.found / v.expected).toFixed(2) }])));
 
 const missedInj = results.filter((r) => r.expectedInjection && r.injection < 0.85);
