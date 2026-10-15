@@ -50,6 +50,7 @@ export class Gateway {
       const categories = [...new Set(findings.map(f => f.category))].slice(0, 100);
       await this.deps.audit.write({
         request_id: requestId, ts: new Date(), user_pseudo: this.deps.audit.pseudo(user), stage,
+        conversation_pseudo: this.deps.audit.fingerprint('conversation', id),
         categories, counts: Object.fromEntries(categories.map(c => [c, findings.filter(f => f.category === c).length])),
         rule_ids: [...new Set(findings.map(f => f.ruleId))].slice(0, 100), policy_version: version,
         action, model_called: providerCalls > 0, via: [...new Set(findings.map(f => f.via))], stage_ms: { ...stage_ms },

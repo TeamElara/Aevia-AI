@@ -35,7 +35,7 @@ export class OfflineBaseline {
     state.busy = true;
     let calls = 0;
     const stage_ms: Record<string, number> = {};
-    const log = async (stage: string) => this.audit.write({ request_id: requestId, ts: new Date(), user_pseudo: this.audit.pseudo(user), stage,
+    const log = async (stage: string) => this.audit.write({ request_id: requestId, ts: new Date(), user_pseudo: this.audit.pseudo(user), conversation_pseudo: this.audit.fingerprint('conversation', id), stage,
       categories: [], counts: {}, rule_ids: [], policy_version: 'offline-baseline', action: 'allow', model_called: calls > 0, via: [], stage_ms, total_ms: performance.now() - started });
     try {
       await log('baseline.accepted');

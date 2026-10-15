@@ -98,19 +98,38 @@ export function createApp(options: Options) {
     res.json(await options.gateway.inspect(identity(res), body.text));
   });
   app.get('/policy', (_req, res) => { admin(res); res.json(options.policies.snapshot()); });
-  app.get(['/events', '/api/events'], (req, res) => {
+  app.get('/api/stats', async (req, res) => {
+    admin(res);
+    const query = z.object({ window: z.coerce.number().int().min(5).max(1440).default(60) }).strict().parse(req.query);
+    res.json(await options.audit.stats(query.window, options.policies.snapshot().version));
+  });
+  app.get(['/events', '/api/events'], async (_req, res) => {
     admin(res);
     if (options.audit.events.listenerCount('audit') >= 50) throw new GatewayError('EVENT_CAPACITY', 429);
     res.status(200).set({ 'Content-Type': 'text/event-stream', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' }).flushHeaders();
     res.write(': connected\n\n');
-    const listener = (event: AuditEvent) => {
+    let initialising = true; const pending: AuditEvent[] = [];
+    const send = (event: AuditEvent) => {
       // Slow consumers are disconnected, rather than accumulating unbounded incident buffers.
       if (!res.write(`event: audit\ndata: ${JSON.stringify(event)}\n\n`)) res.end();
+    };
+    const listener = (event: AuditEvent) => {
+      if (initialising) { if (pending.length >= 100) res.end(); else pending.push(event); }
+      else send(event);
     };
     options.audit.events.on('audit', listener);
     const heartbeat = setInterval(() => { if (!res.write(': heartbeat\n\n')) res.end(); }, 15_000);
     const expiry = setTimeout(() => res.end(), 5 * 60_000); // Reconnect revalidates JWT expiry.
     res.on('close', () => { clearInterval(heartbeat); clearTimeout(expiry); options.audit.events.off('audit', listener); });
+    try {
+      const recent = await options.audit.recent();
+      if (res.destroyed || res.writableEnded) return;
+      const key = (e: AuditEvent) => `${e.request_id}:${e.stage}:${e.ts.toISOString()}`;
+      const seen = new Set(recent.map(key));
+      for (const event of recent.reverse()) send(event);
+      for (const event of pending) if (!seen.has(key(event))) send(event);
+      initialising = false;
+    } catch { res.end(); }
   });
   app.post('/v1/chat/completions', async (req, res) => {
     const body = completionSchema.parse(req.body);

@@ -1,6 +1,6 @@
 # Mahatva gateway hand-off
 
-Implemented against `docs/TEAM.md` and the existing `apps/web/src/api/contract.ts`. Gateway code stays under `apps/gateway`; root changes are shared setup/contracts. Teammate implementation folders are untouched.
+Implemented against `docs/TEAM.md` and the existing `apps/web/src/api/contract.ts`. Gateway code stays under `apps/gateway`; root changes are shared setup/contracts. The two web API files have a minimal integration change for header-authenticated incident streaming and policy-version typing; components/design and detector/access implementations are untouched.
 
 ## Ojaswi → gateway
 
@@ -42,9 +42,11 @@ An approved request is resubmitted to `/api/chat` or `/chat` with the original m
 
 ## Arihant → gateway
 
-The existing console works without source changes: gateway port **8080**, `/api/health`, opt-in `/api/auth/login`, and `/api/chat` with `message`/nullable conversation ID. Chat replies include findings summaries, `rule_ids`, `citations`, `sent_to_model: string | null`, action and actual provider-call count. Responses blocked after a call use `block_response` on the console API. The lower-level `/chat` retains the internal `block` action and full numeric finding metadata for evaluation.
+The existing console chat contract is supported: gateway port **8080**, `/api/health`, opt-in `/api/auth/login`, and `/api/chat` with `message`/nullable conversation ID. Chat replies include findings summaries, `rule_ids`, `citations`, `sent_to_model: string | null`, action and actual provider-call count. Responses blocked after a call use `block_response` on the console API. The lower-level `/chat` retains the internal `block` action and full numeric finding metadata for evaluation.
 
 `/api/events` and `/events` both require an admin bearer token. Connect with streaming `fetch`, not query-string JWTs. Events contain only the audit allowlist. Slow consumers are disconnected; reconnect reauthenticates. The stream is rotated every five minutes.
+
+The web client now uses that header-authenticated stream, and the server replays the last 50 metadata events before live events, without an initial-subscription gap. `/api/stats` counts final request records once rather than counting every pipeline stage. Its overhead subtracts LLM time, and it includes empty five-minute buckets. Approval dashboard routes remain part of the approval bridge dependency above.
 
 `POST /v1/scan` accepts `{ text }`; it is advisory and performs no provider call. It never proves the final assembled request is safe. `/v1/chat/completions` supports non-stream and buffered SSE text chat using the stock SDK and the `leakshield` model alias. Tools, images, arbitrary model destinations and unsupported options are rejected explicitly.
 

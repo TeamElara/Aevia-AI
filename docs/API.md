@@ -102,9 +102,9 @@ The configured Mongo database must have the seed corpus's `chunks` text index. B
 
 The console signs in as `admin` for the Incidents, Overview and Approvals views. Every other user gets `403`.
 
-### `GET /api/events?token=<jwt>`
+### `GET /api/events`
 
-A Server-Sent Events stream. `EventSource` cannot set headers, so the token goes in the query string. Each message's `data:` is one `AuditEvent`, using only the allowlisted fields in PLAN.md §8:
+A Server-Sent Events stream authenticated with `Authorization: Bearer <jwt>`. The console uses streaming `fetch`, keeping admin tokens out of URLs. Each `audit` event's `data:` is one `AuditEvent`, using only the allowlisted fields in PLAN.md §8:
 
 ```json
 {

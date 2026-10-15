@@ -45,6 +45,7 @@ export interface AuditEvent {
   request_id: string;
   ts: Date;
   user_pseudo: string;
+  conversation_pseudo: string;
   stage: string;
   categories: string[];
   counts: Record<string, number>;

@@ -2,7 +2,7 @@
 
 CyberCUP 6.0 · CC6-AI03 · an inspection gateway between workplace applications and an LLM.
 
-This branch implements **Mahatva's request lifecycle**. It builds on Arihant's console without changing its source. Ojaswi owns production detection; Alwaz owns document retrieval, seeded data and approval storage. See [team assignments](docs/TEAM.md), [plan](docs/PLAN.md), [console API](docs/API.md) and [gateway hand-off](docs/MAHATVA_HANDOFF.md).
+This branch implements **Mahatva's request lifecycle**. It builds on Arihant's console, with a small HTTP-client change for header-authenticated incidents and flexible policy-version types. Ojaswi owns production detection; Alwaz owns document retrieval, seeded data and approval storage. See [team assignments](docs/TEAM.md), [plan](docs/PLAN.md), [console API](docs/API.md) and [gateway hand-off](docs/MAHATVA_HANDOFF.md).
 
 ## What works
 
@@ -69,6 +69,7 @@ Docker and Ollama were not installed on the development host used for this imple
 - `POST /chat`: programmatic contract, with `prompt` and optional `conversation_id`/`approval_id`.
 - `POST /v1/scan`: advisory preflight `{ "text": "..." }`, never a provider call.
 - `GET /api/events` or `/events`: admin-only SSE. Use authenticated `fetch`; native `EventSource` cannot add an Authorization header.
+- `GET /api/stats?window=60`: admin-only completed-request statistics, category/action counts, five-minute buckets and overhead percentiles excluding model time. Windows are bounded to 5–1440 minutes.
 - `GET /policy`: admin-only policy snapshot. Edit and increment the version in `apps/gateway/policy.yaml` to reload.
 - `POST /v1/chat/completions`: use model alias `leakshield`; supported fields are `model`, string-content `messages`, `stream`, and `n: 1`. Unsupported fields are rejected rather than silently discarded. Only a supported text-chat subset is claimed. Client system text is inspected as untrusted context; the gateway owns the privileged system instructions.
 

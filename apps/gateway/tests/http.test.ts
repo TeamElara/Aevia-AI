@@ -92,4 +92,17 @@ describe('authenticated HTTP API', () => {
     const r = await request(h.app).post('/api/chat').set('Authorization', await bearer()).set('X-LeakShield-Mode', 'passthrough').send({ message: 'hello', conversation_id: null });
     expect(r.status).toBe(501); expect(h.provider.complete).not.toHaveBeenCalled();
   });
+  it('counts completed requests once in admin statistics and includes empty timeline buckets', async () => {
+    const h = setup();
+    await request(h.app).post('/api/chat').set('Authorization', await bearer()).send({ message: '2345 6789 0124' });
+    const r = await request(h.app).get('/api/stats?window=60').set('Authorization', await bearer(admin));
+    expect(r.status).toBe(200); expect(r.body.requests).toBe(1); expect(r.body.masked_pct).toBe(100);
+    expect(r.body.by_category.AADHAAR).toBe(1); expect(r.body.per_5min.length).toBeGreaterThan(1);
+    expect(r.body.per_5min.some((bucket: { incidents: number }) => bucket.incidents === 0)).toBe(true);
+  });
+  it('keeps statistics admin-only and refuses unbounded windows', async () => {
+    const h = setup();
+    expect((await request(h.app).get('/api/stats').set('Authorization', await bearer())).status).toBe(403);
+    expect((await request(h.app).get('/api/stats?window=999999').set('Authorization', await bearer(admin))).status).toBe(400);
+  });
 });

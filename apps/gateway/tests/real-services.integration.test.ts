@@ -90,6 +90,7 @@ describe('real MongoDB + HTTP + stock SDK integration (simulated LLM)', () => {
   it('strips unexpected raw payload properties at the Mongo persistence boundary', async () => {
     const event: AuditEvent = {
       request_id: 'd67c0030-d113-4f89-b48e-e5d1aa3f242e', ts: new Date(), user_pseudo: audit.pseudo(employee), stage: 'test',
+      conversation_pseudo: audit.fingerprint('conversation', 'test'),
       categories: [], counts: {}, rule_ids: [], policy_version: '1', action: 'allow', model_called: false, via: [], stage_ms: {}, total_ms: 1,
     };
     await audit.write({ ...event, prompt: '2345 6789 0124', response: 'ABCDE1234F' } as AuditEvent);

@@ -5,9 +5,9 @@ The checks below verify implementation behavior, not frozen detector accuracy or
 | Check | Result |
 | --- | --- |
 | Gateway TypeScript check | Pass |
-| Unit/security/API checks | 70 passed |
+| Unit/security/API checks | 72 passed |
 | Integration checks with real MongoDB and HTTP | 21 passed |
-| Existing React console production build | Pass; console source unchanged |
+| Existing React console production build | Pass; two API integration files updated, components/design unchanged |
 | Dependency audit, including development dependencies | 0 reported vulnerabilities at validation time |
 | Compose and CI YAML structure | Pass |
 | Mahatva case format/checksums | 7 dev + 24 held-out valid |
