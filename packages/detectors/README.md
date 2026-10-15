@@ -81,6 +81,14 @@ expect(findSeededLeaks(JSON.stringify(auditRows) + logText + stderr)).toEqual([]
 
 `findSeededLeaks` matches reformatted numbers and case changes, and returns labels, never values.
 
+`test/gateway-privacy.test.ts` is the privacy test itself. It runs Mahatva's gateway, imported read-only, with these real detectors. It covers:
+
+- **Flows:** mask, block, split secret, injection, output redaction, provider error, plus the HTTP chat API with login and a 401.
+- **What it searches:** audit events (which also feed the incident stream), stdout and stderr, error messages, response metadata, and the provider payload of masked requests.
+- **Result:** 0 seeded values found in any of them.
+- **Proof it's not vacuous:** it first asserts each flow really triggered (mask, block, block, block, redact; 0 provider calls on blocks). A deliberate leak makes it fail.
+- **Not covered yet:** approvals, until the approval service is on main.
+
 ## The `Finding` contract
 
 ```ts
@@ -138,7 +146,7 @@ When data findings overlap, the more specific category wins (private key > secre
 
 - Choosing the classifier backend: waits for Alwaz's spike. The integration code is ready.
 - Threshold tuning: waits for `eval/dev.jsonl`.
-- The privacy test itself lives in the gateway (it needs the audit store). The helpers above are ready.
+- Approvals in the privacy test: waits for the approval service on main.
 
 ## Develop
 
