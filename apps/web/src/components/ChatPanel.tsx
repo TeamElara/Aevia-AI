@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Backend } from '../api/client'
-import { actionLabel, isStop, type ChatResponse } from '../api/contract'
+import { actionLabel, answerText, isStop, type ChatResponse } from '../api/contract'
+import { ms } from '../lib/format'
 import { pipeline, starters, type DemoUser } from '../data/demo'
 import { Chamfer } from './Chamfer'
 import { ActionBadge } from './PayloadCard'
@@ -155,14 +156,14 @@ function TurnView({
           }`}
         >
           {/* Plain text only: answers are never rendered as HTML. */}
-          <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-fg/90">{r.answer}</p>
+          <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-fg/90">{answerText(r)}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <ActionBadge label={actionLabel[r.action]} stop={isStop(r.action)} />
             {backend === 'mock' && <span className="font-mono text-[10px] tracking-wider text-faint">MOCK</span>}
             {r.reason && <span className="text-[12px] text-muted">{r.reason}</span>}
             <span className="font-mono text-[10px] text-faint">
               {Object.entries(r.stage_ms)
-                .map(([k, v]) => `${k} ${v}ms`)
+                .map(([k, v]) => `${k} ${ms(v)}`)
                 .join(' · ')}
               {' · '}calls <span className="text-fg">{r.provider_calls}</span>
             </span>

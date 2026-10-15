@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { chat, login, pollApprovalResult, type Backend } from './api/client'
-import { actionLabel, isStop } from './api/contract'
+import { actionLabel, answerText, isStop } from './api/contract'
 import { Chamfer } from './components/Chamfer'
 import { ChatPanel, type Turn } from './components/ChatPanel'
 import { PayloadCard, type Exchange } from './components/PayloadCard'
@@ -89,7 +89,7 @@ export default function App() {
     stop: isStop(t.response!.action),
     typed: t.prompt,
     sent: t.response!.sent_to_model ?? NOT_SENT,
-    reply: t.response!.answer,
+    reply: answerText(t.response!),
     providerCalls: t.response!.provider_calls,
     stages: Object.entries(t.response!.stage_ms),
     tag: session?.backend === 'mock' ? 'mock' : session?.backend === 'simulated' ? 'simulated' : undefined,

@@ -7,7 +7,17 @@ const MODE = (import.meta.env.VITE_API_MODE ?? 'auto') as 'auto' | 'live' | 'moc
 
 export type Backend = 'live' | 'mock' | 'simulated'
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status = 0) {
+    super(message)
+    this.status = status
+  }
+}
+
+// The gateway sends `{ error: "CODE" }` on /api routes and `{ error: { code, message } }` elsewhere.
+const errorText = (e: unknown, status: number) =>
+  typeof e === 'string' ? e : (e as { message?: string; code?: string })?.message ?? (e as { code?: string })?.code ?? `Gateway returned ${status}`
 
 async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, token?: string, headers: Record<string, string> = {}): Promise<T> {
   const res = await fetch(path, {
@@ -21,7 +31,7 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new ApiError(data.error ?? `Gateway returned ${res.status}`)
+    throw new ApiError(errorText(data.error, res.status), res.status)
   }
   return res.json()
 }

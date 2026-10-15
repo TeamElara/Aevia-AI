@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { decideApproval, listApprovals } from '../api/client'
+import { ApiError, decideApproval, listApprovals } from '../api/client'
 import type { Approval } from '../api/contract'
 import { Chamfer } from '../components/Chamfer'
 import { useAdmin } from '../lib/useAdmin'
@@ -26,7 +26,15 @@ export function ApprovalsView() {
   const now = useNow()
 
   const refresh = useCallback(() => {
-    if (admin) listApprovals(admin.backend, admin.token).then(setItems).catch((e) => setNotice((e as Error).message))
+    if (admin) listApprovals(admin.backend, admin.token)
+        .then(setItems)
+        .catch((e) =>
+          setNotice(
+            e instanceof ApiError && e.status === 404
+              ? 'The approval backend is not connected to this gateway yet, so approval-required requests stay withheld.'
+              : (e as Error).message,
+          ),
+        )
   }, [admin])
 
   useEffect(() => {
