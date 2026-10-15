@@ -1,4 +1,28 @@
-# Latest v2 account/API evidence — 15 October 2026
+# Authenticated account check — 15 October 2026, 19:01 IST
+
+After Mahatva signed in, the agent inspected the **Personal** organization / **Default Project** in GroqCloud. Read-only evidence: `results/mahatva/groq-account-console.json`. No account settings were changed; no email, organization identifier, key, token or raw payload is in that evidence.
+
+| Data Controls setting | Observed state |
+| --- | --- |
+| Global ZDR | **Disabled** |
+| Inference APIs ZDR | **Disabled** |
+| Batch storage / feature | On |
+| Fine-tuning and LoRA storage / feature | On |
+
+The authenticated **organization base limits** table explicitly showed these units:
+
+| Model | Requests/minute | Requests/day | Tokens/minute | Tokens/day |
+| --- | --- | --- | --- | --- |
+| `openai/gpt-oss-120b` | 30 | 1,000 | 8,000 | 200,000 |
+| `openai/gpt-oss-20b` | 30 | 1,000 | 8,000 | 200,000 |
+
+Scope: these observations apply to the displayed Personal organization, not every team member's organization. Project overrides and association of the configured demo API key with this organization were not independently established. The observed organization RPD/TPM values agree with earlier demo API headers, but agreement is not proof of key ownership.
+
+For the judge: **“Masked prompts and approved content reach Groq. In the signed-in Personal organization we checked, inference ZDR is disabled, so we do not claim zero retention. Groq's policy permits temporary input/output retention for reliability or abuse monitoring, and always retains usage metadata. Our demo uses synthetic fixtures.”** [Provider retention policy](https://console.groq.com/docs/your-data), rechecked 15 October 2026. Batch and fine-tuning have separate persistence behavior; feature On does not mean this project has submitted batch jobs or training data.
+
+Console pages inspected: [Data Controls](https://console.groq.com/settings/data-controls), [organization limits](https://console.groq.com/settings/limits). This completes the requested inspection/documentation; enabling or disabling controls would be a separate account-owner decision. Older entries below describe the evidence available before this login.
+
+## Earlier v2 account/API evidence — 15 October 2026
 
 The user supplied a key privately for this task. It is stored only in ignored, mode-0600 `.env`; it is absent from reports and Git. Real inference with `openai/gpt-oss-20b` succeeds. Metadata evidence: `results/freeze-v2-groq/account-api-evidence.json`.
 
