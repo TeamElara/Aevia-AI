@@ -25,3 +25,32 @@ These answers use synthetic, team-authored evidence. Frozen v2 uses `eval-freeze
 11. **Eval kaise freeze kiya?** V1 (`eval-freeze`): **48/60 exact actions, provider leaks 12 → 1**. V2 (`eval-freeze-v2`, `05d1afc`, 15 October 17:02:11 IST): **53/60**, robustness **56/60**, same provider-flag headline. V2 was tagged after the v1 held-out run; intervening changes were developed on dev and benign prompts only. Reports retain frozen commit, dataset hashes, expectations and attachment-contract provenance. These are team-authored sets with prior exposure, not a new independently blinded test. See [freeze record](EVAL-FREEZE-V2.md), [v1 protected](../results/heldout-leakshield.json), [v1 baseline](../results/heldout-baseline.json) and [v2 report](../results/freeze-v2-groq/RESULTS.md).
 
 12. **Production me deploy kaise hoga?** The supplied Compose setup is a local starting point: gateway **8080** and Mongo **27017** bind to loopback, and the console has its separate build. This is a **single-process** prototype; restart loses pending in-memory state. Production needs real identity with demo auth disabled, managed secrets, private database access, a TLS entry point, shared secure conversation/approval state, retention operations and load/security testing. Those are required future deployment work, not completed features. **53/60** frozen actions is not production certification. See [deployment starting point](../docker-compose.yml), [README](../README.md) and [limitations](LIMITATIONS.md).
+
+## Detection deep-dive (Ojaswi)
+
+Questions 1, 4 and 7 above already cover false positives, injection detection and Hinglish. These add the detector internals and the post-freeze checks. Post-freeze work does not change any frozen v2 number.
+
+13. **Sirf regex hai kya?** Detection uses rules plus validation; no LLM makes the decision. Text is normalised first: NFKC, zero-width removal, homoglyph folding, de-spacing ("i.g.n.o.r.e"), and one-level base64/hex/URL decoding. Spans map back to the original text. PII is validated, not just matched: Aadhaar needs **Verhoeff**, cards need **Luhn**, and PAN needs its structure. Context words raise the score. Injection needs **intent × target** ("reveal" + "system prompt"), and quotes, negations and "explain prompt injection" lower the score. Policy turns scores into actions: **≥ 0.85 block, 0.60–0.85 warn**, PII masked and restored for the user, secrets blocked. See [detectors](../packages/detectors/src) and [policy](../apps/gateway/policy.yaml).
+
+14. **Freeze ke baad khud attack kiya?** Yes. We ran **50 new synthetic attacks** against the running keyless gateway, and the report lists ids only, no prompt text. **32/50 were stopped before the model, 1 warned, 17 bypassed.** All 11 encoding tricks were stopped (zero-width, fullwidth, leetspeak, base64, ROT13, homoglyph mix, emoji spacing). Bypasses were Hinglish **7/10**, roleplay **4/8**, Devanagari **3/8** and split-line **3/6**. This matches the frozen result: the gap is language and roleplay, not obfuscation. No rules were changed for the demo. See [red-team report](../results/ojaswi/redteam.md).
+
+15. **Lamba message bhej ke gateway hang kar sakte ho?** We tested this ourselves. All **111 detector regexes** were run against **51 adversarial 50 KB inputs**, each in a worker with a timeout.
+    - **Two real ReDoS issues.** The structural role-header pattern was cubic on runs of newlines (about 2.4 s at 2,000 newlines, over 15 s at 50 KB). The markdown-link pattern took about 1.2 s at 50 KB. Detection is synchronous, so either one would stall the gateway for everyone.
+    - **Both fixed in a post-freeze hotfix.** After the fix, 50 KB adversarial inputs take **12–15 ms** through `detectAll`. Dev-set metrics are identical before and after. A regression test keeps 50 KB inputs under 50 ms.
+    - The frozen v2 numbers describe the pre-fix rules.
+    - See the [audit](../results/ojaswi/redos-audit.md) and [hotfix test](../packages/detectors/test/redos.test.ts).
+
+16. **Detector kitna time leta hai?** Rules only, warm, on realistic text with PII, a key and an attack, `detectAll` p50/p95 is **1.0/1.2 ms at 1 KB, 12/13 ms at 10 KB and 44/48 ms at 50 KB**. Every individual PII detector is under 1 ms. These are detector-only timings; question 2 has the gateway stage times. See [per-detector bench](../results/ojaswi/bench.md).
+
+17. **ML classifier kyun band hai?** A DeBERTa prompt-injection classifier was integrated and measured before the freeze. It flagged **19/110 benign prompts (17%)**, and it is English-only, so it would not fix Hinglish. It stays off (`CLASSIFIER_BACKEND=none`), and all quoted scores are rules-only. See [classifier check](../results/ojaswi/classifier-check.md) and [decision](CLASSIFIER-DECISION.md).
+
+18. **Bacha hua 1 provider leak kya hai?** **H-020**, an IFSC code in a transfer form. Frozen policy *warns* on IFSC because it is a public branch code, so the provider still receives it. The decision for the next version is to **mask** it (reversible), because it sits next to the account number we already mask. The policy is not changed before the demo. We do not claim zero leakage. See [IFSC decision](decisions/IFSC-POLICY.md).
+
+19. **Aage kya karoge?** Detection v3 is planned after the demo, on separate small PRs with a new `eval-freeze-v3`; `eval-freeze-v2` never moves.
+    - 40+ Hinglish/Devanagari/roleplay dev cases.
+    - Answer-side injection hits alone no longer block a correct security explanation (H-003/H-043).
+    - Example and placeholder values are skipped (H-030/H-041/H-045).
+    - More Indian PII (UPI, Voter ID, DL, Passport, GSTIN, vehicle, bank account) and secrets (GitHub, Slack, Stripe, JWT, PEM, cloud credentials, DB URLs), each with benign lookalike tests.
+    - New mutations (leet, fullwidth, zero-width, ROT13, emoji).
+    - A **blind held-out set written by teammates and never seen by Detection**, then a fresh provider run.
+    - All data stays synthetic, and tuning uses dev only.
