@@ -26,6 +26,8 @@ For an existing local MongoDB, copy `.env.example`, export its values in your sh
 - Access-service callback integration and Express-compatible routes; optional local ingest classifier.
 - Six dev, sixteen held-out and fifteen paraphrase cases using the agreed schema.
 
+Run `pnpm test:report` when deliberately refreshing the measured access report; ordinary tests leave committed results unchanged.
+
 Evidence: [results](results/alwaz/RESULTS.md), [classifier decision](docs/CLASSIFIER-DECISION.md), [handoff](docs/ALWAZ-HANDOFF.md), [eight-slide deck](docs/Alwaz-LeakShield.pptx).
 
 Run `pnpm classifier:spike` separately to download the pinned English classifier and measure Node feasibility. This downloads approximately 713 MB; model weights stay ignored in `.cache`. The classifier is optional and not a substitute for ACLs. The locally quantized variant can be reproduced using `tools/quantize-classifier.py` with Python ONNX dependencies; the normal upstream model supports the default full-precision path.

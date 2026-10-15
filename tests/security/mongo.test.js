@@ -110,8 +110,10 @@ test('all 37 access fixtures execute against Mongo; save metadata-only report an
     }
   }
   timings.sort((a,b)=>a-b);
+  if (process.env.WRITE_ACCESS_RESULTS === '1') {
   await mkdir('results/alwaz', { recursive: true });
   await writeFile('results/alwaz/access-eval.json', JSON.stringify({ scope: 'real local Mongo; injected deterministic provider and pass-through scan callbacks; access behavior only, not PII or frozen headline metrics', cases: rows.length, passed: rows.filter(r=>r.pass).length, p50_ms: timings[Math.floor(timings.length*.5)], p95_ms: timings[Math.floor(timings.length*.95)], rows }, null, 2));
+  }
 });
 
 test('approval result is isolated between conversations of the same user', async t => {
