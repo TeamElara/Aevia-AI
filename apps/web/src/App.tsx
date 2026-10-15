@@ -2,17 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import { chat, login, pollApprovalResult, type Backend } from './api/client'
 import { actionLabel, answerText, isStop } from './api/contract'
 import { ChatPanel, type Turn } from './components/ChatPanel'
-import { Masthead } from './components/Masthead'
 import { PayloadCard, type Exchange } from './components/PayloadCard'
+import { SignIn } from './components/SignIn'
+import { Avatar, Sidebar } from './components/Sidebar'
+import type { View } from './lib/views'
+import { Field } from './components/Field'
+import { Drawer, Icon, Orb, Toast } from './components/ui'
 import { exampleExchanges, users } from './data/demo'
-import { backendLabel, pad2 } from './lib/format'
+import { pad2 } from './lib/format'
+import { withTransition } from './lib/motion'
+import { toneOf } from './lib/tone'
 import { ApprovalsView } from './views/ApprovalsView'
 import { EvalView } from './views/EvalView'
 import { IncidentsView } from './views/IncidentsView'
 import { OverviewView } from './views/OverviewView'
-
-const views = ['Chat', 'Incidents', 'Overview', 'Approvals', 'Eval'] as const
-type View = (typeof views)[number]
 
 type Session = { token: string; backend: Backend }
 
@@ -27,6 +30,57 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [exampleIndex, setExampleIndex] = useState(0)
   const chatGeneration = useRef(0)
+  const [signInOpen, setSignInOpen] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const [cardDir, setCardDir] = useState<1 | -1>(1)
+  const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
+
+  function go(next: View) {
+    setNavOpen(false)
+    if (next === view) return
+    withTransition(() => {
+      setView(next)
+      window.scrollTo(0, 0)
+    })
+  }
+
+  function signInAs(id: string) {
+    setSignInOpen(false)
+    if (id === activeUser) return
+    pickUser(id)
+    setToast({ text: `Signed in as ${users.find((u) => u.id === id)!.name}`, key: Date.now() })
+  }
+
+  function newChat() {
+    resetChat()
+    go('Chat')
+    setNavOpen(false)
+  }
+
+  function inspect(id: string) {
+    setSelectedId(id)
+    setInspectorOpen(true)
+  }
+
+  // Cards light up under the pointer.
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const card = (e.target as Element | null)?.closest?.('.card') as HTMLElement | null
+      if (!card) return
+      const r = card.getBoundingClientRect()
+      card.style.setProperty('--mx', `${e.clientX - r.left}px`)
+      card.style.setProperty('--my', `${e.clientY - r.top}px`)
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => window.removeEventListener('pointermove', onMove)
+  }, [])
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2600)
+    return () => clearTimeout(t)
+  }, [toast])
 
   // Switching user is a new identity: new token, new conversation, new vault.
   useEffect(() => {
@@ -114,170 +168,176 @@ export default function App() {
   const cardIndex = showingLive ? (selectedIndex === -1 ? cards.length - 1 : selectedIndex) : exampleIndex
 
   const pick = (i: number) => {
+    setCardDir(i < cardIndex ? -1 : 1)
     const next = (i + cards.length) % cards.length
     if (showingLive) setSelectedId(done[next].id)
     else setExampleIndex(next)
   }
 
-  const user = users.find((u) => u.id === activeUser)!
+  const userIndex = users.findIndex((u) => u.id === activeUser)
+  const user = users[userIndex]
+  const last = done[done.length - 1]
+  const busy = turns.some((t) => t.status === 'pending')
+  const tone = toneOf(last?.response?.action)
+
+  const sidebar = (
+    <Sidebar
+      view={view}
+      tone={tone}
+      user={user}
+      userIndex={userIndex}
+      backend={session?.backend ?? null}
+      onGo={go}
+      onNewChat={newChat}
+      onSignIn={() => {
+        setNavOpen(false)
+        setSignInOpen(true)
+      }}
+    />
+  )
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
-      <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col px-3 pb-3 sm:px-5 sm:pb-5">
-        <header className="grid grid-cols-2 items-baseline gap-y-2 pb-3 pt-4 text-[12px] md:grid-cols-3">
-          <span className="font-medium tracking-[-0.01em]">LeakShield©</span>
-          <nav className="col-span-2 row-start-2 md:col-span-1 md:row-start-auto md:justify-self-center" aria-label="Views">
-            {views.map((v, i) => (
-              <span key={v}>
-                <button
-                  onClick={() => setView(v)}
-                  aria-current={v === view ? 'page' : undefined}
-                  className={`transition-colors ${v === view ? 'text-fg underline decoration-1 underline-offset-[3px]' : 'text-faint hover:text-fg'}`}
-                >
-                  {v}
-                </button>
-                {i < views.length - 1 && <span className="text-faint">, </span>}
-              </span>
-            ))}
-          </nav>
-          <div className="flex items-baseline justify-end gap-4">
-            {session && (
-              <span
-                className="hidden text-faint sm:inline"
-                title={session.backend === 'simulated' ? 'Real local gateway with a simulated provider' : session.backend === 'mock' ? 'apps/gateway is not running; replies come from the built-in mock' : 'Connected to apps/gateway'}
-              >
-                <span className={session.backend === 'live' ? 'text-fg' : ''}>●</span> {backendLabel[session.backend]}
-              </span>
-            )}
-            <button onClick={() => setView('Eval')} className="text-fg hover:underline">
-              Run eval ↗
-            </button>
+    <div data-tone={tone} className="min-h-screen overflow-x-clip lg:grid lg:grid-cols-[264px_1fr]">
+      {view === 'Chat' && (
+        <>
+          <div className="aurora" aria-hidden="true">
+            <i />
+            <i />
+            <i />
           </div>
+          <Field tone={tone} busy={busy} burstKey={last?.id} />
+        </>
+      )}
+      <aside className="sticky top-0 z-20 hidden h-screen border-r border-line bg-paper/70 backdrop-blur-xl lg:block">{sidebar}</aside>
+
+      <div className="flex min-w-0 flex-col">
+        <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-line bg-paper/85 px-4 backdrop-blur-md lg:hidden">
+          <button className="icon-btn" onClick={() => setNavOpen(true)} aria-label="Open menu">
+            <Icon name="menu" />
+          </button>
+          <button onClick={() => go('Chat')} className="flex items-center gap-2" aria-label="LeakShield, open Chat">
+            <Orb tone={tone} size={22} busy={busy} />
+            <span className="font-display text-[17px] font-semibold tracking-[-0.03em]">LeakShield</span>
+          </button>
+          <button onClick={() => setSignInOpen(true)} aria-label={`Signed in as ${user.name}. Change who is signed in`} className="rounded-full transition active:scale-95">
+            <Avatar user={user} index={userIndex} size={34} />
+          </button>
         </header>
 
-        <main className="flex flex-1 flex-col gap-3">
+        <main key={view} className={`relative z-10 flex flex-1 flex-col px-4 sm:px-8 lg:px-12 ${view === 'Chat' ? '' : 'mx-auto w-full max-w-[1180px] pb-16'}`}>
           {view === 'Chat' && (
-            <>
-              <Masthead title="LeakShield©">
-                A gateway that lets your AI work on data it never sees. Every prompt passes seven checks; the model only
-                ever receives tokens.
-              </Masthead>
-              <div className="grid grid-cols-1 gap-3 lg:h-[760px] lg:grid-cols-2">
-                <ChatPanel
-                  user={user}
-                  backend={session?.backend ?? null}
-                  ready={!!session}
-                  turns={turns}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  onSend={send}
-                  onReset={resetChat}
-                />
-                <Inspector
-                  cards={cards}
-                  index={cardIndex}
-                  example={!showingLive}
-                  activeUser={activeUser}
-                  onPick={pick}
-                  onPickUser={pickUser}
-                />
-              </div>
-            </>
+            <ChatPanel
+              user={user}
+              backend={session?.backend ?? null}
+              ready={!!session}
+              turns={turns}
+              selectedId={inspectorOpen ? selectedId : null}
+              tone={tone}
+              pulseKey={last?.id}
+              onSend={send}
+              onInspect={inspect}
+              onShowExamples={() => setInspectorOpen(true)}
+            />
           )}
           {view === 'Incidents' && <IncidentsView />}
           {view === 'Overview' && <OverviewView />}
           {view === 'Approvals' && <ApprovalsView />}
           {view === 'Eval' && <EvalView />}
         </main>
-
-        <footer className="mt-3 grid grid-cols-1 gap-y-1 pt-3 text-[11px] text-faint sm:grid-cols-3">
-          <span>Policy v1 · provider {session?.backend === 'simulated' ? 'simulated' : session?.backend === 'mock' ? 'mock' : 'gateway configured'}</span>
-          <span className="sm:justify-self-center">Audit stores metadata only</span>
-          <span className="sm:justify-self-end">TeamElara · CyberCUP 6.0</span>
-        </footer>
+        {view !== 'Chat' && (
+          <footer className="mx-auto w-full max-w-[1180px] px-4 pb-8 text-[12px] text-faint sm:px-8 lg:px-12">
+            Synthetic demo data · Policy v1 · provider{' '}
+            {session?.backend === 'simulated' ? 'simulated' : session?.backend === 'mock' ? 'mock' : 'gateway configured'} · audit stores metadata
+            only · Team Elara, CyberCUP 6.0
+          </footer>
+        )}
       </div>
+
+      <Drawer open={navOpen} onClose={() => setNavOpen(false)} label="Menu" side="left">
+        {sidebar}
+      </Drawer>
+
+      <Drawer open={inspectorOpen} onClose={() => setInspectorOpen(false)} label="Inspector">
+        <Inspector cards={cards} index={cardIndex} dir={cardDir} example={!showingLive} onPick={pick} onClose={() => setInspectorOpen(false)} />
+      </Drawer>
+
+      <SignIn open={signInOpen} current={activeUser} onClose={() => setSignInOpen(false)} onPick={signInAs} />
+
+      {toast && (
+        <Toast key={toast.key}>
+          <Avatar user={user} index={userIndex} size={22} />
+          {toast.text}
+        </Toast>
+      )}
     </div>
   )
 }
 
+// What the user typed, what the model received and what came back, one
+// request at a time.
 function Inspector({
   cards,
   index,
+  dir,
   example,
-  activeUser,
   onPick,
-  onPickUser,
+  onClose,
 }: {
   cards: Exchange[]
   index: number
+  dir: 1 | -1
   example: boolean
-  activeUser: string
   onPick: (i: number) => void
-  onPickUser: (id: string) => void
+  onClose: () => void
 }) {
-  const behind = Math.min(2, cards.length - 1)
   return (
-    <section className="ink flex min-h-[640px] min-w-0 flex-col px-5 py-5 sm:px-8 sm:py-6">
-      <div className="grid grid-cols-2 items-baseline text-[12px] sm:grid-cols-3">
-        <span>Inspector</span>
-        <span className="hidden text-faint sm:block sm:justify-self-center">{example ? 'Example requests' : 'This conversation'}</span>
-        <span className="justify-self-end font-mono text-[11px] text-faint">
-          <span className="text-fg">{pad2(index + 1)}</span> / {pad2(cards.length)}
-        </span>
-      </div>
-
-      <div className="mt-6 grid grid-cols-2 gap-x-6">
-        <p className="text-[13px]">Signed in as</p>
-        <div role="radiogroup" aria-label="Signed-in demo user" className="flex flex-col items-start">
-          {users.map((u) => (
-            <button
-              key={u.id}
-              role="radio"
-              aria-checked={u.id === activeUser}
-              onClick={() => onPickUser(u.id)}
-              className={`text-left text-[clamp(20px,2vw,26px)] leading-[1.08] tracking-[-0.035em] transition-colors ${
-                u.id === activeUser ? 'text-fg' : 'text-faint hover:text-muted'
-              }`}
-            >
-              {u.name}
-              {u.id === activeUser && (
-                <span className="ml-2 align-top font-mono text-[10px] tracking-normal text-muted">{u.role}</span>
-              )}
-            </button>
-          ))}
+    <div className="flex min-h-full flex-col p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="font-serif text-[30px] leading-tight">Inspector</h2>
+          <p className="mt-1 text-[13.5px] text-faint">
+            {example ? 'Example requests. Send a message to see your own.' : 'What the model actually received for each message.'}
+          </p>
         </div>
+        <button className="icon-btn -mr-2" onClick={onClose} aria-label="Close inspector">
+          <Icon name="close" />
+        </button>
       </div>
 
-      <div className="flex flex-1 items-center justify-center py-8">
-        <div className="relative w-full max-w-[340px]">
-          {/* Earlier cards fan out behind the selected one. */}
-          {behind >= 2 && <div aria-hidden="true" className="absolute inset-0 -translate-x-5 translate-y-5 -rotate-2 bg-fg/25" />}
-          {behind >= 1 && <div aria-hidden="true" className="absolute inset-0 -translate-x-2.5 translate-y-2.5 -rotate-1 bg-fg/55" />}
-          <div key={`${example}-${index}`} className="relative animate-deal">
-            <PayloadCard exchange={cards[index]} />
-          </div>
+      <div className="flex flex-1 items-center py-8">
+        <div
+          key={`${example}-${index}`}
+          className="w-full animate-deal"
+          style={{ ['--dx' as string]: `${dir * 36}px`, ['--ry' as string]: `${dir * -14}deg` }}
+        >
+          <PayloadCard exchange={cards[index]} />
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-4">
         <ArrowButton dir="prev" onClick={() => onPick(index - 1)} />
-        <div className="flex flex-wrap justify-center gap-1.5" role="group" aria-label="Choose request">
-          {cards.slice(-12).map((_, j) => {
-            const i = cards.length - Math.min(12, cards.length) + j
-            return (
-              <button
-                key={i}
-                onClick={() => onPick(i)}
-                aria-label={`Request ${i + 1}`}
-                aria-pressed={i === index}
-                className={`h-3 w-3 rounded-full transition-colors ${i === index ? 'bg-fg' : 'bg-fg/25 hover:bg-fg/50'}`}
-              />
-            )
-          })}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-wrap justify-center gap-1.5" role="group" aria-label="Choose request">
+            {cards.slice(-12).map((_, j) => {
+              const i = cards.length - Math.min(12, cards.length) + j
+              return (
+                <button
+                  key={i}
+                  onClick={() => onPick(i)}
+                  aria-label={`Request ${i + 1}`}
+                  aria-pressed={i === index}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${i === index ? 'w-6 bg-fg' : 'w-1.5 bg-fg/25 hover:bg-fg/50'}`}
+                />
+              )
+            })}
+          </div>
+          <span className="font-mono text-[11px] tabular-nums text-faint">
+            {pad2(index + 1)} / {pad2(cards.length)}
+          </span>
         </div>
         <ArrowButton dir="next" onClick={() => onPick(index + 1)} />
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -286,7 +346,7 @@ function ArrowButton({ dir, onClick }: { dir: 'next' | 'prev'; onClick: () => vo
     <button
       onClick={onClick}
       aria-label={dir === 'next' ? 'Next card' : 'Previous card'}
-      className="grid h-8 w-12 place-items-center rounded-full border border-line-strong text-muted transition hover:border-fg hover:text-fg"
+      className="icon-btn h-10 w-12 rounded-full border border-line"
     >
       <svg width="14" height="8" viewBox="0 0 14 8" fill="none" aria-hidden="true">
         <path d={dir === 'next' ? 'M0 4h12M9 1l3 3-3 3' : 'M14 4H2M5 1L2 4l3 3'} stroke="currentColor" strokeWidth="1.2" />
