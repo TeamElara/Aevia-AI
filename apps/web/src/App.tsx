@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { chat, login, pollApprovalResult, type Backend } from './api/client'
 import { actionLabel, answerText, isStop } from './api/contract'
 import { ChatPanel, type Turn } from './components/ChatPanel'
@@ -26,6 +26,7 @@ export default function App() {
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [exampleIndex, setExampleIndex] = useState(0)
+  const chatGeneration = useRef(0)
 
   // Switching user is a new identity: new token, new conversation, new vault.
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function App() {
       .catch(() => !cancelled && setSession(null))
     return () => {
       cancelled = true
+      chatGeneration.current += 1
     }
   }, [activeUser])
 
@@ -46,14 +48,15 @@ export default function App() {
     if (!pending.length) return
     let cancelled = false
     let polling = false
+    const generation = chatGeneration.current
     const timer = setInterval(async () => {
       if (polling) return
       polling = true
       await Promise.all(pending.map(async turn => {
         const response = turn.response!
         await pollApprovalResult(session.token, response.request_id, response.conversation_id)
-          .then(result => { if (result && !cancelled) setTurns(rows => rows.map(row => row.id === turn.id ? { ...row, response: result } : row)) })
-          .catch(() => { if (!cancelled) setTurns(rows => rows.map(row => row.id === turn.id ? { ...row, status: 'error', error: 'Approval result unavailable or expired.' } : row)) })
+          .then(result => { if (result && !cancelled && generation === chatGeneration.current) setTurns(rows => rows.map(row => row.id === turn.id ? { ...row, response: result } : row)) })
+          .catch(() => { if (!cancelled && generation === chatGeneration.current) setTurns(rows => rows.map(row => row.id === turn.id ? { ...row, status: 'error', error: 'Approval result unavailable or expired.' } : row)) })
       }))
       polling = false
     }, 2000)
@@ -61,21 +64,33 @@ export default function App() {
   }, [session, turns])
 
   function resetChat() {
+    // Invalidate in-flight replies before clearing or changing their conversation.
+    chatGeneration.current += 1
     setTurns([])
     setConversationId(null)
     setSelectedId(null)
   }
 
+  function pickUser(id: string) {
+    if (id === activeUser) return
+    setSession(null)
+    resetChat()
+    setActiveUser(id)
+  }
+
   async function send(text: string) {
     if (!session) return
+    const generation = chatGeneration.current
     const id = crypto.randomUUID()
     setTurns((ts) => [...ts, { id, prompt: text, status: 'pending' }])
     try {
       const res = await chat(session.backend, session.token, { conversation_id: conversationId, message: text })
+      if (generation !== chatGeneration.current) return
       setConversationId(res.conversation_id)
       setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'done', response: res } : t)))
       setSelectedId(id)
     } catch (e) {
+      if (generation !== chatGeneration.current) return
       setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'error', error: (e as Error).message } : t)))
     }
   }
@@ -164,7 +179,7 @@ export default function App() {
                   example={!showingLive}
                   activeUser={activeUser}
                   onPick={pick}
-                  onPickUser={setActiveUser}
+                  onPickUser={pickUser}
                 />
               </div>
             </>
