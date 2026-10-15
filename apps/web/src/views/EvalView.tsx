@@ -12,6 +12,7 @@ type Case = {
   category: string
   user: string
   history?: string[]
+  attached_doc?: string | null
   prompt: string
   attached_doc?: string | null
   expected_action: Action

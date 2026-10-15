@@ -1,0 +1,36 @@
+name: Real Docker and Ollama verification
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['docker-compose*.yml', 'apps/gateway/Dockerfile', 'tools/compose-smoke.mjs', '.github/workflows/compose-verification.yml']
+permissions:
+  contents: read
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Generate isolated synthetic configuration
+        run: |
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'node:fs';import{randomBytes}from'node:crypto';writeFileSync('.env',readFileSync('.env.example','utf8').replaceAll('GENERATE_ME',()=>randomBytes(32).toString('hex')))"
+      - name: Build and start clean containers
+        run: docker compose -f docker-compose.yml -f docker-compose.verify.yml up --build -d --wait
+      - name: Pull explicit small local model and seed temporary corpus
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.verify.yml exec -T ollama ollama pull qwen2.5:0.5b
+          docker compose -f docker-compose.yml -f docker-compose.verify.yml exec -T gateway npm run seed
+      - name: Verify actual inference, masking, blocking and audit
+        run: node tools/compose-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compose-verification
+          path: results/mahatva/compose-verification.json
+          if-no-files-found: ignore
+      - name: Clean up isolated verification containers
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.verify.yml down -v

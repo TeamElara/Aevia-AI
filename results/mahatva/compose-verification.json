@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-15T10:14:01.406Z",
+  "source_commit": "8a7a7a5437a2986d9b6cb142ad74bbab864ad018",
+  "environment": "clean GitHub Ubuntu runner; real Docker Compose, Mongo and CPU Ollama",
+  "model": "qwen2.5:0.5b",
+  "checks": {
+    "ready": true,
+    "real_inference": true,
+    "outbound_masking": true,
+    "secret_zero_calls": true,
+    "scan": true,
+    "audit_privacy": true,
+    "unprivileged_container": true
+  },
+  "rows": [
+    {
+      "id": "normal",
+      "action": "allow",
+      "provider_calls": 1,
+      "answer_nonempty": true
+    },
+    {
+      "id": "mask",
+      "action": "mask",
+      "provider_calls": 1,
+      "answer_nonempty": true
+    },
+    {
+      "id": "secret",
+      "action": "block",
+      "provider_calls": 0,
+      "answer_nonempty": false
+    }
+  ]
+}

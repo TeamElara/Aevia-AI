@@ -1,0 +1,16 @@
+# CI-only synthetic local-model verification; no cloud key or evaluation capture.
+services:
+  ollama:
+    image: ollama/ollama:0.40.4
+    environment:
+      OLLAMA_NO_CLOUD: "1"
+    volumes:
+      - ollama-verify:/root/.ollama
+  gateway:
+    environment:
+      LLM_PROVIDER: ollama
+      OLLAMA_MODEL: qwen2.5:0.5b
+      OLLAMA_URL: http://ollama:11434/v1
+      DEMO_AUTH: "true"
+volumes:
+  ollama-verify:
