@@ -14,7 +14,6 @@ type Case = {
   history?: string[]
   attached_doc?: string | null
   prompt: string
-  attached_doc?: string | null
   expected_action: Action
   expected_categories: string[]
   must_not_reach_provider?: string[]

@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { CONTRACT_VERSION, expectation } from './expectations.mjs'
+import { freezeEvidence } from './freeze.mjs'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { isIntervention, judge } from './checks.mjs'
@@ -189,7 +190,7 @@ function markdown(name, summary, rows, ret) {
   const lines = [
     `# Eval: ${name} (${MODE})`,
     '',
-    `Development run; not a coordinated evaluation freeze. Overhead is measured stages excluding model time, not total security overhead.`,
+    `${provenance.frozen ? `Frozen source: ${provenance.freeze_tag} (${provenance.freeze_commit}).` : 'Development run; not a coordinated evaluation freeze.'} Overhead is measured stages excluding model time, not total security overhead.`,
     '',
     `Run at ${new Date().toISOString()} against ${MOCK ? 'the built-in mock (runner self-test only)' : GATEWAY}.`,
     '',
@@ -244,7 +245,7 @@ const provenance = {
   contract: CONTRACT_VERSION, provider_mode: providerMode, provider_evidence: health.provider_mode ?? 'unverified', model: health.model,
   source_commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   source_dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(),
-  frozen: false,
+  ...freezeEvidence(MOCK ? undefined : process.env.EVAL_FREEZE_TAG),
   overhead_definition: 'Sum of instrumented stages excluding llm (case insensitive); excludes audit/vault work outside stages. Wall time includes HTTP and model time. Not total security overhead.',
 }
 const client = await makeClient()
