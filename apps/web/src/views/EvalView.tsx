@@ -214,7 +214,7 @@ export function EvalView() {
                     {['Dataset / mode', 'Cases', 'Errors', 'Provider leaks'].map(label => <th key={label} className="border-b border-line py-2 pr-3 font-normal">{label}</th>)}
                   </tr></thead>
                   <tbody>{development.map(report => <tr key={`${report.file}-${report.mode}`} className="border-b border-line">
-                    <td className="py-2 pr-3 text-muted">{report.file.split('/').at(-1)?.replace('.jsonl', '')} / {report.mode}</td>
+                    <td className="py-2 pr-3 text-muted">{report.file.split('/').slice(-1)[0]?.replace('.jsonl', '')} / {report.mode}</td>
                     <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.cases}</td>
                     <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.errors ?? '–'}</td>
                     <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.provider_leaks}</td>

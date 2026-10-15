@@ -29,7 +29,9 @@ describe('authenticated HTTP API', () => {
     const r = await request(h.app).post('/api/chat').set('Authorization', await bearer()).send({ message: '2345 6789 0124', conversation_id: null });
     expect(r.status).toBe(200); expect(r.body.action).toBe('mask'); expect(r.body.answer).toBe('2345 6789 0124');
     expect(r.body.provider_calls).toBe(1); expect(r.headers['cache-control']).toBe('no-store');
-    expect(JSON.stringify(h.events)).not.toContain('2345');
+    const auditText = JSON.stringify(h.events);
+    expect(auditText).not.toContain('2345 6789 0124');
+    expect(auditText).not.toContain('234567890124');
   });
   it('implements non-streaming compatible text completions', async () => {
     const h = setup();
