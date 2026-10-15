@@ -17,6 +17,7 @@ import { Scanner } from './scanner.js';
 import { ConversationVault } from './vault.js';
 import { loadDetectorAdapter } from './detector-adapter.js';
 import { createApprovalBridge } from './approval-bridge.js';
+import { Delegations } from './delegation.js';
 import { loadRuntimeClassifier } from './classifier-adapter.js';
 
 installConsolePrivacyFilter();
@@ -35,10 +36,15 @@ async function start() {
   let principal: ((id: string) => Promise<import('../../../types.js').User>) | undefined;
   const client = new MongoClient(config.MONGODB_URI, { serverSelectionTimeoutMS: 5000, socketTimeoutMS: 5000 });
   await client.connect();
-  if (config.RETRIEVAL_MODULE) ({ retrieve, restrictedOverlap, principal } = await loadAccessAdapter(client.db(config.MONGODB_DB), config.RETRIEVAL_MODULE, config.FINGERPRINT_KEY));
   const store = new MongoAuditStore(client.db(config.MONGODB_DB));
   await store.initialise();
   const audit = new Audit(store, config.AUDIT_HMAC_SECRET);
+  let delegations: Delegations | undefined;
+  if (config.RETRIEVAL_MODULE) {
+    delegations = new Delegations(client.db(config.MONGODB_DB), audit);
+    await delegations.initialise();
+    ({ retrieve, restrictedOverlap, principal } = await loadAccessAdapter(client.db(config.MONGODB_DB), config.RETRIEVAL_MODULE, config.FINGERPRINT_KEY, id => delegations!.lentTo(id)));
+  }
   const policies = new PolicyStore(config.POLICY_PATH);
   policies.snapshot();
   const vault = new ConversationVault();
@@ -54,7 +60,7 @@ async function start() {
     const documents = await client.db(config.MONGODB_DB).collection('chunks').find(documentId ? { document_id: documentId } : { $text: { $search: query.slice(0, 4000) } }).sort({ _id: 1 }).limit(8).toArray();
     return documents.map(d => d.text as string);
   }) : undefined;
-  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER });
+  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER, delegations });
   const server = app.listen(config.PORT, config.HOST, () => safeLog('STARTED', { port: config.PORT }));
   const stop = () => {
     server.close(() => { vault.close(); policies.close(); baseline?.close(); approvalBridge?.close(); void classifier?.close(); void client.close().then(() => process.exit(0)); });

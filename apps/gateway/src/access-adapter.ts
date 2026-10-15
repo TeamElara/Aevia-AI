@@ -6,7 +6,7 @@ import type { Chunk, Retrieve, User } from '../../../types.js';
 import { GatewayError } from './errors.js';
 
 /** Adapter for Alwaz's published createRetriever/assembleChunks API; never edits his modules. */
-export async function loadAccessAdapter(db: Db, modulePath: string, fingerprintKey?: string) {
+export async function loadAccessAdapter(db: Db, modulePath: string, fingerprintKey?: string, lentTo?: (id: string) => Promise<string[]>) {
   const path = resolve(modulePath);
   const loaded = await import(pathToFileURL(path).href);
   if (typeof loaded.retrieve === 'function' && typeof loaded.restrictedOverlap === 'function') {
@@ -17,11 +17,12 @@ export async function loadAccessAdapter(db: Db, modulePath: string, fingerprintK
   const fingerprints = fingerprintModule.createFingerprinter(fingerprintKey);
   const collection = db.collection('chunks');
   const retrieveRaw = loaded.createRetriever(collection);
+  // Groups a colleague has lent for the day are part of who this person is until they end.
   const principal = async (id: string): Promise<User> => {
     const record = await db.collection<{ _id: string; id: string; groups: string[]; roles?: string[] }>('users').findOne({ _id: id });
     if (!record) throw new GatewayError('UNAUTHENTICATED', 401);
     return z.object({ id: z.string().min(1), groups: z.array(z.string().regex(/^[a-z][a-z0-9-]{0,39}$/)).max(20) })
-      .parse({ id: record.id, groups: [...new Set([...record.groups, ...(record.roles?.includes('admin') ? ['admin'] : [])])] });
+      .parse({ id: record.id, groups: [...new Set([...record.groups, ...(record.roles?.includes('admin') ? ['admin'] : []), ...(lentTo ? await lentTo(record.id) : [])])] });
   };
   const retrieve: Retrieve = async (user, query, options) => {
     const current = await principal(user.id);
