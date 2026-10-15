@@ -22,6 +22,7 @@ export interface EvalCase {
 // Categories this package can produce; others in expected_categories (e.g. ACL) belong to other stages.
 const DETECTOR_CATEGORIES = new Set<string>([
   'AADHAAR', 'VID', 'PAN', 'PHONE', 'CARD', 'IFSC', 'UPI', 'BANK_ACCOUNT', 'EMAIL',
+  'VOTER_ID', 'DRIVING_LICENCE', 'PASSPORT', 'GSTIN', 'VEHICLE',
   'SECRET', 'PRIVATE_KEY', 'CONFIDENTIAL', 'CANARY', 'INJECTION',
 ]);
 

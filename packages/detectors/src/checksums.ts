@@ -71,3 +71,21 @@ export function cardIssuer(digits: string): string | null {
   if (/^35(2[89]|[3-8]\d)/.test(digits) && n >= 16 && n <= 19) return 'jcb';
   return null;
 }
+
+const GSTIN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** GSTIN check character: weights 1,2,1,2… over base-36 values, digits of each product summed in base 36. */
+export function gstinCheckChar(first14: string): string {
+  let sum = 0;
+  for (let i = 0; i < 14; i++) {
+    const v = GSTIN_CHARS.indexOf(first14[i]);
+    if (v < 0) return '';
+    const p = v * (i % 2 === 0 ? 1 : 2);
+    sum += Math.floor(p / 36) + (p % 36);
+  }
+  return GSTIN_CHARS[(36 - (sum % 36)) % 36];
+}
+
+export function gstinValid(g: string): boolean {
+  return g.length === 15 && gstinCheckChar(g.slice(0, 14)) === g[14];
+}

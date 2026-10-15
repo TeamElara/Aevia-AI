@@ -10,7 +10,8 @@ const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECT
 
 // When data findings overlap, the more specific / more dangerous category wins.
 const PRIORITY: Category[] = [
-  'PRIVATE_KEY', 'SECRET', 'CANARY', 'AADHAAR', 'VID', 'CARD', 'PAN', 'BANK_ACCOUNT', 'PHONE', 'UPI', 'EMAIL', 'IFSC', 'CONFIDENTIAL',
+  'PRIVATE_KEY', 'SECRET', 'CANARY', 'AADHAAR', 'VID', 'CARD', 'PAN', 'GSTIN', 'PASSPORT', 'VOTER_ID', 'DRIVING_LICENCE', 'BANK_ACCOUNT', 'PHONE', 'UPI', 'VEHICLE', 'EMAIL', 'IFSC',
+  'CONFIDENTIAL',
 ];
 
 function runData(text: string, ctx: DetectorContext): Hit[] {
