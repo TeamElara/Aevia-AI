@@ -81,8 +81,11 @@ const EXTRACT_SECRETS =
 const ROLEPLAY =
   /\b(?:act\s+(?:like|as)|pretend|roleplay|role-play|imagine|play\s+the\s+role)\b.{0,80}?\b(?:used\s+to|would|always)\b.{0,60}?\b(?:read|tell|recite|share|say|whisper|give)\b.{0,50}?\b(?:hidden|secret|system|internal|confidential|password|passwords|api\s+keys?|keys|configuration|config|instructions|prompt)\b/gi;
 
-// [ \t] not \s: with the m flag, \s* let every blank line start a rescan, which is cubic on runs of newlines (ReDoS).
-const STRUCT = /^[ \t]*(?:#{2,}|\[)?[ \t]*(?:system|assistant|developer)[ \t]*[:\]]|<\/?(?:system|sys|instructions?)>|\[\/?INST\]|<<\/?SYS>>|<\|im_(?:start|end)\|>/gim;
+// Leading space is any whitespace except a line break: with the m flag, \s* let every blank line start a
+// rescan, which is cubic on runs of newlines (ReDoS), while [ \t] missed headers indented with NBSP or em
+// spaces. The second run only follows a ## or [ marker, so a long run of spaces has one way to match.
+const STRUCT =
+  /^[^\S\n\r\u2028\u2029]*(?:(?:#{2,}|\[)[^\S\n\r\u2028\u2029]*)?(?:system|assistant|developer)[^\S\n\r\u2028\u2029]*[:\]]|<\/?(?:system|sys|instructions?)>|\[\/?INST\]|<<\/?SYS>>|<\|im_(?:start|end)\|>/gim;
 
 // Hinglish (Latin script)
 const HI_INTENT =
