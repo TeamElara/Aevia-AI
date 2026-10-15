@@ -33,7 +33,32 @@ Send your cases to Arihant, or append them to the file on your branch. Run `node
 | `expected_categories` | yes | Finding categories, e.g. `AADHAAR`, `PAN`, `PHONE`, `CARD`, `IFSC`, `UPI`, `SECRET`, `INJECTION`, `CANARY`, `ACL`; `[]` for clean allows |
 | `source_id` | robustness only | The held-out `id` this case mutates |
 | `mutation` | robustness only | `hinglish`, `homoglyph`, `base64`, `paraphrase` |
+| `must_not_reach_provider` | no | Exact strings that count as a provider leak if they appear in the captured payload, e.g. a restricted doc's canary marker. Aadhaar, PAN and key-shaped values in masking or blocking cases are added automatically |
+| `must_not_reach_user` | no | Exact strings that count as a user leak if they appear in the answer. Any `LS-CANARY-` marker always counts |
 | `notes` | no | Why this case exists |
+
+## Running
+
+```bash
+node eval/run.mjs eval/dev.jsonl
+```
+
+- Talks to the gateway at `--gateway` (default `http://localhost:8080`), which must run with `EVAL_MODE=1`.
+- `--baseline` sends every case in passthrough mode to measure the unprotected leak count.
+- `--mock` uses the console's built-in mock instead of a gateway. It only tests the runner itself; its numbers mean nothing.
+- Reports go to `results/<file>-<mode>.json` and `.md`. They hold booleans and timings, never prompts' sensitive values or payloads.
+
+Robustness retention needs both runs:
+
+```bash
+node eval/run.mjs eval/heldout.jsonl eval/robustness.jsonl
+```
+
+To generate the scripted mutations:
+
+```bash
+node eval/mutate.mjs eval/heldout.jsonl --sources H-053,H-054 >> eval/robustness.jsonl
+```
 
 ## Rules for writing cases
 

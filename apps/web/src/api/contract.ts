@@ -48,6 +48,8 @@ export interface ChatResponse {
   provider_calls: number
   citations: { doc_id: string; title: string }[]
   approval_id?: string
+  // Only with EVAL_MODE=1 and X-Eval-Capture: 1 (docs/API.md, Eval mode).
+  eval?: { provider_calls: number; provider_payload: string | null }
 }
 
 export const actionLabel: Record<Action, string> = {
