@@ -616,12 +616,15 @@ main { view-transition-name: main-view; }
 .motion-toggle { position: absolute; bottom: 16px; right: 0; display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--color-paper); color: var(--color-muted); font-size: 11px; border-radius: 10px; transition: opacity 200ms, background 200ms; }
 .motion-toggle:hover { background: var(--color-surface-2); }
 .hand-scene[data-paused="true"] * { animation-play-state: paused; }
-.home-workspace { position: relative; padding: 24px 0 40px; max-width: 860px; margin: 0 auto; animation: hero-arrive 800ms 200ms var(--ease-soft) both; }
+.home-workspace { position: relative; padding: 24px 0 40px; max-width: 960px; margin: 0 auto; animation: hero-arrive 800ms 200ms var(--ease-soft) both; }
 .home-greeting { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .home-greeting h2 { font-family: var(--font-display); font-size: 20px; font-weight: 500; letter-spacing: -.025em; }
 .home-greeting p { color: var(--color-muted); font-size: 13px; }
 .home-workspace .composer { border-radius: 20px; box-shadow: 0 8px 28px -18px #29272233; transition: box-shadow 300ms var(--ease-soft), border-color 300ms; background: var(--color-surface); border-color: var(--color-line); }
 .home-workspace .composer::before { display: none; }
+.composer-large { padding: 16px 18px 16px 22px; }
+.composer-large textarea { min-height: 112px; font-size: 16px; }
+.composer-arrival { position: absolute; inset: -5px; border: 1px solid var(--color-accent); border-radius: 25px; opacity: 0; pointer-events: none; }
 .home-workspace .composer:focus-within { outline: none; border-color: var(--color-accent); box-shadow: 0 10px 32px -18px #29272255, 0 0 0 2px var(--color-accent-soft); }
 .home-starters { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; padding-top: 16px; }
 .home-starters li { min-width: 0; max-width: 100%; }
@@ -636,6 +639,7 @@ main { view-transition-name: main-view; }
 .sheen { background: none; color: var(--color-muted); animation: none; }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 textarea { caret-color: var(--color-fg); }
+.composer textarea:focus-visible { outline: none; }
 * { scrollbar-color: var(--color-line-strong) var(--color-paper); scrollbar-width: thin; }
 @keyframes arm-offer { 0%,100% { transform: rotate(0); } 50% { transform: translateY(-8px) rotate(2deg); } }
 @keyframes butterfly-return { 0%,12%,100% { transform: translate(0,0) rotate(0); } 35% { transform: translate(32px,-95px) rotate(-7deg); } 55% { transform: translate(72px,-120px) rotate(5deg); } 78% { transform: translate(32px,-75px) rotate(-3deg); } }
@@ -691,3 +695,25 @@ textarea { caret-color: var(--color-fg); }
 .answer-table :is(th, td) { min-width: 96px; padding: 8px 12px; border-bottom: 1px solid var(--color-line); vertical-align: top; }
 .answer-table th { background: var(--color-surface-2); }
 .answer-table tbody tr:last-child td { border-bottom: 0; }
+
+/* Acting posts use the existing quiet controls and warm surfaces. */
+.home-topline.has-acting-posts { height: auto; min-height: 76px; flex-wrap: wrap; gap: 12px; padding: 16px 0; }
+.assign-post-modal { padding: 24px; min-width: 0; overflow-wrap: anywhere; }
+.post-meta { font-size: 12px; line-height: 1.6; color: var(--color-muted); overflow-wrap: anywhere; }
+.post-form { display: grid; gap: 16px; margin-top: 24px; }
+.post-form label, .post-form legend { font-size: 13px; font-weight: 500; }
+.post-form > label, .post-form-row > label { display: grid; gap: 7px; min-width: 0; }
+.post-form :is(select, input[type="number"], input[type="datetime-local"]) { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-surface); color: var(--color-fg); padding: 10px 12px; font: inherit; font-size: 16px; }
+.post-form-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.post-options { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 10px; }
+.post-options label { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.post-options input { width: 18px; height: 18px; accent-color: var(--color-accent); }
+.post-error, .post-notice { padding: 12px; background: var(--color-surface-2); border-radius: 10px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.post-error { color: var(--color-fg); }
+.post-list { margin-top: 12px; }
+.post-list > li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--color-line); font-size: 13px; }
+.post-status { display: inline-block; font-size: 11px; margin-top: 6px; color: var(--color-muted); }
+.post-status[data-status="active"] { color: var(--color-ok); }
+.covering-posts { display: grid; gap: 8px; text-align: left; }
+.covering-post { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-radius: 12px; padding: 10px 12px; background: var(--color-surface-2); color: var(--color-fg); font-size: 12px; }
+@media (max-width: 400px) { .assign-post-modal { padding: 18px; } .post-list > li > .btn { min-height: 40px; } }

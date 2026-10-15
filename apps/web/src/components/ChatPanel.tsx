@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { Backend } from '../api/client'
 import { actionLabel, answerText, isStop, type ChatResponse } from '../api/contract'
 import { starters, type DemoUser } from '../data/demo'
@@ -36,6 +36,7 @@ export function ChatPanel({
   onSend,
   onInspect,
   onShowExamples,
+  actingPosts,
 }: {
   user: DemoUser
   backend: Backend | null
@@ -47,9 +48,11 @@ export function ChatPanel({
   onSend: (text: string) => void
   onInspect: (id: string) => void
   onShowExamples: () => void
+  actingPosts?: ReactNode
 }) {
   const busy = turns.some((t) => t.status === 'pending')
   const lastStatus = turns[turns.length - 1]?.status
+  const [focusRequest, setFocusRequest] = useState(0)
 
   useEffect(() => {
     if (turns.length) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: reducedMotion() ? 'instant' : 'smooth' })
@@ -58,21 +61,22 @@ export function ChatPanel({
   if (turns.length === 0) {
     return (
       <section data-tone={tone} className="home-panel">
-        <header className="home-topline">
+        <header className={`home-topline${actingPosts ? ' has-acting-posts' : ''}`}>
           <span>Private by design.</span>
           <span className="home-status"><span className="live-dot" />{backend === 'mock' ? 'mock' : backend === 'simulated' ? 'simulated' : ready ? 'live gateway' : 'connecting…'}</span>
+          {actingPosts && <div className="w-full">{actingPosts}</div>}
         </header>
         <div className="home-hero">
           <div className="home-copy">
             <h1 className="home-title"><span className="hero-title-line">AI WITHOUT</span><span className="hero-title-line">THE EXPOSURE.</span></h1>
             <p className="home-description">Ask freely. Private values stay protected.<br />Your ideas are what reach the model.</p>
-            <button className="hero-cta" onClick={() => document.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus()} disabled={!ready}>Start a conversation <Arrow /></button>
+            <button className="hero-cta" onClick={() => setFocusRequest(n => n + 1)} disabled={!ready}>Start a conversation <Arrow /></button>
           </div>
           <HandButterfly />
         </div>
         <div className="home-workspace">
           <div className="home-greeting"><h2>{greeting()}, {user.name.split(' ')[0]}.</h2><p>{ready ? 'What can I help with?' : 'Signing you in…'}</p></div>
-          <Composer onSend={onSend} disabled={!ready} busy={false} big />
+          <Composer onSend={onSend} disabled={!ready} busy={false} big focusRequest={focusRequest} />
           <ul className="home-starters">
             {starters.map(s => <li key={s}><button disabled={!ready} onClick={() => onSend(s)}>{s}<Arrow /></button></li>)}
           </ul>
@@ -84,11 +88,12 @@ export function ChatPanel({
 
   return (
     <section data-tone={tone} className="relative z-10 mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[760px] flex-col lg:min-h-screen">
-      <div className="sticky top-[72px] z-10 flex w-screen -translate-x-1/2 lg:top-0 items-center justify-center gap-2.5 bg-gradient-to-b from-paper/95 via-paper/70 to-transparent pb-8 pt-5 text-[13px] text-faint backdrop-blur-[2px] [margin-left:50%] lg:w-[calc(100vw-264px)] [mask-image:linear-gradient(to_bottom,black_55%,transparent)]">
+      <div className="sticky top-[72px] z-10 flex w-screen -translate-x-1/2 lg:top-0 flex-wrap items-center justify-center gap-2.5 bg-gradient-to-b from-paper/95 via-paper/70 to-transparent px-4 pb-8 pt-5 text-[13px] text-faint backdrop-blur-[2px] [margin-left:50%] lg:w-[calc(100vw-264px)]">
         <Orb tone={tone} size={24} busy={busy} pulseKey={pulseKey} anchor />
         <span>
           {user.name} · {busy ? 'checking…' : `${turns.length} ${turns.length === 1 ? 'message' : 'messages'}`}
         </span>
+        {actingPosts && <div className="w-full max-w-[760px]">{actingPosts}</div>}
       </div>
 
       <div className="relative flex-1 space-y-8 pb-6">
@@ -237,11 +242,57 @@ function useTypewriter(active: boolean) {
   return shown
 }
 
-function Composer({ onSend, disabled, busy, big }: { onSend: (t: string) => void; disabled: boolean; busy: boolean; big?: boolean }) {
+function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (t: string) => void; disabled: boolean; busy: boolean; big?: boolean; focusRequest?: number }) {
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
   const [launches, setLaunches] = useState(0)
   const box = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const input = box.current
+    const panel = input?.closest<HTMLElement>('.composer')
+    if (!focusRequest || !input || !panel) return
+
+    // Focus without a browser jump, then guide the viewport to the field.
+    // Recompute the destination as the mobile keyboard changes the viewport.
+    input.focus({ preventScroll: true })
+    const destination = () => {
+      const rect = panel.getBoundingClientRect()
+      const viewport = window.visualViewport
+      const height = viewport?.height ?? window.innerHeight
+      const top = viewport?.offsetTop ?? 0
+      const header = window.innerWidth < 1024 ? 72 : 0
+      const target = window.scrollY + rect.top - top - header - Math.max(12, (height - header - rect.height) / 2)
+      return Math.max(0, Math.min(target, document.documentElement.scrollHeight - window.innerHeight))
+    }
+    if (reducedMotion()) {
+      window.scrollTo({ top: destination(), behavior: 'instant' })
+      return
+    }
+    const start = window.scrollY
+    const started = performance.now()
+    let frame = 0
+    let arrival: Animation | undefined
+    let highlight: Animation | undefined
+    const stop = () => { cancelAnimationFrame(frame); arrival?.cancel(); highlight?.cancel() }
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - started) / 850)
+      const ease = 1 - (1 - progress) ** 4
+      window.scrollTo({ top: start + (destination() - start) * ease, behavior: 'instant' })
+      if (progress < 1) frame = requestAnimationFrame(step)
+      else {
+        arrival = panel.animate([{ transform: 'scale(.985)' }, { transform: 'scale(1)' }], { duration: 550, easing: 'cubic-bezier(.16,1,.3,1)' })
+        highlight = panel.querySelector('.composer-arrival')?.animate([
+          { opacity: 0, transform: 'scale(.99)' },
+          { opacity: .65, transform: 'scale(1)', offset: .3 },
+          { opacity: 0, transform: 'scale(1.02)' },
+        ], { duration: 900, easing: 'ease-out' })
+      }
+    }
+    frame = requestAnimationFrame(step)
+    const events = ['wheel', 'touchstart', 'pointerdown', 'keydown', 'visibilitychange'] as const
+    events.forEach(event => window.addEventListener(event, stop, { passive: true }))
+    return () => { stop(); events.forEach(event => window.removeEventListener(event, stop)) }
+  }, [focusRequest])
   const hint = useTypewriter(!text && !focused)
   const submit = () => {
     const t = text.trim()
@@ -256,13 +307,14 @@ function Composer({ onSend, disabled, busy, big }: { onSend: (t: string) => void
       submit()
     }
   }
-  const lines = Math.min(6, Math.max(big ? 2 : 1, text.split('\n').length))
+  const lines = Math.min(6, Math.max(big ? 4 : 1, text.split('\n').length))
   return (
     <div
       onClick={() => box.current?.focus()}
       data-busy={busy ? 'true' : undefined}
-      className="composer cursor-text rounded-[24px] border border-line bg-surface/90 p-2 pl-5 text-left shadow-[var(--shadow-lg)] backdrop-blur-xl transition-[border-color] duration-300 focus-within:border-transparent"
+      className={`composer ${big ? 'composer-large' : ''} cursor-text rounded-[24px] border border-line bg-surface/90 p-2 pl-5 text-left shadow-[var(--shadow-lg)] backdrop-blur-xl transition-[border-color] duration-300 focus-within:border-transparent`}
     >
+      {big && <span className="composer-arrival" aria-hidden="true" />}
       <div className="relative flex items-end gap-3">
         {!text && (
           <span aria-hidden="true" className="pointer-events-none absolute left-0 top-2 text-[15.5px] leading-relaxed text-faint">
