@@ -16,6 +16,8 @@ import { ConversationVault } from '../apps/gateway/src/vault.js';
 import { detectAll, findSeededLeaks } from '../packages/detectors/src/index.js';
 import type { ChatResult } from '../types.js';
 
+const outputDir = process.env.OLLAMA_REPORT_DIR ?? 'results/alwaz/ollama-continuation';
+const { expectation } = await import('../eval/expectations.mjs');
 const baseURL = process.env.OLLAMA_URL ?? 'http://127.0.0.1:11435/v1';
 const model = process.env.OLLAMA_MODEL ?? 'qwen2.5:0.5b';
 // Validate the destination with the production adapter before fetching model metadata.
@@ -39,9 +41,9 @@ try {
   const gateway = new Gateway({ scanner: new Scanner(detectAll as any), provider,
     audit: new Audit(store, randomBytes(32).toString('hex')), policies, vault,
     retrieve: access.retrieve, restrictedOverlap: access.restrictedOverlap, evalMode: true });
-  const run = async (id: string, user: string, prompt: string): Promise<ChatResult> => {
+  const run = async (id: string, user: string, prompt: string, attachedDoc?: string): Promise<ChatResult> => {
     const started = performance.now();
-    const result = await gateway.run(await access.principal!(user), { messages: [{ role: 'user', content: prompt }] });
+    const result = await gateway.run(await access.principal!(user), { messages: [{ role: 'user', content: prompt }], attachedDoc });
     rows.push({ id, action: result.action, provider_calls: result.provider_calls,
       answer_nonempty: result.answer.length > 0, wall_ms: performance.now() - started,
       overhead_ms: Object.entries(result.stage_ms).filter(([k]) => k.toLowerCase() !== 'llm').reduce((n, [, v]) => n + v, 0),
@@ -68,7 +70,7 @@ try {
     for (const line of (await readFile(file, 'utf8')).trim().split('\n')) {
       const c = JSON.parse(line);
       if (c.history?.length) throw new Error('This verification supports single-turn fixtures only');
-      const result = await run(c.id, c.user, c.prompt);
+      const result = await run(c.id, c.user, c.prompt, c.attached_doc ?? undefined);
       const principal = await access.principal!(c.user);
       const target = await db.collection('chunks').findOne({ document_id: c.attached_doc });
       const forbiddenTarget = target && (target.quarantined ||
@@ -77,6 +79,8 @@ try {
         !JSON.stringify(result.captured_payload ?? []).includes(target.text));
       Object.assign(rows.at(-1)!, { split: c.split, source_id: c.source_id, expected_action: c.expected_action,
         action_matches_fixture: result.action === c.expected_action,
+        contract_expected_action: expectation(c, 'local').action,
+        action_matches_contract: result.action === expectation(c, 'local').action,
         target_exclusion_required: Boolean(forbiddenTarget), target_excluded: targetExcluded,
         forbidden_provider_leak: c.must_not_reach_provider?.length ? c.must_not_reach_provider.some((v: string) => JSON.stringify(result.captured_payload ?? []).includes(v)) : null,
         forbidden_user_leak: c.must_not_reach_user?.length ? c.must_not_reach_user.some((v: string) => result.answer.includes(v)) : null });
@@ -94,12 +98,12 @@ try {
   const report = { at: new Date().toISOString(), source_commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     verification_script_sha256: createHash('sha256').update(await readFile('seed/verify-ollama.ts')).digest('hex'),
     platform: `${process.platform}/${process.arch}`, node: process.version, model, model_digest: installed.digest,
-    provider: 'real local Ollama; cloud disabled for this recorded run', transport: 'production HttpProvider and Gateway; direct pipeline, not browser E2E',
-    scope: 'Unfrozen development smoke and Alwaz slices. Local mode permits external_llm=deny/approval for authorized users. ACL filtering may omit documents rather than emit deny; fixture action mismatches are retained. Stage overhead excludes llm but excludes audit and vault setup outside measured stages. No headline accuracy claim.',
+    provider: 'local Ollama via production loopback adapter; daemon cloud settings require separate verification', transport: 'production HttpProvider and Gateway; direct pipeline, not browser E2E',
+    scope: 'Unfrozen development smoke and Alwaz slices. Local mode permits external_llm=deny/approval for authorized users. Explicit fixture attachments reach retrieval; original labels and local contract expectations are both retained. Stage overhead excludes llm but excludes audit and vault setup outside measured stages. No headline accuracy claim.',
     checks, cases: rows.length, provider_calls: rows.reduce((n, r) => n + Number(r.provider_calls), 0),
     overhead_ms: percentiles('overhead_ms'), wall_ms: percentiles('wall_ms'), rows };
-  await mkdir('results/alwaz', { recursive: true });
-  await writeFile('results/alwaz/ollama-verification.json', JSON.stringify(report, null, 2) + '\n');
+  await mkdir(outputDir, { recursive: true });
+  await writeFile(resolve(outputDir, 'ollama-verification.json'), JSON.stringify(report, null, 2) + '\n');
   process.stdout.write(`Checks: ${Object.values(checks).filter(Boolean).length}/${Object.keys(checks).length}; report saved.\n`);
   if (Object.values(checks).some(v => !v)) process.exitCode = 1;
 } finally { policies?.close(); vault?.close(); await client?.close(); await mongo.stop(); }

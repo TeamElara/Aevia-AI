@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { Auth, issueToken } from '../src/auth.js';
@@ -26,6 +26,15 @@ describe('explicit offline comparison mode', () => {
     expect(r.status).toBe(200); expect(r.body.policy_version).toBe('offline-baseline'); expect(r.body.eval.provider_payload).toContain('2345 6789 0124');
     expect(r.body.eval.provider_payload).toContain('Synthetic restricted reference'); expect(r.body.provider_calls).toBe(1); expect(r.body.stage_ms).toHaveProperty('LLM');
     expect(JSON.stringify(h.events)).not.toContain('2345'); expect(JSON.stringify(h.events)).not.toContain('Synthetic restricted reference');
+  });
+  it('carries explicit document attachments into the isolated baseline retrieval', async () => {
+    const { h } = setup(); const retrieve = vi.fn(async (_query: string, doc?: string) => [doc === 'salary' ? 'Synthetic salary fixture' : 'Wrong reference']);
+    const baseline = new OfflineBaseline(h.provider, h.audit, retrieve); cleanup.push(() => baseline.close());
+    const app = createApp({ ...h, baseline, evalMode: true, auth: new Auth(secret), ready: () => true });
+    const r = await request(app).post('/api/chat').set('Authorization', `Bearer ${await issueToken(employee, secret)}`).set('X-LeakShield-Mode', 'passthrough').set('X-Eval-Capture', '1').send({ message: 'Summarise this reference', attached_doc: 'salary' });
+    expect(retrieve).toHaveBeenCalledWith('Summarise this reference', 'salary');
+    expect(r.body.eval.provider_payload).toContain('Synthetic salary fixture');
+    expect(r.body.eval.provider_payload).not.toContain('Wrong reference');
   });
   it('keeps unprotected multi-turn history encrypted at rest in memory and isolated by owner', async () => {
     const { baseline } = setup(); const first = await baseline.run(employee, '2345 6789 0124');

@@ -50,8 +50,8 @@ async function start() {
   const approvalBridge = config.APPROVALS_MODULE ? await createApprovalBridge({ db: client.db(config.MONGODB_DB), audit, policies, principal, modulePath: config.APPROVALS_MODULE, gateway: () => gateway }) : undefined;
   deps.approvals = approvalBridge?.service;
   gateway = new Gateway(deps);
-  const baseline = config.BASELINE_MODE ? new OfflineBaseline(provider, audit, async query => {
-    const documents = await client.db(config.MONGODB_DB).collection('chunks').find({ $text: { $search: query.slice(0, 4000) } }).sort({ _id: 1 }).limit(8).toArray();
+  const baseline = config.BASELINE_MODE ? new OfflineBaseline(provider, audit, async (query, documentId) => {
+    const documents = await client.db(config.MONGODB_DB).collection('chunks').find(documentId ? { document_id: documentId } : { $text: { $search: query.slice(0, 4000) } }).sort({ _id: 1 }).limit(8).toArray();
     return documents.map(d => d.text as string);
   }) : undefined;
   const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge });

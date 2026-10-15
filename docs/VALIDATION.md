@@ -1,3 +1,5 @@
+> Current continuation evidence: [ALWAZ-CONTINUATION.md](ALWAZ-CONTINUATION.md). Earlier snapshots below are historical.
+
 # Validation record — 15 October 2026
 
 - Combined default Vitest: 412 passed; additional real-service integration suite: 21 passed across actual detector tests, standalone access tests and real HTTP integration tests.

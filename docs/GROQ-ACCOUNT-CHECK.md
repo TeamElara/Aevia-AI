@@ -8,3 +8,15 @@ Verified public documentation:
 Team-account verification remains pending. The browser approval gate rejected console.groq.com, so the agent cannot inspect the team account. The team’s non-secret model limits and retention configuration have not been established. No credentials were searched outside the task or printed. Public policy is not proof of the team's selected configuration.
 
 Record in the team console: organization/project, selected model ID, RPM/RPD/TPM/TPD limits, ZDR/global and feature settings, batch/fine-tuning state, timestamp and verifier. Do not store keys or raw user payloads in this document. Do not claim zero retention until this is checked. Approved document content does reach Groq.
+
+## Continuation check
+
+15 October 2026: an authorized check in the current in-app browser reached the GroqCloud sign-in page at `https://console.groq.com/home`, with no authenticated organization session. No account settings could be read; all team RPM/RPD/TPM/TPD and ZDR checks remain pending. This is separate from the historical approval-gate denial above. No credential entry or account-setting changes occurred.
+
+The continuation subsequently verified real HTTPS inference with the locally
+configured `openai/gpt-oss-120b`: four model calls and 8/8 synthetic boundary
+checks. The first response advertised `x-ratelimit-limit-requests: 1000` and
+`x-ratelimit-limit-tokens: 8000`; all observed rate/reset headers are retained
+in `results/continuation-groq/boundaries.json`. Do not relabel these header
+values as a complete RPM/RPD/TPM/TPD configuration; authenticated settings
+inspection remains necessary. No header verified ZDR.

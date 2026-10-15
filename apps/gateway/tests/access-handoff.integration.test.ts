@@ -63,7 +63,7 @@ describe.skipIf(!existsSync(path))('published access hand-off with real MongoDB'
   });
   it('passes deny-external metadata to the gateway without accidentally sending the document', async () => {
     const h = setup(); const gateway = new Gateway({ ...h, ...access });
-    const r = await gateway.run(employee, { messages: [{ role: 'user', content: 'Deployment credentials policy' }] });
+    const r = await gateway.run(employee, { messages: [{ role: 'user', content: 'Deployment credentials policy' }], attachedDoc: 'external-deny' });
     expect(r.action).toBe('deny'); expect(r.provider_calls).toBe(0);
   });
 });

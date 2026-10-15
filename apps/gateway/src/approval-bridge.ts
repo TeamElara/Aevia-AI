@@ -92,7 +92,24 @@ export async function createApprovalBridge(options: {
       purge(); const ref = refs.get(requestId);
       if (!ref || ref.owner !== user.id || ref.conversation !== conversationId) throw new GatewayError('RESULT_NOT_FOUND', 404);
       const ready = completed.get(requestId);
-      if (ready) { completed.delete(requestId); refs.delete(requestId); return ready; }
+      if (ready) {
+        // Polling can happen long after replay. Recheck every cited document against
+        // fresh membership and current quarantine state before releasing the answer.
+        try {
+          const fresh = await current(user);
+          for (const id of new Set(ready.citations.map(c => c.doc_id))) {
+            const chunks = await options.db.collection('chunks').find({ document_id: id }).toArray();
+            if (!chunks.length || chunks.some(c => c.quarantined ||
+              (!c.allowed_users?.includes(fresh.id) && !c.allowed_groups?.some((g: string) => fresh.groups.includes(g))))) {
+              throw new GatewayError('RESULT_NOT_FOUND', 404);
+            }
+          }
+        } catch {
+          completed.delete(requestId); refs.delete(requestId);
+          throw new GatewayError('RESULT_NOT_FOUND', 404);
+        }
+        completed.delete(requestId); refs.delete(requestId); return ready;
+      }
       const row = await metadata.findOne({ _id: ref.approvalId });
       if (row && ['pending', 'replaying'].includes(row.status)) return null;
       refs.delete(requestId);

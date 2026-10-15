@@ -14,6 +14,7 @@ type Case = {
   history?: string[]
   attached_doc?: string | null
   prompt: string
+  attached_doc?: string | null
   expected_action: Action
   expected_categories: string[]
   must_not_reach_provider?: string[]
@@ -22,6 +23,8 @@ type Case = {
 
 type Row = {
   status: 'idle' | 'running' | 'done' | 'error'
+  expected_action?: Action
+  expectation_reason?: string
   observed_action?: Action
   correct?: boolean
   expected_intervention?: boolean
@@ -34,6 +37,7 @@ type Row = {
 }
 
 type Summary = {
+  errors?: number
   precision: number | null
   recall: number | null
   false_positives_on_allowed: string
@@ -44,7 +48,7 @@ type Summary = {
   overhead_ms_p95: number | null
   cases: number
 }
-type Report = { file: string; mode: string; at: string; summary: Summary }
+type Report = { provenance?: { frozen?: boolean; provider_evidence?: string }; file: string; mode: string; at: string; summary: Summary }
 
 const parseJsonl = (raw: string): Case[] =>
   raw
@@ -57,7 +61,7 @@ const caseFiles = import.meta.glob('../../../../eval/{live_subset,heldout}.jsonl
   import: 'default',
   eager: true,
 }) as Record<string, string>
-const reportFiles = import.meta.glob('../../../../results/*.json', { import: 'default', eager: true }) as Record<string, Report>
+const reportFiles = import.meta.glob('../../../../results/**/*.json', { import: 'default', eager: true }) as Record<string, Report>
 
 function pickLiveSubset(): { cases: Case[]; source: string } {
   const subset = Object.entries(caseFiles).find(([p]) => p.endsWith('live_subset.jsonl'))
@@ -75,7 +79,10 @@ function pickLiveSubset(): { cases: Case[]; source: string } {
 }
 
 const { cases, source } = pickLiveSubset()
-const frozen = Object.values(reportFiles).filter((r) => r.file?.includes('heldout') && r.mode !== 'mock')
+const developmentReports = Object.values(reportFiles).filter((r) => r.provenance?.frozen === false && r.provenance?.provider_evidence === 'simulated' && r.summary)
+// Retain historical files on disk; show the newest run for each dataset/mode.
+const development = [...new Map(developmentReports.sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map(report => [`${report.file}-${report.mode}`, report] as const)).values()]
+const frozen = Object.values(reportFiles).filter((r) => r.provenance?.frozen === true && r.file?.includes('heldout') && r.mode !== 'mock')
 const leakshieldReport = frozen.find((r) => r.mode === 'leakshield')
 const baselineReport = frozen.find((r) => r.mode === 'baseline')
 
@@ -167,7 +174,7 @@ export function EvalView() {
                       <tr key={c.id} className="border-b border-line" title={c.prompt}>
                         <td className="py-2.5 pr-4 font-mono text-[11px] text-fg">{c.id}</td>
                         <td className="py-2.5 pr-4 text-muted">{c.category.replace(/_/g, ' ')}</td>
-                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted">{c.expected_action}</td>
+                        <td className="py-2.5 pr-4 font-mono text-[11px] text-muted" title={r?.expectation_reason}>{r?.expected_action ?? c.expected_action}</td>
                         <td className="py-2.5 pr-4">
                           {r?.observed_action ? (
                             <ActionBadge label={actionLabel[r.observed_action]} stop={isStop(r.observed_action)} />
@@ -198,6 +205,24 @@ export function EvalView() {
 
         <section className="ink min-w-0">
           <div className="space-y-8 px-5 py-6 sm:p-8">
+            {development.length > 0 && <div className="space-y-3">
+              <h2 className="text-[15px] text-fg">Simulated development reports</h2>
+              <p className="text-[12px] text-muted">Loopback fixture provider; no model-backed accuracy or coordinated freeze. Leaks count declared forbidden values only.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-[13px]">
+                  <thead><tr className="text-[11px] text-faint">
+                    {['Dataset / mode', 'Cases', 'Errors', 'Provider leaks'].map(label => <th key={label} className="border-b border-line py-2 pr-3 font-normal">{label}</th>)}
+                  </tr></thead>
+                  <tbody>{development.map(report => <tr key={`${report.file}-${report.mode}`} className="border-b border-line">
+                    <td className="py-2 pr-3 text-muted">{report.file.split('/').at(-1)?.replace('.jsonl', '')} / {report.mode}</td>
+                    <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.cases}</td>
+                    <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.errors ?? '–'}</td>
+                    <td className="py-2 pr-3 font-mono text-[12px]">{report.summary.provider_leaks}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div>
+              <p className="text-[12px] text-muted">Stage timings exclude model time and uninstrumented audit/vault work; they are not total security overhead.</p>
+            </div>}
             <div>
               <h2 className="text-[15px] text-fg">Frozen report</h2>
               <p className="mt-1 text-[12px] text-faint">60 held-out cases at tag eval-freeze, with and without LeakShield</p>
@@ -255,7 +280,7 @@ export function EvalView() {
                 <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-fg">
                   node eval/run.mjs eval/heldout.jsonl{'\n'}node eval/run.mjs eval/heldout.jsonl --baseline
                 </pre>
-                <p className="text-[12px] text-faint">Reports written to results/ appear here automatically.</p>
+                <p className="text-[12px] text-faint">Only reports explicitly marked with verified freeze provenance belong here.</p>
               </div>
             )}
 

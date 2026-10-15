@@ -68,3 +68,41 @@ node eval/mutate.mjs eval/heldout.jsonl --sources H-053,H-054 >> eval/robustness
 - One behaviour per case. If a case needs two actions, the strictest one is `expected_action`.
 
 Robustness ID allocation: `R-001`–`R-030` scripted mutations, `R-031`–`R-045` Arihant Hinglish, `R-046`–`R-060` Alwaz paraphrases.
+
+## Production attachment and provider contract (continuation)
+
+`POST /api/chat` carries a validated `attached_doc` through ACL retrieval and
+hash-bound approval replay. An unavailable/unauthorized attachment returns the
+same generic denial with no title/citation or model call. An explicitly selected
+quarantined document stops with `quarantine` and zero model calls. Ordinary query
+retrieval may omit inaccessible documents and still answer the remaining query.
+The isolated synthetic baseline receives the same attachment but intentionally
+omits the protections; never enable baseline on a production or non-synthetic corpus.
+
+`expectations.mjs` versions semantic differences without rewriting original JSONL:
+H-028 uses `redact` for document-origin PII in both modes; authorized H-029
+(board/CEO) and D-011/H-036 (Garuda/Meera), including their source-linked
+paraphrases, use `allow` locally. External deny/approval expectations and all ACL
+expectations remain intact. These are contract decisions, not changes fitted to
+model outputs. Reports retain original and contract actions plus the reason.
+
+The runner reads `provider_external` and model from gateway health and refuses an
+unidentified provider mode. Reports include dataset SHA-256, source commit/dirty
+state, provider evidence and `frozen: false`. A development report is never proof
+of a coordinated freeze. The console loads the simulated continuation reports
+separately; no frozen report has been supplied. Baseline accuracy is not a useful
+security metric: compare explicitly checked leak assertions and timings instead.
+
+Reproduce the **simulated** integration comparison (temporary seeded Mongo, no
+cloud/model calls):
+
+```bash
+node --import tsx seed/evaluate-simulated.ts
+```
+
+Measured overhead is the sum of instrumented stages other than `llm`/`LLM`,
+rounded to the nearest millisecond. It excludes uninstrumented audit/vault work;
+wall latency includes HTTP/model time and can include rate-limit retry waits.
+Neither is a controlled estimate of total incremental security overhead. The
+runner now respects the gateway's `Retry-After` header. Initial pre-header
+robustness runs had one request error each; the committed rerun has zero.
