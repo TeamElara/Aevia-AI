@@ -7,14 +7,18 @@ import type { ChatResponse } from '../src/api/contract'
 const api = vi.hoisted(() => ({ chat: vi.fn(), login: vi.fn(), pollApprovalResult: vi.fn() }))
 vi.mock('../src/api/client', () => api)
 vi.mock('../src/components/ChatPanel', () => ({
-  ChatPanel: ({ ready, turns, onSend, onReset }: { ready: boolean; turns: { prompt: string }[]; onSend: (text: string) => void; onReset: () => void }) => (
+  ChatPanel: ({ ready, turns, onSend }: { ready: boolean; turns: { prompt: string }[]; onSend: (text: string) => void }) => (
     <div>
       <button disabled={!ready} onClick={() => onSend('test message')}>Send test message</button>
-      <button onClick={onReset}>New chat</button>
       <p>{turns.map(t => t.prompt).join(',')}</p>
     </div>
   ),
 }))
+// The real sign-in dialog animates its tick before picking; the test picks at once.
+vi.mock('../src/components/SignIn', () => ({
+  SignIn: ({ onPick }: { onPick: (id: string) => void }) => <button onClick={() => onPick('ravi')}>Ravi Menon</button>,
+}))
+vi.mock('../src/components/Field', () => ({ Field: () => null }))
 vi.mock('../src/components/PayloadCard', () => ({ PayloadCard: () => null }))
 vi.mock('../src/views/ApprovalsView', () => ({ ApprovalsView: () => null }))
 vi.mock('../src/views/EvalView', () => ({ EvalView: () => null }))
@@ -41,6 +45,8 @@ describe('chat response ownership', () => {
   }
   beforeEach(async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
     api.chat.mockReset()
     api.login.mockReset().mockImplementation(async (user: string) => ({ token: user + '-token', backend: 'live' }))
     container = document.createElement('div')
