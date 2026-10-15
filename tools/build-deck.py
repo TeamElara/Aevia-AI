@@ -1,4 +1,7 @@
-"""Build the editable eight-slide development handoff deck with python-pptx."""
+"""Rebuild the HISTORICAL handoff deck (219 + 21 snapshot).
+
+For the continuation evidence deck, use tools/update-deck.mjs.
+"""
 from pathlib import Path
 import json
 from pptx import Presentation

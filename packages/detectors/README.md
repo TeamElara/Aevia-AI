@@ -38,6 +38,8 @@ if (!scan.ok) {
 
 ### Classifier in the gateway (no gateway code change)
 
+> **Measured with the real model: keep it off for user prompts.** It catches paraphrases the rules miss, but it flagged 19 of 110 benign prompts (17%) and its scores don't separate attacks from normal work. See `results/ojaswi/classifier-check.md`. The plumbing below stays for future fine-tuning.
+
 Alwaz's spike (`docs/CLASSIFIER-DECISION.md`) found Node ONNX fp32 works: warm p95 ≈ 12 ms per prompt, ~2 s load. To turn it on:
 
 ```bash

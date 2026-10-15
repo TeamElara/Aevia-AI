@@ -37,7 +37,7 @@ describe.skipIf(!existsSync(modulePath))('published detector hand-off (no held-o
   it('supports the real console login and chat contract without editing the web app', async () => {
     const h = setup();
     const app = createApp({ ...h, auth: new Auth(secret), ready: () => true, demoAuth: true, signingSecret: secret });
-    expect((await request(app).get('/api/health')).body).toEqual({ ok: true });
+    expect((await request(app).get('/api/health')).body).toMatchObject({ ok: true, provider_external: true, model: 'test-model', baseline_available: false });
     const login = await request(app).post('/api/auth/login').send({ user: 'asha' });
     expect(login.status).toBe(200); expect(login.body.user.groups).toContain('employee');
     const r = await request(app).post('/api/chat').set('Authorization', `Bearer ${login.body.token}`).send({ message: 'Draft a KYC letter for Aadhaar 2345 6789 0124', conversation_id: null });

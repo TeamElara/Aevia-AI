@@ -8,4 +8,4 @@ Model: `protectai/deberta-v3-base-prompt-injection-v2`, Apache-2.0, revision `90
 
 The optional adapter is `retrieval/classifier.js`; ingestion accepts its classify callback via `ingestWithClassifier`. It refuses to truncate over-512-token chunks silently. The detector team's runtime user-prompt sliding windows and rule-first skip remain their integration responsibility. Do not classify retrieved chunks again during requests.
 
-Reproduce: `pnpm classifier:spike`. For int8, install Python `onnx` and `onnxruntime`, run `python tools/quantize-classifier.py`, then rerun the spike. Weights and generated ONNX files are ignored, not committed. A clean clone runs the upstream fp32 path; q8 is available only after local quantization.
+Reproduce: `npm run classifier:spike`. For int8, install Python `onnx` and `onnxruntime`, run `python tools/quantize-classifier.py`, then rerun the spike. Weights and generated ONNX files are ignored, not committed. A clean clone runs the upstream fp32 path; q8 is available only after local quantization.

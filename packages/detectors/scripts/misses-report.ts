@@ -59,7 +59,7 @@ function table(title: string, rows: Row[]): string[] {
 }
 
 /** Markdown report: per category, per mutation, robustness retention, and the list of misses (ids only). */
-export function missesReport(cases: EvalCase[], results: CaseResult[], meta: { tag: string; files: string[] }): string {
+export function missesReport(cases: EvalCase[], results: CaseResult[], meta: { tag: string; tagName?: string; files: string[] }): string {
   const byCategory = new Map<string, Row>();
   const byMutation = new Map<string, Row>();
   const total = blank('All');
@@ -99,7 +99,7 @@ export function missesReport(cases: EvalCase[], results: CaseResult[], meta: { t
   return [
     '# Detector misses after the freeze',
     '',
-    `Frozen tag \`eval-freeze\` (${meta.tag}). Files: ${meta.files.map((f) => `\`${f.split('/').pop()}\``).join(', ')}. Detector-level only: ACL, quarantine and approval outcomes are measured by the gateway eval runner. Ids and scores only, no prompt text.`,
+    `Frozen tag \`${meta.tagName ?? 'eval-freeze'}\` (${meta.tag}). Files: ${meta.files.map((f) => `\`${f.split('/').pop()}\``).join(', ')}. Detector-level only: ACL, quarantine and approval outcomes are measured by the gateway eval runner. Ids and scores only, no prompt text.`,
     '',
     ...table('By category', [...byCategory.values(), total]),
     ...(byMutation.size ? table('By mutation (robustness)', [...byMutation.values()]) : []),

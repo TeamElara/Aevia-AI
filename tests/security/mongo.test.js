@@ -36,10 +36,10 @@ test('Mongo applies group and per-user grants before top-k; admin has no content
   assert.equal((await retrieve(users[1], 'salary'))[0].document_id, 'salary');
   assert.deepEqual(await retrieve(users[0], 'salary'), []);
   assert.deepEqual(await retrieve(users[4], 'board', { external: false }), []);
-  assert.equal((await retrieve(users[3], 'board', { external: false }))[0].document_id, 'board');
+  assert.equal((await retrieve(users[3], 'board minutes', { external: false }))[0].document_id, 'board');
   assert.deepEqual(await retrieve(users[3], 'board'), []);
   assert.deepEqual(await retrieve(users[2], 'Garuda'), []);
-  assert.equal((await retrieve(users[2], 'Garuda', { approved: true }))[0].document_id, 'garuda');
+  assert.equal((await retrieve(users[2], 'Garuda roadmap', { approved: true }))[0].document_id, 'garuda');
   assert.deepEqual(await retrieve(users[0], 'vendor onboarding'), []);
 });
 test('assembly rejects revoked ACLs and modified content', async () => {

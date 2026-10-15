@@ -159,6 +159,7 @@ export class Gateway {
         }
       });
       chunks = approvedChunks.filter(c => !quarantined.has(c.doc_id));
+      if (input.attachedDoc && quarantined.has(input.attachedDoc)) return await result('quarantine', '', 'The requested reference is unavailable for use.');
       if (actions.includes('block')) return await result('block', '', 'Retrieved content cannot be sent to the model.');
       if (this.deps.provider.external && chunks.some(c => c.external_llm === 'deny')) {
         return await result('deny', '', 'The selected provider is not permitted for this request.');
@@ -236,6 +237,7 @@ export class Gateway {
     } finally { release(); captured = undefined; }
   }
   /** Extension preflight is advisory only: it neither calls a model nor replaces final inspection. */
+  get external(): boolean { return this.deps.provider.external; }
   get model(): string { return this.deps.provider.model; }
   async inspect(user: User, text: string, history: string[] = []) {
     const policy = this.deps.policies.snapshot(); const requestId = randomUUID(); const started = performance.now();
