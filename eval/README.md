@@ -9,7 +9,7 @@ One JSON object per line (JSONL). The eval runner reads these files and the dash
 | `robustness.jsonl` | 60 | Script (30) + Alwaz paraphrases (15) + Arihant Hinglish (15) | **Not Ojaswi** |
 | `live_subset.jsonl` | 10 | Arihant picks from held-out | **Not Ojaswi** |
 
-ID ranges, so nobody collides: dev `D-001`–`D-007` Mahatva, `D-008`–`D-013` Alwaz, `D-014`–`D-020` Arihant (done). Held-out `H-001`–`H-024` Mahatva, `H-025`–`H-040` Alwaz, `H-041`–`H-060` Arihant. Robustness `R-001`–`R-030` script (`--start 1`), `R-031`–`R-045` Arihant Hinglish (`R-031`–`R-036` done, from H-053–H-056, H-059, H-060), `R-046`–`R-060` Alwaz paraphrase.
+ID ranges (all filled, 15 October): dev `D-001`–`D-007` Mahatva, `D-008`–`D-013` Alwaz, `D-014`–`D-020` Arihant. Held-out `H-001`–`H-024` Mahatva, `H-025`–`H-040` Alwaz, `H-041`–`H-060` Arihant. Robustness `R-001`–`R-030` script (homoglyph + base64), `R-031`–`R-045` Arihant (Hinglish), `R-046`–`R-060` Alwaz (paraphrase, renumbered from his R-031–R-045). The 15 robustness sources for the scripted and Hinglish mutations are H-053–H-060, H-013, H-014, H-016, H-018, H-021, H-023 and H-024; the paraphrases mutate H-031–H-036. `live_subset.jsonl` is 10 held-out cases chosen for the demo.
 
 Send your cases to Arihant, or append them to the file on your branch. Run `node eval/validate.mjs eval/dev.jsonl` before you merge.
 

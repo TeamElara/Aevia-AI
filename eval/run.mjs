@@ -160,12 +160,15 @@ function retention(allRows) {
   const mutated = allRows.filter((r) => r.split === 'robustness' && source.has(r.source_id) && r.expected_intervention)
   if (!mutated.length) return null
   const recall = (rs) => ratio(rs.filter((r) => r.observed_intervention).length, rs.length)
-  const sources = [...new Set(mutated.map((r) => r.source_id))].map((id) => source.get(id))
-  const base = recall(sources)
+  const sourcesOf = (rs) => [...new Set(rs.map((r) => r.source_id))].map((id) => source.get(id))
+  const base = recall(sourcesOf(mutated))
+  // Each mutation is compared with its own source cases (paraphrases may use different sources).
   const byMutation = {}
   for (const m of [...new Set(mutated.map((r) => r.mutation))]) {
-    const rm = recall(mutated.filter((r) => r.mutation === m))
-    byMutation[m] = { recall: rm, retention: base ? ratio(rm, base) : null }
+    const rs = mutated.filter((r) => r.mutation === m)
+    const rm = recall(rs)
+    const rb = recall(sourcesOf(rs))
+    byMutation[m] = { source_recall: rb, recall: rm, retention: rb ? ratio(rm, rb) : null }
   }
   const rMut = recall(mutated)
   return { source_recall: base, mutated_recall: rMut, retention: base ? ratio(rMut, base) : null, by_mutation: byMutation }
@@ -196,9 +199,9 @@ function markdown(name, summary, rows, ret) {
       '',
       `Source recall ${ret.source_recall}, mutated recall ${ret.mutated_recall}, retention **${ret.retention}**.`,
       '',
-      '| Mutation | Recall | Retention |',
-      '| --- | --- | --- |',
-      ...Object.entries(ret.by_mutation).map(([m, v]) => `| ${m} | ${v.recall} | ${v.retention} |`),
+      '| Mutation | Source recall | Mutated recall | Retention |',
+      '| --- | --- | --- | --- |',
+      ...Object.entries(ret.by_mutation).map(([m, v]) => `| ${m} | ${v.source_recall} | ${v.recall} | ${v.retention} |`),
       '',
     )
   }
