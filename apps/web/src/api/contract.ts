@@ -49,8 +49,27 @@ export interface ChatResponse {
   provider_calls: number
   citations: { doc_id: string; title: string }[]
   approval_id?: string
+  // Only on /api/chat/attachment: what the gateway read from the file and hid.
+  attachment?: AttachmentSummary
   // Only with EVAL_MODE=1 and X-Eval-Capture: 1 (docs/API.md, Eval mode).
   eval?: { provider_external?: boolean; provider_calls: number; provider_payload: string | null }
+}
+
+// A photo or PDF read inside the gateway (docs/API.md, attachments). No raw values come back.
+export interface AttachmentSummary {
+  name: string
+  kind: 'pdf' | 'png' | 'jpeg' | 'webp'
+  pages: number
+  ocr_pages: number
+  truncated: boolean
+  /** Taken out before the request so it need not stop: secrets, instruction lines, codenames. */
+  removed: Record<string, number>
+  /** Everything sensitive found in the file, by category. */
+  found: Record<string, number>
+  /** The file's text with each sensitive value shown as [CATEGORY]. */
+  masked_text: string
+  /** OCR pages as PNG data URLs with black bars over what was hidden. */
+  redacted_pages: { page: number; image: string }[]
 }
 
 // Audit allowlist (PLAN.md §8). No prompt text, no values, no doc titles.
