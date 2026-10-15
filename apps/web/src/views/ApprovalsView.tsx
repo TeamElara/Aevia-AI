@@ -4,6 +4,8 @@ import type { Approval } from '../api/contract'
 import { Masthead } from '../components/Masthead'
 import { Arrow } from '../components/ui'
 import { useAdmin } from '../lib/useAdmin'
+import { useActingPosts } from '../lib/useActingPosts'
+import { CoverList } from '../components/ActingPosts'
 
 function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now())
@@ -21,6 +23,7 @@ const countdown = (ms: number) => {
 
 export function ApprovalsView() {
   const { admin, error } = useAdmin()
+  const posts = useActingPosts(admin)
   const [items, setItems] = useState<Approval[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -164,6 +167,12 @@ export function ApprovalsView() {
             </div>
           )}
         </div>
+      </section>
+      <section className="mt-10 min-w-0" aria-label="Acting posts">
+        <h2 className="font-display text-[24px] font-medium">Acting posts</h2>
+        <p className="post-meta mt-1">Current and scheduled covers. Ending a cover removes its access on the next request.</p>
+        {posts.error && <p className="post-error mt-3" role="alert">{posts.error} <button className="underline" onClick={posts.refresh}>Retry</button></p>}
+        {posts.loading ? <p className="post-meta mt-3" role="status">Loading acting posts…</p> : posts.list?.active?.length ? <CoverList covers={posts.list.active} posts={posts} admin /> : !posts.error && <p className="post-meta mt-3">No active or scheduled covers.</p>}
       </section>
     </div>
   )

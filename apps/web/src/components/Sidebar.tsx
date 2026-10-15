@@ -6,6 +6,7 @@ import { avatarTone, type View } from '../lib/views'
 import { useState, type PointerEvent } from 'react'
 import { useSlider } from '../lib/useSlider'
 import { Icon, Magnetic, Orb, ThemeToggle } from './ui'
+import type { ActingPosts } from '../lib/useActingPosts'
 
 
 const monitor: { id: View; icon: Parameters<typeof Icon>[0]['name']; sub: string }[] = [
@@ -37,6 +38,8 @@ export function Sidebar({
   onGo,
   onNewChat,
   onSignIn,
+  posts,
+  onAssign,
 }: {
   view: View
   tone: Tone
@@ -46,6 +49,8 @@ export function Sidebar({
   onGo: (v: View) => void
   onNewChat: () => void
   onSignIn: () => void
+  posts: ActingPosts
+  onAssign: () => void
 }) {
   const [navRef, pill] = useSlider(view)
   const [hover, setHover] = useState<{ y: number; h: number } | null>(null)
@@ -111,6 +116,11 @@ export function Sidebar({
           </span>
           <ThemeToggle />
         </div>
+        <button className="btn btn-ghost w-full text-[13px]" onClick={onAssign} disabled={posts.loading || !posts.me?.lendable_groups.length} title={posts.error ?? undefined}>
+          {posts.loading ? 'Loading posts…' : posts.me && !posts.me.lendable_groups.length ? 'Nothing to assign' : 'Assign my post'}
+        </button>
+        {posts.error && <p className="px-2 text-[11px] text-muted" role="status">{posts.error}<button className="ml-1 underline underline-offset-2" onClick={posts.refresh}>Retry</button></p>}
+        {!!posts.list?.given.length && !posts.me?.lendable_groups.length && <button className="w-full py-2 text-[12px] text-muted" onClick={onAssign}>View assigned posts</button>}
         <button
           onClick={onSignIn}
           className="card flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition hover:border-line-strong"

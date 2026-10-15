@@ -15,6 +15,8 @@ import { ApprovalsView } from './views/ApprovalsView'
 import { EvalView } from './views/EvalView'
 import { IncidentsView } from './views/IncidentsView'
 import { OverviewView } from './views/OverviewView'
+import { useActingPosts } from './lib/useActingPosts'
+import { AssignPostModal, CoveringBadge } from './components/ActingPosts'
 
 type Session = { token: string; backend: Backend }
 
@@ -34,6 +36,8 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [cardDir, setCardDir] = useState<1 | -1>(1)
   const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
+  const [assignOpen, setAssignOpen] = useState(false)
+  const posts = useActingPosts(session)
 
   function go(next: View) {
     setNavOpen(false)
@@ -127,6 +131,7 @@ export default function App() {
   function pickUser(id: string) {
     if (id === activeUser) return
     setSession(null)
+    setAssignOpen(false)
     resetChat()
     setActiveUser(id)
   }
@@ -192,6 +197,8 @@ export default function App() {
         setNavOpen(false)
         setSignInOpen(true)
       }}
+      posts={posts}
+      onAssign={() => { setNavOpen(false); setAssignOpen(true) }}
     />
   )
 
@@ -226,6 +233,7 @@ export default function App() {
               onSend={send}
               onInspect={inspect}
               onShowExamples={() => setInspectorOpen(true)}
+              actingPosts={posts.me?.covering.length ? <CoveringBadge covering={posts.me.covering} posts={posts} /> : undefined}
             />
           )}
           {view === 'Incidents' && <IncidentsView />}
@@ -251,6 +259,7 @@ export default function App() {
       </Drawer>
 
       <SignIn open={signInOpen} current={activeUser} onClose={() => setSignInOpen(false)} onPick={signInAs} />
+      <AssignPostModal key={activeUser} open={assignOpen} onClose={() => setAssignOpen(false)} userId={activeUser} posts={posts} />
 
       {toast && (
         <Toast key={toast.key}>

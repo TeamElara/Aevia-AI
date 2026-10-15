@@ -6,6 +6,7 @@ import type { ChatResponse } from '../src/api/contract'
 
 const api = vi.hoisted(() => ({ chat: vi.fn(), login: vi.fn(), pollApprovalResult: vi.fn() }))
 vi.mock('../src/api/client', () => api)
+vi.mock('../src/lib/useActingPosts', () => ({ useActingPosts: () => ({ me: null, list: null, loading: false, error: null, busy: null, refresh: vi.fn(), assign: vi.fn(), end: vi.fn() }) }))
 vi.mock('../src/components/ChatPanel', () => ({
   ChatPanel: ({ ready, turns, onSend }: { ready: boolean; turns: { prompt: string }[]; onSend: (text: string) => void }) => (
     <div>
