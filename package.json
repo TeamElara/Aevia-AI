@@ -1,0 +1,26 @@
+{
+  "name": "leakshield-access",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run tests/security",
+    "seed": "node seed/seed.js",
+    "benchmark": "node tests/security/benchmark.js",
+    "eval:validate": "node eval/validate.mjs eval/dev.jsonl eval/alwaz/heldout.jsonl eval/alwaz/robustness.jsonl",
+    "classifier:spike": "node tools/classifier-spike.mjs"
+  },
+  "dependencies": {
+    "mongodb": "^7.7.0"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "^4.3.1",
+    "mongodb-memory-server": "^11.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  },
+  "packageManager": "pnpm@11.25.0"
+}
