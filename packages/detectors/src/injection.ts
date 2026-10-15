@@ -21,17 +21,26 @@ const OVERRIDE_TARGET = new RegExp(
 
 // Extraction intents: show me what you were given.
 const EXTRACT_INTENT =
-  /\b(?:reveal|show|print|repeat|output|display|dump|leak|expose|reproduce|recite|echo|spell\s+out|tell\s+me|give\s+me|share|paste|write\s+out|copy|return|list|quote|translate|summari[sz]e|paraphrase|rephrase|encode|complete|continue|finish)\b/gi;
+  /\b(?:reveal|show|print|repeat|output|display|dump|leak|expose|reproduce|recite|echo(?:\s+back)?|spell\s+out|tell\s+me|give\s+me|share|paste|write\s+out|copy|return|list|quote|translate|summari[sz]e|paraphrase|rephrase|encode|complete|continue|finish)\b/gi;
 const EXTRACT_TARGET = new RegExp(
   [
-    String.raw`\b(?:system|developer|hidden|secret|initial|original|internal|underlying|first)\s+(?:prompt|message|instructions?|rules|context|configuration|config)\b`,
+    // Not settings UI: "the hidden configuration options in VS Code", "initial config file".
+    String.raw`\b(?:system|developer|hidden|secret|initial|original|internal|underlying|first)\s+(?:prompt|message|instructions?|rules|context|configuration|config)\b(?!\s+(?:options?|settings|menu|file|files|panel|tab|page|flags?|parameters?|values?|screen|dialog)\b)`,
     String.raw`\byour\s+(?:instructions|rules|prompt|guidelines|configuration|config|directives|system\s+message)\b`,
-    String.raw`\b(?:instructions|text|content|configuration|config|message|prompt|context|words|everything|whatever)\s+(?:(?:that|which)\s+(?:was|were)\s+)?(?:you\s+(?:were\s+)?(?:given|received|told)|given\s+to\s+you|above|before\s+(?:my|this|the\s+user'?s?))`,
+    // "…you were given" is about the model's own setup unless it goes on "for/from/about …" ("the instructions you were given for the expense form").
+    String.raw`\b(?:instructions|text|content|configuration|config|message|prompt|context|words|everything|whatever)\s+(?:(?:that|which)\s+(?:was|were)\s+)?(?:you\s+(?:were\s+)?(?:given|received|told)(?!\s+(?:for|from|about|in|on|by|regarding)\b)|given\s+to\s+you(?!\s+(?:for|from|about|in|on|by|regarding)\b)|above|before\s+(?:my|this|the\s+user'?s?))`,
     String.raw`\b(?:text|content|message|instructions|words)\s+(?:that|which)\s+(?:appears?|is|was|were|came|comes)\s+(?:above|before)\s+(?:my|this|the)\b`,
     String.raw`\b(?:supplied|given|provided|written|sent|placed)\s+(?:to\s+you\s+)?(?:before|above|ahead\s+of|prior\s+to)\s+(?:my|this|the\s+user'?s?)\s+(?:message|prompt|question|input)`,
     String.raw`\beverything\s+(?:above|before\s+(?:my|this))`,
     String.raw`\b(?:what|everything)\s+(?:you\s+were|you've\s+been|you\s+have\s+been)\s+told\s+(?:before|earlier|at\s+the\s+start|initially|first)`,
     String.raw`\bbefore\s+(?:this|our|the)\s+conversation(?:\s+(?:started|began))?`,
+    // The model's own setup, named self-referentially: "your initial configuration", "the hidden setup text",
+    // "the preamble you received", "whatever configuration you were initialised with". Not "the preamble of
+    // the Constitution", "the config you were using", or "the configuration you got from the doc".
+    String.raw`\byour\s+(?:(?:hidden|secret|initial|original|exact|full|complete|underlying|starting)\s+){0,2}(?:setup(?:\s+text)?|preamble|configuration|config|context|instructions|prompt)\b`,
+    String.raw`\b(?:hidden|secret)\s+(?:setup|preamble|configuration|config|context|instructions|prompt)(?:\s+(?:text|message|block))?\b(?!\s+(?:of|for|in|on|from|options?|settings|menu|file|panel)\b)`,
+    String.raw`\b(?:setup|preamble|configuration|config|instructions|prompt|context|rules)\s+(?:that\s+)?you\s+(?:were|have\s+been|'ve\s+been)\s+(?:initiali[sz]ed|configured|set\s+up|primed|loaded|trained)(?:\s+with)?\b(?!\s+(?:for|from|in|by|about|on)\b)`,
+    String.raw`\b(?:preamble|setup\s+text)\s+(?:that\s+)?you\s+(?:received|were\s+given|got)\b(?!\s+(?:for|from|about|in|on|by)\b)`,
   ].join('|'),
   'gi',
 );
@@ -43,6 +52,8 @@ const ROLE = new RegExp(
     String.raw`\bdo\s+anything\s+now\b`,
     String.raw`\bfrom\s+now\s+on\b.{0,40}?\b(?:no|without|zero)\s+(?:restrictions|rules|limits|filters|guidelines|censorship|boundaries)\b`,
     String.raw`\byou\s+(?:have|are\s+under|operate\s+with)\s+no\s+(?:restrictions|rules|limits|filters|guidelines|censorship)\b`,
+    // "you are an AI without any guidelines", "pretend you're a model with no rules"
+    String.raw`\b(?:you\s+are|you're|act\s+as|be|become|pretend\s+(?:to\s+be|you\s+are))\s+an?\s+(?:\w+\s+){0,2}(?:ai|assistant|model|chatbot|bot|llm)\s+(?:without|with\s+no|that\s+has\s+no|free\s+of)\s+(?:any\s+)?(?:guidelines|rules|restrictions|filters|limits|limitations|safety|ethics|morals)\b`,
   ].join('|'),
   'gi',
 );
@@ -58,6 +69,11 @@ const EXFIL = new RegExp(
 );
 
 // "reveal all secrets" / "dump the passwords": asking the model itself to disclose credentials.
+// Asking for something the model is "not supposed to" disclose names the boundary being crossed.
+const FORBIDDEN_ASK =
+  /\b(?:secret|something|anything|information|info|details?|things?)\s+(?:that\s+)?you(?:'re|\s+are)?\s+(?:not|never)\s+(?:supposed|allowed|meant|permitted)\s+to\s+(?:share|tell|say|reveal|disclose|talk\s+about)\b/gi;
+// "Disregard the above and instead …": dropping prior context in favour of new orders.
+const ABOVE_INSTEAD = /\b(?:ignore|disregard|forget|discard)\s+(?:all\s+|everything\s+)?(?:of\s+)?(?:the\s+|what's\s+|what\s+is\s+)?above\b[^.?!\n]{0,15}?\b(?:and|,)\s+(?:instead|now)\b/gi;
 const EXTRACT_SECRETS =
   /\b(?:reveal|dump|leak|expose|spill|print\s+out|list\s+all)\b.{0,30}?\b(?:all\s+)?(?:the\s+)?(?:your\s+)?(?:secrets|passwords|credentials|api\s+keys|private\s+keys|access\s+tokens)\b/gi;
 
@@ -207,6 +223,8 @@ function rulesOn(t: string, ctx: DetectorContext, add: (list: Span[], score: num
   add(spans(ROLEPLAY, t), 0.85, 'inj.roleplay');
   add(spans(EXFIL, t).filter((s) => !NEGATED.test(t.slice(Math.max(0, s.start - 30), s.start))), 0.9, 'inj.exfil');
   add(spans(EXTRACT_SECRETS, t).filter((s) => !NEGATED.test(t.slice(Math.max(0, s.start - 30), s.start))), 0.9, 'inj.extract_secrets');
+  add(spans(FORBIDDEN_ASK, t), 0.9, 'inj.forbidden_ask');
+  add(spans(ABOVE_INSTEAD, t), 0.9, 'inj.override');
   add(live(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t), 80, 60)), 0.9, 'inj.override.hi');
   add(spans(HI_ROLE, t), 0.9, 'inj.role.hi');
   add(spans(HI_DATA_DEMAND, t), 0.9, 'inj.crossuser.hi');
