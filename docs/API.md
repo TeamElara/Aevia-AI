@@ -211,4 +211,6 @@ Returns the approval metadata stored in Mongo, newest first, with no payload:
 
 ### `POST /api/approvals/:id/approve` and `POST /api/approvals/:id/reject`
 
-Return the updated `Approval`. Approving makes the gateway re-check policy and ACL against `request_hash` and then replay the request. Rejecting, or letting the request expire, deletes the in-memory copy. A decision on a request that is no longer pending returns `409`.
+The decision body includes `{ "request_hash": "<listed SHA-256 request hash>" }`; a mismatched hash returns `409`. Return the updated `Approval`. Transient `replaying` and terminal `failed` states may also appear. Approving makes the gateway re-check policy and ACL against `request_hash` and then replay the request. Rejecting, or letting the request expire, deletes the in-memory copy. A decision on a request that is no longer pending returns `409`.
+
+The access integration host also supports `GET /api/access/results/:request_id?conversation_id=...` for the original user and conversation: `202` while pending, then a buffered ChatResponse once. Other users/conversations and consumed results receive `404`.

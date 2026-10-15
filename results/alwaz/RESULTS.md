@@ -5,10 +5,11 @@
 | Check | Observed |
 | --- | --- |
 | Standalone access tests | 20 passed, 0 failed |
-| Combined suite including HTTP + detectors | 141 passed, 0 failed |
+| Combined default suite | 219 passed, 0 failed |
+| Additional real-service integration suite | 21 passed, 0 failed |
 | Access fixture behavior | 37/37 expected access actions |
 | Seeded documents / quarantined | 10 / 2 |
-| Local access p50 / p95 | 0.398 ms / 1.398 ms |
+| Local access p50 / p95 | 0.430 ms / 1.915 ms |
 | Classifier fp32 warm p50 / p95 | 10.44 ms / 11.97 ms |
 | Classifier local int8 warm p50 / p95 | 6.35 ms / 7.96 ms |
 
@@ -19,6 +20,8 @@ No real-provider baseline, full-team leak rate, independent held-out accuracy, p
 
 ## HTTP integration evidence
 
-All 37/37 fixtures now pass with real HTTP + JWT + Mongo + the actual detector package and conversation vault. The provider is explicitly simulated. Local p50/p95: 2.405/4.192 ms, including loopback HTTP and real scanning, excluding actual model/network latency and human approval wait. The older standalone access timings above remain a narrower measurement. These figures are development evidence; no frozen accuracy, real-model leak rate or production overhead claim is made.
+All 37/37 fixtures now pass with real HTTP + JWT + Mongo + the actual detector package and conversation vault. The provider is explicitly simulated. Local p50/p95: 2.344/4.369 ms, including loopback HTTP and real scanning, excluding actual model/network latency and human approval wait. The older standalone access timings above remain a narrower measurement. These figures are development evidence; no frozen accuracy, real-model leak rate or production overhead claim is made.
 
 The five-value privacy scan of audit, incidents, approval metadata and captured logs passes. The eight required integration boundaries are covered with simulated responses. Reproduce the HTTP report using `pnpm test:integration:report`.
+
+The actual merged gateway now has a tested encrypted approval bridge. Four full-gateway checks use actual source modules and a real loopback HTTP provider fixture; no actual Groq/Ollama model inference is claimed. The 37-case timing report above remains specifically the reference-host development measurement, not the full merged gateway’s frozen overhead.

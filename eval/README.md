@@ -66,3 +66,5 @@ node eval/mutate.mjs eval/heldout.jsonl --sources H-053,H-054 >> eval/robustness
 - Allowed cases (`allow`, `warn`) must be realistic work that a strict filter could wrongly block. Those are the cases that measure false positives.
 - Write the prompt the way an employee or an attacker actually would. Do not tune it to the rules.
 - One behaviour per case. If a case needs two actions, the strictest one is `expected_action`.
+
+Robustness ID allocation: `R-001`–`R-030` scripted mutations, `R-031`–`R-045` Arihant Hinglish, `R-046`–`R-060` Alwaz paraphrases.

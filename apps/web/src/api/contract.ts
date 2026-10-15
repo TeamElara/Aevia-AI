@@ -90,7 +90,7 @@ export interface Approval {
   user_pseudo: string
   doc_ids: string[]
   reason: string
-  status: 'pending' | 'approved' | 'rejected' | 'expired'
+  status: 'pending' | 'replaying' | 'approved' | 'rejected' | 'expired' | 'failed'
   created_at: string
   expires_at: string
 }

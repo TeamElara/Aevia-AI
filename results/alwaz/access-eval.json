@@ -2,8 +2,8 @@
   "scope": "real local Mongo; injected deterministic provider and pass-through scan callbacks; access behavior only, not PII or frozen headline metrics",
   "cases": 37,
   "passed": 37,
-  "p50_ms": 0.3980420000000322,
-  "p95_ms": 1.398290999999972,
+  "p50_ms": 0.4303339999999025,
+  "p95_ms": 1.915208000000007,
   "rows": [
     {
       "id": "D-008",
@@ -160,105 +160,105 @@
       "provider_calls": 0
     },
     {
-      "id": "R-031",
+      "id": "R-046",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-032",
+      "id": "R-047",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-033",
+      "id": "R-048",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-034",
+      "id": "R-049",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-035",
+      "id": "R-050",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-036",
+      "id": "R-051",
       "action": "require_approval",
       "expected_access_action": "require_approval",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-037",
+      "id": "R-052",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-038",
+      "id": "R-053",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-039",
+      "id": "R-054",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-040",
+      "id": "R-055",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-041",
+      "id": "R-056",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-042",
+      "id": "R-057",
       "action": "require_approval",
       "expected_access_action": "require_approval",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-043",
+      "id": "R-058",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-044",
+      "id": "R-059",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,
       "provider_calls": 0
     },
     {
-      "id": "R-045",
+      "id": "R-060",
       "action": "deny",
       "expected_access_action": "deny",
       "pass": true,

@@ -13,9 +13,13 @@ import type { ApprovalBridge } from './approval-bridge.js';
 const messages = z.array(z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().min(1).max(30_000) }).strict()).min(1).max(20);
 const chatSchema = z.object({ prompt: z.string().min(1).max(30_000), conversation_id: z.uuid().optional(), approval_id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/).optional() }).strict();
 const completionSchema = z.object({ model: z.string().min(1).max(100).default('leakshield'), messages, stream: z.boolean().default(false), n: z.literal(1).optional() }).strict();
-interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; }
+interface Options { gateway: Gateway; auth: Auth; audit: Audit; policies: PolicyStore; ready: () => boolean; corsOrigin?: string; demoAuth?: boolean; signingSecret?: string; evalMode?: boolean; baseline?: OfflineBaseline; approvalBridge?: ApprovalBridge; providerMode?: 'simulated'; }
 const identity = (res: Response): User => res.locals.user as User;
 const admin = (res: Response): void => { if (!identity(res).groups.includes('admin')) throw new GatewayError('FORBIDDEN', 403); };
+const consoleStages = (stages: Record<string, number>) => {
+  const names: Record<string, string> = { prompt: 'PII', retrieval: 'ACL', documents: 'Docs', outbound: 'Outbound', llm: 'LLM', response: 'Out', restore: 'Restore' };
+  return Object.fromEntries(Object.entries(stages).map(([key, ms]) => [names[key] ?? key, Math.round(ms * 100) / 100]));
+};
 export function createApp(options: Options) {
   const app = express();
   app.disable('x-powered-by');
@@ -33,7 +37,7 @@ export function createApp(options: Options) {
     next();
   });
   app.get('/health', (_req, res) => res.json({ status: 'alive' }));
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, ...(options.providerMode ? { provider_mode: options.providerMode } : {}) }));
   app.get('/ready', (_req, res) => {
     let ready = options.ready();
     try { options.policies.snapshot(); } catch { ready = false; }
@@ -86,9 +90,8 @@ export function createApp(options: Options) {
       ? await options.baseline!.run(identity(res), body.message, body.conversation_id ?? undefined)
       : await options.gateway.run(identity(res), { messages: [{ role: 'user', content: body.message }], conversationId: body.conversation_id ?? undefined, approvalId: body.approval_id, attachedDoc: body.attached_doc ?? undefined });
     const { findings, approval, captured_payload, ...rest } = result;
-    const stageNames: Record<string, string> = { prompt: 'PII', retrieval: 'ACL', documents: 'Docs', outbound: 'Outbound', llm: 'LLM', response: 'Out', restore: 'Restore' };
     res.json({ ...rest, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
-      stage_ms: Object.fromEntries(Object.entries(result.stage_ms).map(([key, ms]) => [stageNames[key] ?? key, Math.round(ms * 100) / 100])),
+      stage_ms: consoleStages(result.stage_ms),
       findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })),
       rule_ids: [...new Set(findings.map(f => f.ruleId))], ...(approval ? { approval_id: approval.id } : {}),
       ...(options.evalMode && req.headers['x-eval-capture'] === '1' ? { eval: { provider_calls: result.provider_calls, provider_payload: captured_payload?.map(m => m.content).join('\n') ?? null } } : {}),
@@ -118,6 +121,7 @@ export function createApp(options: Options) {
     if (!result) return res.status(202).json({ status: 'pending' });
     const { findings, captured_payload: _payload, approval: _approval, ...safe } = result;
     res.json({ ...safe, action: result.action === 'block' && result.provider_calls > 0 ? 'block_response' : result.action,
+      stage_ms: consoleStages(result.stage_ms),
       findings: findings.map(({ category, source, via, ruleId }) => ({ category, source, via, ruleId })), rule_ids: [...new Set(findings.map(f => f.ruleId))] });
   });
   app.get('/api/stats', async (req, res) => {

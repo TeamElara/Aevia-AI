@@ -30,6 +30,10 @@ test('HTTP blocked prompts and retrieved credentials invoke provider zero times'
   const r=await f.chat(token,message,{attached_doc});assert.equal(r.status,200);assert.equal(r.data.action,'block');assert.equal(r.data.provider_calls,0);assert.equal(r.data.eval.provider_payload,null);
  }
  assert.equal(f.payloads.length,0);
+ const asha=await f.login('asha');
+ const blocked=await f.chat(asha,'AWS credential AKIAIOSFODNN7EXAMPLE');
+ const retry=await f.chat(asha,'Use [SECRET_DEMO] instead',{conversation_id:blocked.data.conversation_id});
+ assert.equal(retry.data.provider_calls,1);assert.equal(f.payloads.length,1);
 });
 test('HTTP provider receives only masks across prompt, history and retrieved HR source',async t=>{
  const f=await fixture(t),token=await f.login('ravi');
@@ -74,10 +78,10 @@ test('HTTP users and conversations cannot read another vault, pending request or
  const f=await fixture(t),meera=await f.login('meera'),asha=await f.login('asha'),admin=await f.login('admin');
  const pending=await f.chat(meera,'Garuda roadmap',{attached_doc:'garuda'});assert.equal(pending.data.action,'require_approval');
  assert.equal((await f.api('/api/approvals',asha)).status,403);
- const list=await f.api('/api/approvals',admin);const entry=list.data.find((r:any)=>r.id===pending.data.approval_id);assert.ok(entry);
+ const list=await f.api('/api/approvals',admin);const entry=list.data.find((r:any)=>r.approval_id===pending.data.approval_id);assert.ok(entry);
  const path=`/api/access/results/${pending.data.request_id}?conversation_id=${pending.data.conversation_id}`;
  assert.equal((await f.api(path,asha)).status,404);assert.equal((await f.api(path,meera)).status,202);
- await f.api(`/api/approvals/${entry.id}/approve`,admin,{request_hash:entry.request_hash});
+ await f.api(`/api/approvals/${entry.approval_id}/approve`,admin,{request_hash:entry.request_hash});
  assert.equal((await f.api(path,asha)).status,404);assert.equal((await f.api(path.replace(pending.data.conversation_id,'wrong-conversation'),meera)).status,404);
  const result=await f.api(path,meera);assert.equal(result.status,200);assert.equal(result.data.provider_calls,1);
  assert.equal((await f.api(path,meera)).status,404);

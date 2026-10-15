@@ -1,9 +1,10 @@
-import { randomBytes, randomUUID, createCipheriv, createDecipheriv, createHash, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, createCipheriv, createDecipheriv, createHash, createHmac, timingSafeEqual } from 'node:crypto';
 const hash = value => createHash('sha256').update(value).digest();
 
 export function createApprovals({ metadata, revalidate, replay, now = Date.now, ttlMs = 600_000, key = randomBytes(32) }) {
   if (!metadata?.insertOne || !metadata?.updateOne || typeof revalidate !== 'function' || typeof replay !== 'function' || key.length !== 32 || !Number.isInteger(ttlMs) || ttlMs < 1 || ttlMs > 600_000) throw new TypeError('Approval dependencies required');
   const pending = new Map();
+  const pseudoKey = randomBytes(32);
   const purge = () => { for (const [id, item] of pending) if (now() >= item.expiresAt) pending.delete(id); };
   const timer = setInterval(purge, Math.min(ttlMs, 30_000)); timer.unref();
   const isAdmin = actor => { if (!actor?.id || (!Array.isArray(actor.roles) || !actor.roles.includes('admin'))) throw new Error('Admin required'); };
@@ -19,8 +20,9 @@ export function createApprovals({ metadata, revalidate, replay, now = Date.now, 
       cipher.setAAD(Buffer.from(id));
       const encrypted = Buffer.concat([cipher.update(clear), cipher.final()]);
       // No payload, excerpts, prompts, principal identifiers or finding values in Mongo.
-      await metadata.insertOne({ _id: id, request_hash: hash(clear).toString('hex'), status: 'pending', created_at: new Date(now()), expires_at: new Date(expiresAt) });
-      pending.set(id, { encrypted, iv, tag: cipher.getAuthTag(), digest: hash(clear), expiresAt });
+      const safe = { _id: id, request_hash: hash(clear).toString('hex'), user_pseudo: 'u_'+createHmac('sha256',pseudoKey).update(ctx.user.id).digest('hex').slice(0,16), doc_ids: Array.isArray(ctx.doc_ids) ? ctx.doc_ids.filter(id=>typeof id==='string') : [], reason: 'Confidential document requires approval for external LLM', status: 'pending', created_at: new Date(now()), expires_at: new Date(expiresAt) };
+      await metadata.insertOne(safe);
+      pending.set(id, { encrypted, iv, tag: cipher.getAuthTag(), digest: hash(clear), expiresAt, safe });
       return { id, expires_at: new Date(expiresAt).toISOString() };
     },
     async approve(id, actor, expectedHash) {
@@ -39,7 +41,7 @@ export function createApprovals({ metadata, revalidate, replay, now = Date.now, 
         if (now() >= item.expiresAt) throw new Error('Approval expired');
         await metadata.updateOne({ _id: id }, { $set: { status: 'replaying' } });
         if (now() >= item.expiresAt) throw new Error('Approval expired');
-        const result = await replay(payload, ctx); // Replay enters the full gateway policy + ACL pipeline.
+        const result = await replay(payload, ctx, { approvalId: id }); // Replay enters the full gateway policy + ACL pipeline.
         await metadata.updateOne({ _id: id }, { $set: { status: 'approved' } });
         return result;
       } catch (error) {

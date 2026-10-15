@@ -43,7 +43,7 @@ Gateway port is **8080**. Supported: `/api/health`, opt-in `/api/auth/login`, `/
 
 `EVAL_MODE=1` or `true` enables `X-Eval-Capture: 1` only on loopback. The existing evaluator receives `eval.provider_calls` and `eval.provider_payload`, checks booleans, then discards the payload. It now forwards `attached_doc`. Baseline additionally requires a separate loopback process with `BASELINE_MODE=true` and synthetic fixtures; ordinary servers reject passthrough headers. Never commit captured payloads or confuse simulated generation with real inference results.
 
-Shared files now contain **20 dev cases (D-001–D-020), 60 held-out cases (H-001–H-060), and 21 robustness cases**. Mahatva's contribution copies remain under `eval/contributions/mahatva/`. Conflicting robustness IDs were resolved by retaining Arihant's Hinglish IDs and placing Alwaz's paraphrases at R-046–R-060. The missing 39 robustness cases remain dataset-owner work. Held-out/robustness files were assembled and schema-validated, not used to tune rules.
+Shared files now contain **20 dev cases (D-001–D-020), 60 held-out cases (H-001–H-060), 60 robustness cases and 10 live-subset cases**. Mahatva's contribution copies remain under `eval/contributions/mahatva/`. The shared benchmark files were assembled and schema-validated; gateway detector tuning used dev cases only. Existing access-package tests exercise their authored access fixtures, including their own held-out/robustness copies, and are not independent frozen evaluation evidence.
 
 ## Classifier and remaining live checks
 

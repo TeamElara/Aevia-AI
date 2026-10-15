@@ -128,9 +128,9 @@ export function listApprovals(backend: Backend, token: string): Promise<Approval
   return request<Approval[]>('GET', '/api/approvals', undefined, token)
 }
 
-export function decideApproval(backend: Backend, token: string, id: string, decision: 'approve' | 'reject'): Promise<Approval> {
+export function decideApproval(backend: Backend, token: string, id: string, decision: 'approve' | 'reject', requestHash?: string): Promise<Approval> {
   if (backend === 'mock') return mockDecide(id, decision)
-  return request<Approval>('POST', `/api/approvals/${encodeURIComponent(id)}/${decision}`, {}, token)
+  return request<Approval>('POST', `/api/approvals/${encodeURIComponent(id)}/${decision}`, requestHash ? { request_hash: requestHash } : {}, token)
 }
 
 export interface PendingApproval { id: string; request_hash: string; expires_at: string }

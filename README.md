@@ -46,6 +46,8 @@ npm run dev --workspace @leakshield/web
 
 Open `http://localhost:5173`. Set the web app's `VITE_API_MODE=live` for rehearsals so a missing gateway cannot be mistaken for a real result. The UI's mock mode is a separate frontend feature, not evidence of gateway operation.
 
+For a rehearsal without a cloud key or an installed Mongo server, use `npm run demo:gateway` instead of `npm run dev`, then start the console in its default auto mode. This starts the complete gateway with a temporary real MongoDB and an explicitly simulated loopback HTTP provider; the console displays **simulated provider**. This tests integration, not real model behavior or quality. The first run downloads MongoDB. Keep it separate from the normal gateway because both use port 8080.
+
 For JWT-only use, leave demo login disabled and run `npm run token -- asha`. Tokens expire after one hour and exist only in terminal/session memory. API keys are mapped to identities through `API_KEYS_JSON`; prompts never grant permissions. Only when `DEMO_AUTH=true` and no real API keys are configured, `ls_demo_asha` is enabled for the existing SDK demo; it is not a production credential.
 
 ## Container setup
@@ -93,7 +95,7 @@ npm run eval:validate
 
 Unit tests inject a deterministic fixture detector/provider. Integration tests use **real MongoDB**, the real HTTP provider adapter, and the stock OpenAI client, against a **simulated LLM HTTP server**. The first Mongo integration run may download a large MongoDB binary into a local cache. Detector hand-off tests run when the production detector module exists; otherwise they are explicitly skipped. `TEST_DETECTOR_MODULE` can point to a checkout of Ojaswi's branch without merging or editing it.
 
-Ojaswi's detector branch and Alwaz's access branch are included with their authorship preserved. The existing evaluator was run end to end on Mahatva's **dev cases only**, in protected and baseline modes with a simulated model HTTP server; generated reports remained temporary. Root datasets now contain **20 dev, 60 held-out and 21 robustness cases**. The remaining robustness cases belong to the dataset owners. No held-out cases were run for tuning. Mahatva's contribution copies remain under `eval/contributions/mahatva/`.
+Ojaswi's detector branch and Alwaz's access branch are included with their authorship preserved. The existing evaluator was run end to end on Mahatva's **dev cases only**, in protected and baseline modes with a simulated model HTTP server; generated reports remained temporary. Root datasets now contain **20 dev, 60 held-out, 60 robustness and 10 live-subset cases**. No held-out cases were run for detector tuning. Existing access-package tests exercise their authored held-out/robustness copies; they are not independent frozen evaluation evidence. Mahatva's contribution copies remain under `eval/contributions/mahatva/`.
 
 ## Limits
 
