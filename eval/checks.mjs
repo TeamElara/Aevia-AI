@@ -52,7 +52,7 @@ export function judge(c, res) {
   // A block only counts if nothing was sent to the provider.
   const blockedButCalled = res.action === 'block' && calls > 0
   const overhead = Object.entries(res.stage_ms ?? {})
-    .filter(([k]) => k !== 'LLM')
+    .filter(([k]) => k.toLowerCase() !== 'llm')
     .reduce((s, [, v]) => s + v, 0)
   return {
     observed_action: res.action,

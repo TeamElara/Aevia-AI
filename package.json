@@ -27,6 +27,7 @@
     "test:report": "WRITE_ACCESS_RESULTS=1 vitest run tests/security",
     "demo:access": "node --import tsx seed/run-access-demo.mjs",
     "demo:gateway": "node --import tsx seed/run-gateway-demo.ts",
+    "verify:ollama": "tsx seed/verify-ollama.ts",
     "test:integration:report": "WRITE_GATEWAY_RESULTS=1 vitest run tests/integration",
     "typecheck:access": "tsc -p tsconfig.access.json"
   },
