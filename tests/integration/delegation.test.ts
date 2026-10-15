@@ -64,11 +64,43 @@ test('HR lends access for the day; the employee sees HR documents until it is re
   const me = (await as(asha).get('/api/me').expect(200)).body;
   assert.deepEqual(me.delegated_groups, ['hr']);
   assert.deepEqual(me.own_groups, ['employee']);
+  assert.deepEqual(me.covering.map((c: { for: string; groups: string[] }) => [c.for, c.groups]), [['ravi', ['hr']]]);
   assert.equal(await salaryCited(asha), true);
 
   await as(ravi).del(`/api/delegations/${granted.id}`).expect(200);
   assert.equal(await salaryCited(asha), false);
   assert.deepEqual((await as(asha).get('/api/me').expect(200)).body.delegated_groups, []);
+});
+
+test('HR away for two days: the post can be booked from a later start, and it begins and ends on its own', async () => {
+  const [ravi, asha] = [await login('ravi'), await login('asha')];
+  const start = Date.now() + 3_600_000;
+  const booked = (await as(ravi).post('/api/delegations', { to: 'asha', days: 2, starts_at: new Date(start).toISOString() }).expect(201)).body;
+  assert.equal(booked.status, 'scheduled');
+  assert.equal(new Date(booked.expires_at).getTime() - new Date(booked.starts_at).getTime(), 48 * 3_600_000);
+  assert.equal(await salaryCited(asha), false);
+  assert.deepEqual((await as(asha).get('/api/me').expect(200)).body.covering, []);
+
+  // The start time arrives.
+  await db.collection('delegations').updateOne({ _id: booked.id }, { $set: { starts_at: new Date(Date.now() - 1000) } });
+  assert.equal(await salaryCited(asha), true);
+  assert.equal((await as(ravi).get('/api/delegations').expect(200)).body.given[0].status, 'active');
+
+  // Two days later.
+  await db.collection('delegations').updateOne({ _id: booked.id }, { $set: { expires_at: new Date(Date.now() - 1000) } });
+  assert.equal(await salaryCited(asha), false);
+  assert.equal((await as(ravi).get('/api/delegations').expect(200)).body.given[0].status, 'ended');
+});
+
+test('a booked cover can be cancelled before it starts and counts toward the limit', async () => {
+  const ravi = await login('ravi');
+  const later = new Date(Date.now() + 86_400_000).toISOString();
+  const booked = (await as(ravi).post('/api/delegations', { to: 'asha', days: 2, starts_at: later }).expect(201)).body;
+  await as(ravi).post('/api/delegations', { to: 'meera', starts_at: later }).expect(201);
+  await as(ravi).post('/api/delegations', { to: 'ceo', starts_at: later }).expect(201);
+  assert.equal((await as(ravi).post('/api/delegations', { to: 'admin' }).expect(409)).body.error, 'DELEGATION_LIMIT');
+  assert.equal((await as(ravi).del(`/api/delegations/${booked.id}`).expect(200)).body.status, 'ended');
+  await as(ravi).post('/api/delegations', { to: 'admin' }).expect(201);
 });
 
 test('access ends by itself when the day is over', async () => {
@@ -82,14 +114,18 @@ test('access ends by itself when the day is over', async () => {
   assert.equal(listed.given[0].active, false);
 });
 
-test('only your own groups can be lent, for at most a day, and never onwards', async () => {
+test('only your own groups can be lent, for at most a week, and never onwards', async () => {
   const [ravi, asha, admin] = [await login('ravi'), await login('asha'), await login('admin')];
   assert.equal((await as(asha).post('/api/delegations', { to: 'meera' }).expect(400)).body.error, 'NOTHING_TO_DELEGATE');
   assert.equal((await as(ravi).post('/api/delegations', { to: 'ravi' }).expect(400)).body.error, 'DELEGATE_TO_SELF');
   assert.equal((await as(ravi).post('/api/delegations', { to: 'nobody' }).expect(404)).body.error, 'DELEGATE_UNKNOWN');
   assert.equal((await as(ravi).post('/api/delegations', { to: 'asha', groups: ['engineering'] }).expect(403)).body.error, 'GROUP_NOT_DELEGABLE');
   assert.equal((await as(ravi).post('/api/delegations', { to: 'asha', groups: ['employee'] }).expect(403)).body.error, 'GROUP_NOT_DELEGABLE');
-  await as(ravi).post('/api/delegations', { to: 'asha', hours: 25 }).expect(400);
+  await as(ravi).post('/api/delegations', { to: 'asha', hours: 169 }).expect(400);
+  await as(ravi).post('/api/delegations', { to: 'asha', days: 8 }).expect(400);
+  await as(ravi).post('/api/delegations', { to: 'asha', days: 2, hours: 3 }).expect(400);
+  assert.equal((await as(ravi).post('/api/delegations', { to: 'asha', starts_at: new Date(Date.now() + 15 * 86_400_000).toISOString() }).expect(400)).body.error, 'START_TOO_FAR');
+  assert.equal((await as(ravi).post('/api/delegations', { to: 'asha', starts_at: new Date(Date.now() - 86_400_000).toISOString() }).expect(400)).body.error, 'START_IN_PAST');
   await as(ravi).post('/api/delegations', { to: 'asha', hours: 0 }).expect(400);
   assert.equal((await as(admin).post('/api/delegations', { to: 'asha' }).expect(400)).body.error, 'NOTHING_TO_DELEGATE');
 
