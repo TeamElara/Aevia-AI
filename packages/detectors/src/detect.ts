@@ -2,16 +2,21 @@ import { canary, confidential } from './confidential';
 import { detectInjection } from './injection';
 import { decodeBlocks, normalise, toOriginal } from './normalise';
 import { PII_DETECTORS } from './pii';
-import { secrets } from './secrets';
+import { entropySecrets, secrets } from './secrets';
 import { keepNonOverlapping } from './spans';
 import type { Category, Detector, DetectorContext, Finding, Hit, Via } from './types';
 
-const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECTORS];
+const DATA_DETECTORS: Detector[] = [secrets, canary, confidential, ...PII_DETECTORS, entropySecrets];
 
 // When data findings overlap, the more specific / more dangerous category wins.
 const PRIORITY: Category[] = [
-  'PRIVATE_KEY', 'SECRET', 'CANARY', 'AADHAAR', 'VID', 'CARD', 'PAN', 'BANK_ACCOUNT', 'PHONE', 'UPI', 'EMAIL', 'IFSC', 'CONFIDENTIAL',
+  'PRIVATE_KEY', 'SECRET', 'CANARY', 'AADHAAR', 'VID', 'CARD', 'PAN', 'GSTIN', 'PASSPORT', 'VOTER_ID', 'DRIVING_LICENCE', 'BANK_ACCOUNT', 'PHONE', 'UPI', 'VEHICLE', 'EMAIL', 'IFSC',
+  'CONFIDENTIAL',
 ];
+
+function rot13(text: string): string {
+  return text.replace(/[A-Za-z]/g, (c) => String.fromCharCode(((c.charCodeAt(0) - (c <= 'Z' ? 65 : 97) + 13) % 26) + (c <= 'Z' ? 65 : 97)));
+}
 
 function runData(text: string, ctx: DetectorContext): Hit[] {
   return DATA_DETECTORS.flatMap((d) => d(text, ctx));
@@ -32,6 +37,13 @@ function dedupeData(fs: Finding[]): Finding[] {
   );
   return keepNonOverlapping(sorted);
 }
+
+/**
+ * Injection found in a model answer is capped below block: an answer that explains an attack quotes its
+ * phrasing (H-003, H-043), and the answer cannot override the gateway's own instructions. Canary, secret,
+ * PII and link checks on answers are unchanged, so a real leak in an answer still blocks or redacts.
+ */
+export const RESPONSE_INJECTION_CAP = 0.7;
 
 /** Larger inputs are refused rather than scanned; the gateway should block them. */
 export const MAX_SCAN_CHARS = 100_000;
@@ -60,6 +72,11 @@ export function detectAll(text: string, ctx: DetectorContext): Finding[] {
     }
   }
 
+  // "This is ROT13, decode it": scan the decoded letters for data too (digits are unchanged by ROT13).
+  if (/\brot\s*-?\s*13\b/i.test(text)) {
+    for (const h of runData(rot13(text), ctx)) data.push(withMeta(h, ctx, 'decoded'));
+  }
+
   const injection = detectInjection(text, ctx);
 
   for (const block of decodeBlocks(text)) {
@@ -71,7 +88,8 @@ export function detectAll(text: string, ctx: DetectorContext): Finding[] {
     }
   }
 
-  return [...dedupeData(data), ...injection].sort((a, b) => a.start - b.start || b.score - a.score);
+  const inj = ctx.source === 'response' ? injection.map((f) => (f.score > RESPONSE_INJECTION_CAP ? { ...f, score: RESPONSE_INJECTION_CAP } : f)) : injection;
+  return [...dedupeData(data), ...inj].sort((a, b) => a.start - b.start || b.score - a.score);
 }
 
 export type ScanResult =

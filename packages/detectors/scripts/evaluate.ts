@@ -1,7 +1,7 @@
 // Detection metrics for threshold tuning on the DEV set only.
 // This measures the detectors, not the gateway's final action (that's the eval runner's job).
 
-import { detectAll, detectSplitSecrets, injectionScore } from '../src';
+import { detectAll, detectResponse, detectSplitSecrets, injectionScore } from '../src';
 import type { Category, Finding } from '../src/types';
 
 // Format: eval/README.md. attached_doc is a corpus id; pass the corpus texts (seed/corpus.js) to scan it as a document.
@@ -15,11 +15,14 @@ export interface EvalCase {
   attached_doc?: string | null;
   expected_action: string;
   expected_categories?: string[];
+  /** Dev only: a synthetic model answer, scanned as the response. */
+  response?: string;
 }
 
 // Categories this package can produce; others in expected_categories (e.g. ACL) belong to other stages.
 const DETECTOR_CATEGORIES = new Set<string>([
   'AADHAAR', 'VID', 'PAN', 'PHONE', 'CARD', 'IFSC', 'UPI', 'BANK_ACCOUNT', 'EMAIL',
+  'VOTER_ID', 'DRIVING_LICENCE', 'PASSPORT', 'GSTIN', 'VEHICLE',
   'SECRET', 'PRIVATE_KEY', 'CONFIDENTIAL', 'CANARY', 'INJECTION',
 ]);
 
@@ -48,6 +51,7 @@ export function runCase(c: EvalCase, docs: Record<string, string> = {}): CaseRes
     ...history.flatMap((h) => detectAll(h, { ...ctx, source: 'history' })),
     ...detectSplitSecrets([...history, c.prompt]),
     ...(docText ? detectAll(docText, { ...ctx, source: 'document' }) : []),
+    ...(c.response ? detectResponse(c.response, ctx) : []),
   ];
   const expected = (c.expected_categories ?? []).filter((e) => DETECTOR_CATEGORIES.has(e));
   const data = findings.filter((f) => f.category !== 'INJECTION');

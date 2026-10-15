@@ -1,10 +1,10 @@
-version: "1"
+version: "2"
 injection:
   warn: 0.60
   block: 0.85
 actions:
   pii: mask
   email: warn
-  ifsc: warn
+  ifsc: mask
   secret: block
 allowed_link_hosts: []

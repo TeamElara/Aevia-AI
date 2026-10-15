@@ -1,9 +1,12 @@
-import { cardIssuer, luhnValid, verhoeffValid } from './checksums';
+import { cardIssuer, gstinValid, luhnValid, verhoeffValid } from './checksums';
+import { leetFold } from './normalise';
 import type { Detector, Hit } from './types';
 
 /** True if `re` matches within `radius` characters of [start, end). */
 function near(text: string, start: number, end: number, re: RegExp, radius = 40): boolean {
-  return re.test(text.slice(Math.max(0, start - radius), Math.min(text.length, end + radius)));
+  const around = text.slice(Math.max(0, start - radius), Math.min(text.length, end + radius));
+  // Context words in leetspeak ("4cc0un7") still count; the value itself is outside the regex anyway.
+  return re.test(around) || re.test(leetFold(around));
 }
 
 const AADHAAR_CTX = /aadhaa?r|adhaa?r|\buid(ai)?\b|आधार/i;
@@ -13,6 +16,13 @@ const PHONE_CTX = /phone|mobile|\bmob\b|contact|call|whats\s*app|\bph\b|\btel\b|
 const CARD_CTX = /card|credit|debit|\bcvv\b|expiry|visa|master|rupay/i;
 const BANK_CTX = /a\/c|\bacc(oun)?t\b|account\s*(no|number)|bank|khata/i;
 const UPI_CTX = /\bupi\b|gpay|google\s*pay|phone\s*pe|paytm|bhim/i;
+const VOTER_CTX = /\bvoter\b|\bepic\b|election\s+(?:card|id)|matdata|मतदाता|वोटर/i;
+const PASSPORT_CTX = /passport|पासपोर्ट/i;
+const DL_CTX = /\bdl\b|driving|licen[cs]e|लाइसेंस/i;
+const VEHICLE_CTX = /vehicle|\bcar\b|\bbike\b|scooter|gaa?di|registration|\breg\.?\s*no|number\s+plate|challan|\brc\b|गाड़ी/i;
+
+// State and union-territory codes used on licences and number plates.
+const STATE = '(?:AN|AP|AR|AS|BR|CH|CG|DD|DL|DN|GA|GJ|HR|HP|JH|JK|KA|KL|LA|LD|MP|MH|MN|ML|MZ|NL|OD|OR|PB|PY|RJ|SK|TN|TS|TG|TR|UP|UK|UA|WB)';
 
 // 12 digits, first 2-9, optional consistent separator between 4-digit groups.
 export const aadhaar: Detector = (text) => {
@@ -79,6 +89,12 @@ export const phone: Detector = (text) => {
     const prefixed = /^(\+|00)?91|^0/.test(m[0]);
     hits.push({ category: 'PHONE', start, end, score: ctx || prefixed ? 0.95 : 0.8, ruleId: ctx || prefixed ? 'pii.phone.ctx' : 'pii.phone.format' });
   }
+  // "+91 987 654 3210": 3-3-4 grouping, only with the country code or phone context.
+  for (const m of text.matchAll(/(?<![\d+])(?:(?:\+|00)91[ \-]?)?[6-9]\d{2}[ \-.]\d{3}[ \-.]\d{4}(?!\d)/g)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    if (/^(\+|00)91/.test(m[0]) || near(text, start, end, PHONE_CTX, 30)) hits.push({ category: 'PHONE', start, end, score: 0.95, ruleId: 'pii.phone.grouped' });
+  }
   return hits;
 };
 
@@ -105,14 +121,26 @@ export const ifsc: Detector = (text) =>
     ruleId: 'pii.ifsc',
   }));
 
+// Handles of UPI apps and banks (NPCI). Without a UPI context word, only these count: "security@company"
+// in a policy answer is an internal address, not a UPI ID (H-030 pattern).
+const UPI_HANDLES = new Set([
+  'ybl', 'ibl', 'axl', 'okhdfcbank', 'okaxis', 'oksbi', 'okicici', 'okbizaxis', 'paytm', 'ptyes', 'ptaxis', 'pthdfc', 'ptsbi',
+  'apl', 'yapl', 'rapl', 'upi', 'icici', 'sbi', 'hdfcbank', 'axisbank', 'axisb', 'kotak', 'kmbl', 'yesbank', 'yesbankltd',
+  'freecharge', 'fbl', 'airtel', 'jio', 'idfcbank', 'idfcfirst', 'indus', 'federal', 'fam', 'waicici', 'wahdfcbank',
+  'waaxis', 'wasbi', 'abfspay', 'slice', 'jupiteraxis', 'naviaxis', 'superyes', 'kbl', 'cnrb', 'pnb', 'barodampay',
+  'unionbankofindia', 'ubi', 'boi', 'aubank', 'dbs', 'rbl', 'ikwik', 'pingpay', 'timecosmos', 'dlb', 'equitas', 'mahb',
+]);
+
 // handle@provider with no dot after the provider, so plain emails don't match.
 export const upi: Detector = (text) => {
   const hits: Hit[] = [];
-  for (const m of text.matchAll(/(?<![\w.\-])[\w.\-]{2,256}@[a-zA-Z]{2,64}(?![\w.\-]*\.[a-zA-Z])(?![\w@])/g)) {
+  for (const m of text.matchAll(/(?<![\w.\-])[\w.\-]{2,256}@([a-zA-Z]{2,64})(?![\w.\-]*\.[a-zA-Z])(?![\w@])/g)) {
     const start = m.index!;
     const end = start + m[0].length;
     const ctx = near(text, start, end, UPI_CTX);
-    hits.push({ category: 'UPI', start, end, score: ctx ? 0.9 : 0.75, ruleId: ctx ? 'pii.upi.ctx' : 'pii.upi.format' });
+    const known = UPI_HANDLES.has(m[1].toLowerCase());
+    if (!ctx && !known) continue;
+    hits.push({ category: 'UPI', start, end, score: ctx ? 0.9 : 0.85, ruleId: ctx ? 'pii.upi.ctx' : 'pii.upi.handle' });
   }
   return hits;
 };
@@ -130,9 +158,69 @@ export const bankAccount: Detector = (text) => {
   return hits;
 };
 
+// Reserved for documentation (RFC 2606, RFC 6761): never a real person's address (H-041 pattern).
+const RESERVED_EMAIL_DOMAIN = /@(?:[\w\-]+\.)*(?:example\.(?:com|net|org)|example|test|invalid|localhost)$/i;
+
+// Voter ID (EPIC): 3 letters + 7 digits. The shape matches many codes (INV1234567), so only with context.
+export const voterId: Detector = (text) => {
+  const hits: Hit[] = [];
+  for (const m of text.matchAll(/\b[A-Z]{3}\d{7}\b/g)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    if (near(text, start, end, VOTER_CTX)) hits.push({ category: 'VOTER_ID', start, end, score: 0.95, ruleId: 'pii.voter_id.ctx' });
+  }
+  return hits;
+};
+
+// Indian passport: a letter (not Q, X, Z) + 7 digits, first and last digit non-zero. Only with context.
+export const passport: Detector = (text) => {
+  const hits: Hit[] = [];
+  for (const m of text.matchAll(/\b[A-PR-WY][1-9]\d{5}[1-9]\b/g)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    if (near(text, start, end, PASSPORT_CTX)) hits.push({ category: 'PASSPORT', start, end, score: 0.95, ruleId: 'pii.passport.ctx' });
+  }
+  return hits;
+};
+
+// Driving licence: state code + 2-digit RTO + year of issue + 7 digits, e.g. "MH12 2011 0012345".
+export const drivingLicence: Detector = (text) => {
+  const hits: Hit[] = [];
+  for (const m of text.matchAll(new RegExp(`\\b${STATE}[ \\-]?\\d{2}[ \\-]?(?:19[5-9]\\d|20[0-4]\\d)[ \\-]?\\d{7}\\b`, 'g'))) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    const ctx = near(text, start, end, DL_CTX);
+    hits.push({ category: 'DRIVING_LICENCE', start, end, score: ctx ? 0.95 : 0.85, ruleId: ctx ? 'pii.dl.ctx' : 'pii.dl.format' });
+  }
+  return hits;
+};
+
+// GSTIN: state code 01-38 + PAN + entity number + Z + check character. A proprietor's GSTIN holds their PAN.
+export const gstin: Detector = (text) => {
+  const hits: Hit[] = [];
+  for (const m of text.matchAll(/\b(?:0[1-9]|[12]\d|3[0-8])[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b/g)) {
+    if (!gstinValid(m[0])) continue;
+    hits.push({ category: 'GSTIN', start: m.index!, end: m.index! + m[0].length, score: 0.95, ruleId: 'pii.gstin.checksum' });
+  }
+  return hits;
+};
+
+// Number plates: "MH 12 AB 1234", "KA01MJ2024", and Bharat series "22 BH 1234 AA".
+export const vehicle: Detector = (text) => {
+  const hits: Hit[] = [];
+  const re = new RegExp(`\\b${STATE}[ \\-]?\\d{1,2}[ \\-]?[A-Z]{1,3}[ \\-]?\\d{4}\\b|\\b\\d{2}[ \\-]?BH[ \\-]?\\d{4}[ \\-]?[A-Z]{1,2}\\b`, 'g');
+  for (const m of text.matchAll(re)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    const ctx = near(text, start, end, VEHICLE_CTX);
+    hits.push({ category: 'VEHICLE', start, end, score: ctx ? 0.9 : 0.8, ruleId: ctx ? 'pii.vehicle.ctx' : 'pii.vehicle.format' });
+  }
+  return hits;
+};
+
 export const email: Detector = (text) =>
   // Lookbehind + bounded parts: "\b[\w.+-]+@" rescans to the end from every word boundary.
-  [...text.matchAll(/(?<![\w.+\-])[\w.+\-]{1,64}@[\w\-]{1,63}(?:\.[\w\-]{1,63}){0,8}\.[a-zA-Z]{2,24}\b/g)].map((m) => ({
+  [...text.matchAll(/(?<![\w.+\-])[\w.+\-]{1,64}@[\w\-]{1,63}(?:\.[\w\-]{1,63}){0,8}\.[a-zA-Z]{2,24}\b/g)].filter((m) => !RESERVED_EMAIL_DOMAIN.test(m[0])).map((m) => ({
     category: 'EMAIL' as const,
     start: m.index!,
     end: m.index! + m[0].length,
@@ -140,4 +228,4 @@ export const email: Detector = (text) =>
     ruleId: 'pii.email',
   }));
 
-export const PII_DETECTORS: Detector[] = [aadhaar, vid, pan, phone, card, ifsc, upi, bankAccount, email];
+export const PII_DETECTORS: Detector[] = [aadhaar, vid, pan, phone, card, ifsc, upi, bankAccount, voterId, passport, drivingLicence, gstin, vehicle, email];
