@@ -4,6 +4,8 @@ Draft for rehearsal. Arihant drives and Ojaswi narrates (TEAM.md). It follows PL
 
 Post-freeze demo-reliability change: the gateway system prompt now explains that gateway-supplied Aadhaar/PAN pseudonyms are synthetic opaque placeholders, preserves them verbatim, and permits legitimate KYC formatting without inferring underlying identifiers. This changes the demo build, not the recorded frozen v1/v2 evaluation results. Keep the v1 headline at **12 → 1**. Use `openai/gpt-oss-120b` and `CLASSIFIER_BACKEND=none` for the KYC rehearsal; its separate ten-run report is `results/mahatva/kyc-demo-reliability.json`.
 
+Verification on 15 October 2026: **10/10 consecutive fresh-conversation requests passed** on real Groq. Every response was `mask`, made one provider call, preserved masking in the full outbound payload, restored both identifiers, returned exactly two non-empty plain-text lines and contained no refusal. This is observed demo reliability on the authored prompt, not a general model guarantee or a replacement for frozen evaluation. Reproduce against an isolated evaluation-enabled demo host with `node tools/verify-kyc-demo.mjs` (default loopback port 8084; override `KYC_GATEWAY_URL` as needed).
+
 ## Before going on stage
 
 - [ ] Gateway running with `EVAL_MODE=1` and Groq reachable. Console header shows **● LIVE GATEWAY**, not mock.

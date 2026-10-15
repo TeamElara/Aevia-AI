@@ -1,0 +1,132 @@
+{
+  "at": "2026-10-15T12:38:05.928Z",
+  "source_commit": "1380a3e4de76b4d4a0806434ceb1b9b4d73144b9",
+  "provider": "real Groq",
+  "model": "openai/gpt-oss-120b",
+  "classifier": "none",
+  "requests": 10,
+  "passed": 10,
+  "rows": [
+    {
+      "run": 1,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 925
+    },
+    {
+      "run": 2,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 600
+    },
+    {
+      "run": 3,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 1216
+    },
+    {
+      "run": 4,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 845
+    },
+    {
+      "run": 5,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 825
+    },
+    {
+      "run": 6,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 831
+    },
+    {
+      "run": 7,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 695
+    },
+    {
+      "run": 8,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 873
+    },
+    {
+      "run": 9,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 793
+    },
+    {
+      "run": 10,
+      "passed": true,
+      "action": "mask",
+      "provider_calls": 1,
+      "refused": false,
+      "outbound_masked": true,
+      "provider_values_absent": true,
+      "restored": true,
+      "plain_two_lines": true,
+      "wall_ms": 822
+    }
+  ],
+  "scope": "Post-freeze demo-reliability check using ten fresh conversations and the authored two-line KYC prompt. Not a held-out evaluation; frozen v1/v2 reports are unchanged. No raw prompts, answers, tokens or captured payloads are saved."
+}
