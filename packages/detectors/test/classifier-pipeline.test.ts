@@ -100,3 +100,18 @@ describe('gateway entry point', () => {
     }
   });
 });
+
+describe('LEAKSHIELD_CLASSIFIER validation', () => {
+  it('accepts off and fp32', () => {
+    expect(gatewayEntry.classifierModeFrom('off')).toBe('off');
+    expect(gatewayEntry.classifierModeFrom('fp32')).toBe('fp32');
+  });
+  it('refuses int8, which labelled recorded attacks SAFE in the spike', () => {
+    expect(() => gatewayEntry.classifierModeFrom('q8')).toThrow(/disabled/);
+    expect(() => gatewayEntry.classifierModeFrom('int8')).toThrow(/disabled/);
+  });
+  it('refuses typos instead of silently running rules-only', () => {
+    expect(() => gatewayEntry.classifierModeFrom('fp16')).toThrow(/must be/);
+  });
+});
+
