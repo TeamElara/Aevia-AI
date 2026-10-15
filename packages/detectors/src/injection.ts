@@ -2,12 +2,8 @@
 // The DeBERTa classifier (if the spike passes) is combined by the gateway as max(rules, classifier).
 
 import { leetFold, normalise, toOriginal } from './normalise';
+import { keepNonOverlapping, lowerBound, type Span } from './spans';
 import type { DetectorContext, Finding, Via } from './types';
-
-interface Span {
-  start: number;
-  end: number;
-}
 
 // Override intents: ignore / forget the rules.
 const OVERRIDE_INTENT = /\b(?:ignore|disregard|forget|override|overrule|bypass|discard|drop|skip|abandon)\b/gi;
@@ -31,7 +27,11 @@ const EXTRACT_TARGET = new RegExp(
 const ROLE =
   /\b(?:you\s+are\s+now|you're\s+now|from\s+now\s+on,?\s+you\s+are|act\s+as|pretend\s+(?:to\s+be|you\s+are)|enter|switch\s+to|enable)\b.{0,40}?\b(?:admin(?:istrator)?|developer|root|sudo|unrestricted|unfiltered|jailbroken|jailbreak|dan|god|evil|debug)\b(?:\s+mode)?|\b(?:developer|god|debug|jailbreak|dan)\s+mode\b|\bdo\s+anything\s+now\b/gi;
 
-const STRUCT = /^\s*(?:#{2,}|\[)?\s*(?:system|assistant|developer)\s*[:\]]|<\/?(?:system|sys|instructions?)>|\[\/?INST\]|<<\/?SYS>>|<\|im_(?:start|end)\|>/gim;
+// Roleplay extraction ("grandma exploit"): a persona that "used to" reveal secrets.
+const ROLEPLAY =
+  /\b(?:act\s+(?:like|as)|pretend|roleplay|role-play|imagine|play\s+the\s+role)\b.{0,80}?\b(?:used\s+to|would|always)\b.{0,60}?\b(?:read|tell|recite|share|say|whisper|give)\b.{0,50}?\b(?:hidden|secret|system|internal|confidential|password|passwords|api\s+keys?|keys|configuration|config|instructions|prompt)\b/gi;
+
+const STRUCT =/^\s*(?:#{2,}|\[)?\s*(?:system|assistant|developer)\s*[:\]]|<\/?(?:system|sys|instructions?)>|\[\/?INST\]|<<\/?SYS>>|<\|im_(?:start|end)\|>/gim;
 
 // Hinglish
 const HI_INTENT =
@@ -48,21 +48,37 @@ const CROSS_USER =
 const META = /\b(?:what\s+is|what's|what\s+are|explain|why\s+(?:is|are|does)|how\s+(?:does|do|can|a|an|the|to\s+(?:detect|prevent|stop|write))|define|definition|example\s+of|examples\s+of|detect|prevent|defend|protect\s+against|is\s+called|kya\s+hota|kya\s+hai|samjhao|matlab)\b/i;
 const QUOTES = /["“”'‘’`]/g;
 
+const MAX_SPANS = 2000;
+
 function spans(re: RegExp, text: string): Span[] {
-  re.lastIndex = 0;
-  return [...text.matchAll(re)].map((m) => ({ start: m.index!, end: m.index! + m[0].length }));
+  const out: Span[] = [];
+  for (const m of text.matchAll(re)) {
+    out.push({ start: m.index!, end: m.index! + m[0].length });
+    if (out.length >= MAX_SPANS) break;
+  }
+  return out;
 }
+
+// Target matches are short (well under this), so only targets starting in this window can pair.
+const MAX_TARGET_LEN = 300;
+// One pairing per intent is enough to score it; cap the total so a hostile prompt can't explode the work.
+const MAX_PAIRS = 500;
 
 function pairs(intents: Span[], targets: Span[], after = 80, before = 60): Span[] {
   const out: Span[] = [];
+  if (!intents.length || !targets.length) return out;
+  const sorted = [...targets].sort((a, b) => a.start - b.start);
   for (const i of intents) {
-    for (const t of targets) {
+    for (let k = lowerBound(sorted, i.start - before - MAX_TARGET_LEN); k < sorted.length && sorted[k].start <= i.end + after; k++) {
+      const t = sorted[k];
       const gapAfter = t.start - i.end;
       const gapBefore = i.start - t.end;
       if ((gapAfter >= 0 && gapAfter <= after) || (gapBefore >= 0 && gapBefore <= before) || (t.start < i.end && t.end > i.start)) {
         out.push({ start: Math.min(i.start, t.start), end: Math.max(i.end, t.end) });
+        break;
       }
     }
+    if (out.length >= MAX_PAIRS) break;
   }
   return out;
 }
@@ -70,7 +86,10 @@ function pairs(intents: Span[], targets: Span[], after = 80, before = 60): Span[
 /** How many levels to lower a score: one for meta phrasing nearby, one for being inside quotes. */
 function damping(text: string, s: Span): number {
   let levels = 0;
-  const sentenceStart = Math.max(text.lastIndexOf('\n', s.start - 1), text.lastIndexOf('. ', s.start - 1), text.lastIndexOf('? ', s.start - 1)) + 1;
+  // Look back at most 300 chars for the sentence start; a whole-text lastIndexOf per candidate is quadratic.
+  const winStart = Math.max(0, s.start - 300);
+  const win = text.slice(winStart, s.start);
+  const sentenceStart = winStart + Math.max(win.lastIndexOf('\n'), win.lastIndexOf('. '), win.lastIndexOf('? ')) + 1;
   if (META.test(text.slice(Math.max(sentenceStart, s.start - 80), s.start)) || META.test(text.slice(s.end, s.end + 40))) levels++;
   const before = text.slice(sentenceStart, s.start);
   const quotesBefore = (before.match(QUOTES) ?? []).length;
@@ -99,6 +118,7 @@ export function detectInjection(text: string, ctx: DetectorContext): Finding[] {
     add(pairs(spans(OVERRIDE_INTENT, t), spans(OVERRIDE_TARGET, t)), 0.9, 'inj.override');
     add(pairs(spans(EXTRACT_INTENT, t), spans(EXTRACT_TARGET, t)), 0.9, 'inj.extract');
     add(spans(ROLE, t), 0.9, 'inj.role');
+    add(spans(ROLEPLAY, t), 0.85, 'inj.roleplay');
     add(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t)), 0.9, 'inj.override.hi');
     add(spans(HI_ROLE, t), 0.9, 'inj.role.hi');
     add(spans(HI_DATA_DEMAND, t), 0.9, 'inj.crossuser.hi');
@@ -137,12 +157,7 @@ export function detectInjection(text: string, ctx: DetectorContext): Finding[] {
 
 /** Keep the highest-scoring finding among overlapping spans. */
 function dedupeInjection(fs: Finding[]): Finding[] {
-  const sorted = [...fs].sort((a, b) => b.score - a.score || a.start - b.start);
-  const kept: Finding[] = [];
-  for (const f of sorted) {
-    if (!kept.some((k) => f.start < k.end && f.end > k.start)) kept.push(f);
-  }
-  return kept.sort((a, b) => a.start - b.start);
+  return keepNonOverlapping([...fs].sort((a, b) => b.score - a.score || a.start - b.start));
 }
 
 export function injectionScore(findings: Finding[]): number {

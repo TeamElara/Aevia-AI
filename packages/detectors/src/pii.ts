@@ -124,7 +124,8 @@ export const bankAccount: Detector = (text) => {
 };
 
 export const email: Detector = (text) =>
-  [...text.matchAll(/\b[\w.+\-]+@[\w\-]+(?:\.[\w\-]+)*\.[a-zA-Z]{2,}\b/g)].map((m) => ({
+  // Lookbehind + bounded parts: "\b[\w.+-]+@" rescans to the end from every word boundary.
+  [...text.matchAll(/(?<![\w.+\-])[\w.+\-]{1,64}@[\w\-]{1,63}(?:\.[\w\-]{1,63}){0,8}\.[a-zA-Z]{2,24}\b/g)].map((m) => ({
     category: 'EMAIL' as const,
     start: m.index!,
     end: m.index! + m[0].length,
