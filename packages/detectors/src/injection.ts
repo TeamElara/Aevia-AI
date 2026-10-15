@@ -82,7 +82,9 @@ const ROLEPLAY =
   /\b(?:act\s+(?:like|as)|pretend|roleplay|role-play|imagine|play\s+the\s+role)\b.{0,80}?\b(?:used\s+to|would|always)\b.{0,60}?\b(?:read|tell|recite|share|say|whisper|give)\b.{0,50}?\b(?:hidden|secret|system|internal|confidential|password|passwords|api\s+keys?|keys|configuration|config|instructions|prompt)\b/gi;
 
 // [ \t] not \s: with the m flag, \s* let every blank line start a rescan, which is cubic on runs of newlines (ReDoS).
-const STRUCT = /^[ \t]*(?:#{2,}|\[)?[ \t]*(?:system|assistant|developer)[ \t]*[:\]]|<\/?(?:system|sys|instructions?)>|\[\/?INST\]|<<\/?SYS>>|<\|im_(?:start|end)\|>/gim;
+// Keep indentation on either side of an optional marker disjoint: adjacent space stars
+// still backtrack quadratically on long spaces/tabs even after removing newline matching.
+const STRUCT = /^[ \t]*(?:(?:#{2,}|\[)[ \t]*)?(?:system|assistant|developer)[ \t]*[:\]]|<\/?(?:system|sys|instructions?)>|\[\/?INST\]|<<\/?SYS>>|<\|im_(?:start|end)\|>/gim;
 
 // Hinglish (Latin script)
 const HI_INTENT =
