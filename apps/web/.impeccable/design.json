@@ -540,19 +540,19 @@
         "purpose": "Control response and sliding selection."
       },
       {
-        "name": "chip-travel",
-        "value": "9s linear infinite; translateX(30px) to translateX(530px), raw value crossfades to token at 50%",
-        "purpose": "Private values enter the gateway lens and leave as tokens."
+        "name": "arm-offer",
+        "value": "10s cubic-bezier(.45,0,.55,1) infinite; midpoint translateY(-8px) rotate(2deg)",
+        "purpose": "Subtle wrist offering movement."
       },
       {
-        "name": "lens-pulse",
-        "value": "9s linear infinite; 0.45 opacity at 50%, scale to 1.14 by 64%",
-        "purpose": "The lens edge answers each value as it crosses."
+        "name": "butterfly-return",
+        "value": "10s cubic-bezier(.45,0,.55,1) infinite; peak translate(72px,-120px) rotate(5deg)",
+        "purpose": "Continuous lift and return in SVG coordinates."
       },
       {
-        "name": "ring-spin",
-        "value": "14s and 22s linear infinite; stroke-dashoffset -180",
-        "purpose": "Slow orbit around the lens."
+        "name": "wing-flutter",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "Independent wing movement."
       },
       {
         "name": "view-change",
@@ -674,7 +674,7 @@
   ],
   "narrative": {
     "northStar": "Warm Paper Console",
-    "overview": "LeakShield combines a warm paper entrance with a working privacy gateway console. The shipped light theme uses beige surfaces, brown neutral accents, tightly spaced display typography, and an original gateway-lens SVG illustration. Chat, Incidents, Overview, Approvals, and Eval remain the five navigable views. The dark console palette is preserved.\n\nThe entrance is balanced and spacious: equal desktop hero columns, centered mobile copy, and a centered message workspace. Rounded controls and quiet shadows soften the supplied mechanical subject. The photographic subject is separated into independently moving layers. PRODUCT.md records the approved refinement and existing product behavior from the web README and implemented views.",
+    "overview": "LeakShield combines a warm paper entrance with a working privacy gateway console. The shipped light theme uses beige surfaces, brown neutral accents, tightly spaced display typography, and a supplied robotic hand and butterfly image. Chat, Incidents, Overview, Approvals, and Eval remain the five navigable views. The dark console palette is preserved.\n\nThe entrance is balanced and spacious: equal desktop hero columns, centered mobile copy, and a centered message workspace. Rounded controls and quiet shadows soften the supplied mechanical subject. The photographic subject is separated into independently moving layers. PRODUCT.md records the approved refinement and existing product behavior from the web README and implemented views.",
     "keyCharacteristics": [
       "Warm paper and brown neutrals in light mode; preserved dark console surfaces.",
       "Balanced hero columns and centered mobile content without decorative rules.",
@@ -703,7 +703,7 @@
     "donts": [
       "Don't reintroduce purple or yellow ambient illumination to the hero or page background.",
       "Don't add decorative circuit lines, hero dividers, or asymmetric entrance layouts.",
-      "Don't replace the gateway lens with an unrelated subject or a third-party image.",
+      "Don't replace the supplied robotic hand and butterfly with an unrelated subject.",
       "Don't use the hero display size for operational tables or message content."
     ]
   }

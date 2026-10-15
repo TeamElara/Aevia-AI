@@ -606,32 +606,16 @@ main { view-transition-name: main-view; }
 .hero-cta:hover .arr { transform: translateX(4px); }
 .hero-cta:active { transform: scale(.98); }
 .hero-cta:disabled { opacity: .5; }
-/* The gateway lens: private values drift in, tokens drift out. */
-.lens-scene { position: relative; min-width: 0; height: 500px; overflow: hidden; align-self: end; color: var(--color-fg); }
-.lens-art { height: 100%; width: 100%; overflow: visible; animation: illustration-arrive 1100ms var(--ease-soft) both; }
-.lens-caption { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; fill: var(--color-faint); }
-.lens-body { transform-box: fill-box; transform-origin: center; animation: lens-float 8s ease-in-out infinite; }
-.lens-dots { fill: currentColor; opacity: .78; }
-.lens-edge { fill: none; stroke: var(--color-line-strong); stroke-width: 1; }
-.lens-ring { fill: none; stroke: var(--color-line-strong); stroke-width: 1; stroke-dasharray: 2 7; }
-.ring-a { animation: ring-spin 14s linear infinite; }
-.ring-b { stroke-dasharray: 1 11; opacity: .7; animation: ring-spin 22s linear infinite reverse; }
-.lens-scan { animation: lens-scan 4.5s ease-in-out infinite alternate; }
-.lens-pulse { fill: none; stroke: var(--color-accent); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; animation: lens-pulse 9s linear infinite; }
-.lens-chip { transform: translateX(110px); animation: chip-travel 9s linear infinite; }
-.lens-chip[data-rest="out"] { transform: translateX(450px); }
-.lens-chip rect { fill: var(--color-surface); stroke: var(--color-line); stroke-width: 1; }
-.lens-chip text { font-family: var(--font-sans); font-size: 11px; fill: var(--color-fg); }
-.chip-token text { font-family: var(--font-mono); font-size: 11px; }
-.chip-token rect { stroke: var(--color-accent); }
-.chip-raw, .chip-token { animation: 9s linear infinite; }
-.chip-raw { animation-name: chip-raw; }
-.chip-token { opacity: 0; animation-name: chip-token; }
-.lens-chip[data-rest="out"] .chip-raw { opacity: 0; }
-.lens-chip[data-rest="out"] .chip-token { opacity: 1; }
+.hand-scene { position: relative; min-width: 0; height: 500px; overflow: hidden; align-self: end; }
+.hand-illustration { height: 100%; width: 100%; overflow: visible; mix-blend-mode: multiply; animation: illustration-arrive 1100ms var(--ease-soft) both; }
+.robot-arm { transform-origin: 595px 855px; animation: arm-offer 10s cubic-bezier(.45,0,.55,1) infinite; }
+.butterfly-flight { animation: butterfly-return 10s cubic-bezier(.45,0,.55,1) infinite; }
+.butterfly-wing { transform-origin: 225px 176px; }
+.wing-a { animation: flutter-a 1.4s ease-in-out infinite; }
+.wing-b { animation: flutter-b 1.4s ease-in-out infinite; }
 .motion-toggle { position: absolute; bottom: 16px; right: 0; display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--color-paper); color: var(--color-muted); font-size: 11px; border-radius: 10px; transition: opacity 200ms, background 200ms; }
 .motion-toggle:hover { background: var(--color-surface-2); }
-.lens-scene[data-paused="true"] * { animation-play-state: paused; }
+.hand-scene[data-paused="true"] * { animation-play-state: paused; }
 .home-workspace { position: relative; padding: 24px 0 40px; max-width: 860px; margin: 0 auto; animation: hero-arrive 800ms 200ms var(--ease-soft) both; }
 .home-greeting { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .home-greeting h2 { font-family: var(--font-display); font-size: 20px; font-weight: 500; letter-spacing: -.025em; }
@@ -646,20 +630,18 @@ main { view-transition-name: main-view; }
 .home-starters button:disabled { opacity: .4; }
 .home-inspect { display: flex; width: max-content; max-width: 100%; margin-left: auto; margin-right: auto; align-items: center; gap: 9px; margin-top: 18px; color: var(--color-muted); font-size: 12px; }
 .home-inspect:hover { color: var(--color-fg); }
+:root[data-theme="dark"] .hand-illustration { filter: invert(1); mix-blend-mode: screen; }
 .orb-wrap::before, .orb-shadow { display: none; }
 .orb { box-shadow: inset 0 -3px 8px #0003, inset 0 2px 4px #fff5; }
 .sheen { background: none; color: var(--color-muted); animation: none; }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 textarea { caret-color: var(--color-fg); }
 * { scrollbar-color: var(--color-line-strong) var(--color-paper); scrollbar-width: thin; }
-@keyframes lens-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-@keyframes ring-spin { to { stroke-dashoffset: -180; } }
-@keyframes lens-scan { from { transform: translateY(0); } to { transform: translateY(264px); } }
-@keyframes lens-pulse { 0%,47% { opacity: 0; transform: scale(1); } 50% { opacity: .45; transform: scale(1); } 64%,100% { opacity: 0; transform: scale(1.14); } }
-@keyframes chip-travel { from { transform: translateX(30px); } to { transform: translateX(530px); } }
-@keyframes chip-raw { 0% { opacity: 0; } 8%,44% { opacity: 1; } 50%,100% { opacity: 0; } }
-@keyframes chip-token { 0%,48% { opacity: 0; } 54%,90% { opacity: 1; } 100% { opacity: 0; } }
-@media (min-width: 1280px) { .home-hero, .lens-scene { min-height: 520px; height: 520px; } }
+@keyframes arm-offer { 0%,100% { transform: rotate(0); } 50% { transform: translateY(-8px) rotate(2deg); } }
+@keyframes butterfly-return { 0%,12%,100% { transform: translate(0,0) rotate(0); } 35% { transform: translate(32px,-95px) rotate(-7deg); } 55% { transform: translate(72px,-120px) rotate(5deg); } 78% { transform: translate(32px,-75px) rotate(-3deg); } }
+@keyframes flutter-a { 0%,100% { transform: rotate(-2deg) scaleX(1); } 50% { transform: rotate(6deg) scaleX(.65); } }
+@keyframes flutter-b { 0%,100% { transform: rotate(2deg) scaleY(1); } 50% { transform: rotate(-7deg) scaleY(.7); } }
+@media (min-width: 1280px) { .home-hero, .hand-scene { min-height: 520px; height: 520px; } }
 @media (max-width: 767px) {
   .home-topline { height: 52px; font-size: 11px; }
   .home-hero { min-height: 0; grid-template-columns: 1fr; }
@@ -667,7 +649,8 @@ textarea { caret-color: var(--color-fg); }
   .home-title { font-size: clamp(36px, 8.8vw, 60px); }
   .home-description { margin: 18px auto 0; font-size: 13px; }
   .hero-cta { margin-top: 20px; }
-  .lens-scene { height: 320px; width: 100%; margin-top: 0; }
+  .hand-scene { height: 320px; width: 100%; margin-top: 0; }
+  .hand-illustration { width: 100%; margin-left: 0; }
   .motion-toggle { left: 0; right: auto; }
   .home-workspace { padding-top: 24px; }
   .home-greeting { gap: 5px 12px; justify-content: center; text-align: center; }
@@ -675,7 +658,7 @@ textarea { caret-color: var(--color-fg); }
   .home-starters li { border: none; }
   .home-starters button { font-size: 11px; width: 100%; justify-content: space-between; }
 }
-@media (prefers-reduced-motion: reduce) { .lens-scene * { animation: none !important; } .motion-toggle { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hand-scene * { animation: none !important; } .motion-toggle { display: none; } }
 
 @keyframes hero-arrive { from { transform: translateY(12px); opacity: .35; } to { transform: none; opacity: 1; } }
 

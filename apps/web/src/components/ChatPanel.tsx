@@ -7,7 +7,7 @@ import { toneOf, type Tone } from '../lib/tone'
 import { ActionBadge } from './PayloadCard'
 import { reducedMotion } from '../lib/motion'
 import { Arrow, Icon, Magnetic, Orb, Reveal, Tokens } from './ui'
-import { GatewayLens } from './GatewayLens'
+import { HandButterfly } from './HandButterfly'
 
 export type Turn = {
   id: string
@@ -67,7 +67,7 @@ export function ChatPanel({
             <p className="home-description">Ask freely. Private values stay protected.<br />Your ideas are what reach the model.</p>
             <button className="hero-cta" onClick={() => document.querySelector<HTMLTextAreaElement>('[aria-label="Message"]')?.focus()} disabled={!ready}>Start a conversation <Arrow /></button>
           </div>
-          <GatewayLens />
+          <HandButterfly />
         </div>
         <div className="home-workspace">
           <div className="home-greeting"><h2>{greeting()}, {user.name.split(' ')[0]}.</h2><p>{ready ? 'What can I help with?' : 'Signing you in…'}</p></div>

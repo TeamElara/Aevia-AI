@@ -135,7 +135,7 @@ components:
 
 **Creative North Star: "Warm Paper Console"**
 
-LeakShield combines a warm paper entrance with a working privacy gateway console. The shipped light theme uses beige surfaces, brown neutral accents, tightly spaced display typography, and an original gateway-lens illustration drawn in SVG. Chat, Incidents, Overview, Approvals, and Eval remain the five navigable views. The dark console palette is preserved.
+LeakShield combines a warm paper entrance with a working privacy gateway console. The shipped light theme uses beige surfaces, brown neutral accents, tightly spaced display typography, and a supplied robotic hand and butterfly image. Chat, Incidents, Overview, Approvals, and Eval remain the five navigable views. The dark console palette is preserved.
 
 The entrance is balanced and spacious: equal desktop hero columns, centered mobile copy, and a centered message workspace. Rounded controls and quiet shadows soften the supplied mechanical subject. The photographic subject is separated into independently moving layers. PRODUCT.md records the approved refinement and existing product behavior from the web README and implemented views.
 
@@ -221,8 +221,8 @@ The opening field uses the workspace-field role, a line border, soft resting sha
 ### Navigation
 Navigation items retain text and SVG icons with a sliding surface pill behind the active page. Hover uses a separate surface-2 layer. Active items use foreground text and theme accent icons. Mobile navigation is the same view set inside a drawer. Icon transforms and spring transitions support interaction without changing the layout.
 
-### Gateway lens
-`GatewayLens.tsx` draws the hero in SVG; it uses no image files. A stippled sphere, lit from the upper left and generated from a fixed seed as one path, sits between three lanes captioned "you type", "gateway" and "model sees". Six synthetic values cross the lanes over a nine-second loop. Each enters as typed text, crossfades to its token (for example [AADHAAR_K7Q2]) at the centre, and leaves. The lens edge pulses as each value crosses. Two dashed rings turn over 14s and 22s, a scan band sweeps the sphere every 4.5s, and the sphere floats 6px over 8s. A pause/play button stops every scene animation, and the component also pauses while outside the viewport or when the document is hidden. Reduced motion shows a still frame, with raw values on the left and tokens on the right, and hides the motion control. Colours come from theme tokens, so dark mode needs no filter.
+### Robotic hand and butterfly
+The supplied /art/robotic-hand-reference.png is clipped inside an SVG into the hand and two wing layers. The arm offers gently over ten seconds, reaching a two-degree rotation and eight-pixel rise. The butterfly follows a ten-second return path, peaking at 120px upward and 72px sideways in SVG coordinates. Wings flutter every 1.4 seconds. A pause/play button stops all scene animations; the component also pauses while outside the viewport or when the document is hidden. Reduced motion disables animation and hides the motion control. Dark mode inverts the image and switches blending from multiply to screen.
 
 The hero title lines enter over 850ms with a 90ms stagger. Description entry lasts 750ms after 140ms; the action fades over 750ms after 220ms so its hover transform stays independent. The centered workspace enters over 800ms after 200ms, the illustration over 1100ms, and starter items over 600ms with 40ms stagger beginning at 220ms. State changes use the existing soft and spring easings. Reduced motion removes these entrances as well as continuous scene movement.
 
@@ -240,7 +240,7 @@ The hero title lines enter over 850ms with a 90ms stagger. Description entry las
 ### Don't:
 - **Don't** reintroduce purple or yellow ambient illumination to the hero or page background.
 - **Don't** add decorative circuit lines, hero dividers, or asymmetric entrance layouts.
-- **Don't** replace the gateway lens with an unrelated subject or a third-party image.
+- **Don't** replace the supplied robotic hand and butterfly with an unrelated subject.
 - **Don't** use the hero display size for operational tables or message content.
 
 Not canonized: the existing uppercase tracking-heavy labels used as eyebrows on some console surfaces are carried by the build, but are not a reusable house-style rule. This focused documentation pass does not repair source defects or unrelated pre-existing drift.
