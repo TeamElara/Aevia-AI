@@ -1,5 +1,5 @@
 /** Shared hand-off contracts. Never attach matched values to findings or audit events. */
-export type Source = 'prompt' | 'document' | 'response';
+export type Source = 'prompt' | 'history' | 'document' | 'response';
 export type Action = 'allow' | 'warn' | 'mask' | 'redact' | 'quarantine' | 'deny' | 'require_approval' | 'block';
 export interface User { id: string; groups: string[]; }
 export interface Finding {
@@ -16,6 +16,9 @@ export interface DetectionContext {
   user: User;
   requestId: string;
   canaries: readonly string[];
+  protectedPhrases?: string[];
+  knownUsers?: string[];
+  currentUser?: string;
 }
 export type DetectAll = (text: string, ctx: DetectionContext) => Finding[] | Promise<Finding[]>;
 export interface Message { role: 'system' | 'user' | 'assistant'; content: string; }
@@ -28,6 +31,7 @@ export interface Chunk {
   external_llm: 'allow' | 'deny' | 'approval';
   injection_score: number;
   canary?: string;
+  title?: string;
 }
 export type Retrieve = (user: User, query: string) => Promise<Chunk[]>;
 export interface ProviderResult { content: string; model: string; }
@@ -75,6 +79,8 @@ export interface ChatResult {
   stage_ms: Record<string, number>;
   provider_calls: number;
   policy_version: string;
-  sent_to_model?: Message[];
+  sent_to_model: string | null;
+  captured_payload?: Message[];
+  citations: { doc_id: string; title: string }[];
   approval?: { id: string; expires_at: string };
 }

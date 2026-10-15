@@ -26,7 +26,7 @@ describe('authenticated HTTP API', () => {
   });
   it('serves the agreed chat response and metadata without persisting the raw prompt', async () => {
     const h = setup();
-    const r = await request(h.app).post('/api/chat').set('Authorization', await bearer()).send({ prompt: '2345 6789 0124' });
+    const r = await request(h.app).post('/api/chat').set('Authorization', await bearer()).send({ message: '2345 6789 0124', conversation_id: null });
     expect(r.status).toBe(200); expect(r.body.action).toBe('mask'); expect(r.body.answer).toBe('2345 6789 0124');
     expect(r.body.provider_calls).toBe(1); expect(r.headers['cache-control']).toBe('no-store');
     expect(JSON.stringify(h.events)).not.toContain('2345');
@@ -86,5 +86,10 @@ describe('authenticated HTTP API', () => {
     for (let i = 0; i < 60; i++) await request(h.app).get('/missing').set('Authorization', token);
     expect((await request(h.app).post('/chat').set('Authorization', token).send({ prompt: 'Hello' })).status).toBe(429);
     expect(h.provider.complete).not.toHaveBeenCalled();
+  });
+  it('explicitly refuses baseline headers rather than publishing misleading protected baseline metrics', async () => {
+    const h = setup();
+    const r = await request(h.app).post('/api/chat').set('Authorization', await bearer()).set('X-LeakShield-Mode', 'passthrough').send({ message: 'hello', conversation_id: null });
+    expect(r.status).toBe(501); expect(h.provider.complete).not.toHaveBeenCalled();
   });
 });

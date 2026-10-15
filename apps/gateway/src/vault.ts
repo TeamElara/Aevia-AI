@@ -60,7 +60,7 @@ export class ConversationVault {
       const value = text.slice(span.start, span.end);
       let token = [...c.entries].find(([, e]) => e.value === value && e.category === span.category)?.[0];
       if (!token) {
-        if (c.entries.size >= 500) throw new GatewayError('VAULT_CAPACITY');
+        if (c.entries.size >= 500 || [...c.entries.values()].reduce((n, e) => n + e.value.length, 0) + value.length > 128_000) throw new GatewayError('VAULT_CAPACITY');
         do { token = `[${span.category}_${randomBytes(16).toString('hex')}]`; } while (text.includes(token) || c.entries.has(token));
         c.entries.set(token, { value, category: span.category });
       }
@@ -74,6 +74,7 @@ export class ConversationVault {
     return text.replace(/\[[A-Z][A-Z0-9_]{0,39}_[a-f0-9]{32}\]/g, token => c.entries.get(token)?.value ?? token);
   }
   history(id: string, owner: string): Message[] { return structuredClone(this.get(id, owner).history); }
+  tokens(id: string, owner: string): string[] { return [...this.get(id, owner).entries.keys()]; }
   append(id: string, owner: string, messages: Message[]): void {
     const c = this.get(id, owner);
     c.history.push(...structuredClone(messages));

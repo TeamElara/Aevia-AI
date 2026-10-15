@@ -26,8 +26,11 @@ export function findingAction(f: Finding, policy: Policy): Action {
   if (f.category === 'INJECTION') {
     return f.score >= policy.injection.block ? 'block' : f.score >= policy.injection.warn ? 'warn' : 'allow';
   }
+  if (f.category === 'AADHAAR' && f.score < 0.8) return 'warn';
   if (f.source === 'response') return 'redact';
   if (f.category === 'EMAIL') return policy.actions.email;
+  // Document disclosure is additionally governed by its external_llm flag; the label is never reversible.
+  if (f.category === 'CONFIDENTIAL') return f.source === 'document' ? 'redact' : 'block';
   return policy.actions.pii;
 }
 /** Invalid reloads fail closed until a valid, newly versioned policy is supplied. */

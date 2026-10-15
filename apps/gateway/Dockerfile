@@ -1,10 +1,7 @@
 FROM node:24-bookworm-slim
 WORKDIR /app
-COPY package*.json ./
-COPY apps/gateway/package.json ./apps/gateway/package.json
+COPY . .
 RUN npm ci
-COPY tsconfig.json types.ts ./
-COPY apps/gateway ./apps/gateway
 USER node
-EXPOSE 3001
+EXPOSE 8080
 CMD ["npm", "start"]

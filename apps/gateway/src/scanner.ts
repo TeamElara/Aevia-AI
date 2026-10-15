@@ -4,7 +4,7 @@ import { GatewayError } from './errors.js';
 
 const finding = z.object({
   category: z.string().regex(/^[A-Z][A-Z0-9_]{0,39}$/),
-  source: z.enum(['prompt', 'document', 'response']),
+  source: z.enum(['prompt', 'history', 'document', 'response']),
   start: z.number().int().min(0), end: z.number().int().min(0),
   score: z.number().min(0).max(1),
   ruleId: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.:-]{0,79}$/),

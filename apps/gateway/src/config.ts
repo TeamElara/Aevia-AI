@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   HOST: z.enum(['127.0.0.1', '0.0.0.0']).default('127.0.0.1'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  PORT: z.coerce.number().int().min(1).max(65535).default(8080),
   JWT_SECRET: z.string().min(32), AUDIT_HMAC_SECRET: z.string().min(32),
-  MONGODB_URI: z.string().startsWith('mongodb://').default('mongodb://127.0.0.1:27017'),
+  MONGODB_URI: z.string().regex(/^mongodb(?:\+srv)?:\/\//).default('mongodb://127.0.0.1:27017'),
   MONGODB_DB: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_-]{0,39}$/).default('aevia'),
   LLM_PROVIDER: z.enum(['groq', 'ollama']).default('groq'),
   GROQ_API_KEY: z.string().optional(), GROQ_MODEL: z.string().optional(),
@@ -13,7 +13,8 @@ const envSchema = z.object({
   POLICY_PATH: z.string().default('apps/gateway/policy.yaml'),
   DETECTOR_MODULE: z.string().default('packages/detectors/src/index.ts'),
   RETRIEVAL_MODULE: z.string().optional(), APPROVALS_MODULE: z.string().optional(),
-  EVAL_MODE: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
+  EVAL_MODE: z.enum(['true', 'false', '1', '0']).default('false').transform(v => v === 'true' || v === '1'),
+  DEMO_AUTH: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   CORS_ORIGIN: z.url().default('http://localhost:5173'),
   API_KEYS_JSON: z.string().default('[]'),
 });

@@ -49,7 +49,7 @@ async function start() {
     ? { kind: 'groq', baseURL: 'https://api.groq.com/openai/v1', apiKey: config.GROQ_API_KEY, model: config.GROQ_MODEL! }
     : { kind: 'ollama', baseURL: config.OLLAMA_URL, model: config.OLLAMA_MODEL! });
   const gateway = new Gateway({ scanner: new Scanner(detect), provider, audit, policies, vault, retrieve, approvals, restrictedOverlap, evalMode: config.EVAL_MODE });
-  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN });
+  const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, evalMode: config.EVAL_MODE });
   const server = app.listen(config.PORT, config.HOST, () => safeLog('STARTED', { port: config.PORT }));
   const stop = () => {
     server.close(() => { vault.close(); policies.close(); void client.close().then(() => process.exit(0)); });
