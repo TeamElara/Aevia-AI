@@ -9,7 +9,7 @@
     "test": "vitest run tests/security",
     "seed": "node seed/seed.js",
     "benchmark": "node tests/security/benchmark.js",
-    "eval:validate": "node eval/validate.mjs eval/dev.jsonl eval/alwaz/heldout.jsonl eval/alwaz/robustness.jsonl",
+    "eval:validate": "node eval/validate.mjs eval/dev.jsonl eval/heldout.jsonl eval/robustness.jsonl eval/alwaz/heldout.jsonl eval/alwaz/robustness.jsonl",
     "classifier:spike": "node tools/classifier-spike.mjs",
     "test:report": "WRITE_ACCESS_RESULTS=1 vitest run tests/security"
   },
