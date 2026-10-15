@@ -27,6 +27,16 @@ const EXTRACT_TARGET = new RegExp(
 const ROLE =
   /\b(?:you\s+are\s+now|you're\s+now|from\s+now\s+on,?\s+you\s+are|act\s+as|pretend\s+(?:to\s+be|you\s+are)|enter|switch\s+to|enable)\b.{0,40}?\b(?:admin(?:istrator)?|developer|root|sudo|unrestricted|unfiltered|jailbroken|jailbreak|dan|god|evil|debug)\b(?:\s+mode)?|\b(?:developer|god|debug|jailbreak|dan)\s+mode\b|\bdo\s+anything\s+now\b/gi;
 
+// Exfiltration: telling the model to send other people's data or credentials somewhere.
+// Plain "send me the password reset link" doesn't match: the target must be secrets in bulk or other users' data.
+const EXFIL = new RegExp(
+  [
+    String.raw`\b(?:send|forward|email|mail|upload|post|leak|exfiltrate|transmit|share)\b.{0,40}?\b(?:(?:other|all|every)\s+users?'?s?|everyone'?s|their|the\s+users?'?s?)\s+(?:secrets|passwords|credentials|api\s+keys|tokens|private\s+keys|data|details|records)\b`,
+    String.raw`\b(?:send|forward|email|mail|upload|post|leak|exfiltrate|transmit)\b.{0,30}?\b(?:all\s+)?(?:the\s+)?(?:secrets|credentials|api\s+keys|access\s+keys|private\s+keys)\b`,
+  ].join('|'),
+  'gi',
+);
+
 // Roleplay extraction ("grandma exploit"): a persona that "used to" reveal secrets.
 const ROLEPLAY =
   /\b(?:act\s+(?:like|as)|pretend|roleplay|role-play|imagine|play\s+the\s+role)\b.{0,80}?\b(?:used\s+to|would|always)\b.{0,60}?\b(?:read|tell|recite|share|say|whisper|give)\b.{0,50}?\b(?:hidden|secret|system|internal|confidential|password|passwords|api\s+keys?|keys|configuration|config|instructions|prompt)\b/gi;
@@ -132,6 +142,7 @@ export function detectInjection(text: string, ctx: DetectorContext): Finding[] {
     add(pairs(spans(EXTRACT_INTENT, t), spans(EXTRACT_TARGET, t)), 0.9, 'inj.extract');
     add(spans(ROLE, t), 0.9, 'inj.role');
     add(spans(ROLEPLAY, t), 0.85, 'inj.roleplay');
+    add(spans(EXFIL, t), 0.9, 'inj.exfil');
     add(pairs(spans(HI_INTENT, t), spans(HI_TARGET, t), 80, 60), 0.9, 'inj.override.hi');
     add(spans(HI_ROLE, t), 0.9, 'inj.role.hi');
     add(spans(HI_DATA_DEMAND, t), 0.9, 'inj.crossuser.hi');

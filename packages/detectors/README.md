@@ -148,13 +148,17 @@ This package is an npm workspace of the repo root, so install from the root:
 npm install                                         # at the repo root
 npm test --workspace @leakshield/detectors
 npm run typecheck --workspace @leakshield/detectors
-npm run tune --workspace @leakshield/detectors -- ../../eval/dev.jsonl   # threshold sweep, category recall, misses
+npm run tune --workspace @leakshield/detectors -- ../../eval/dev.jsonl --corpus ../../seed/corpus.js   # sweep, recall, misses
 npm run test:integration                            # gateway tests, incl. detector-handoff against this package
 ```
 
 The gateway imports `src/index.ts` directly (`DETECTOR_MODULE`) and validates every finding: no extra fields, `source` equal to the request's, `0 <= start < end <= text.length`, at most 1000 findings. Any violation fails the request closed.
 
 `test/benign-corpus.ts` holds 110 realistic prompts with no sensitive data and no attack: office work, Hinglish, code with `password`/`token` variables, IDs and numbers, security discussion, roleplay, trigger words, long text. `test/benign.test.ts` fails if any of them would trigger a warn or mask, so false positives can't creep back in. It was written independently of the held-out set.
+
+`--corpus` points at a module exporting `documents: [{ id, text }]` (Alwaz's `seed/corpus.js`), so `attached_doc` cases are scanned as documents. Without it, those cases are listed as "not measured" instead of counted as misses.
+
+Current dev result (all 20 cases from main + Mahatva's and Alwaz's contributions, with the seed corpus): 0 false alarms, 0 missed injections at 0.6–0.9, all expected data categories found. 20 cases is a small sample; the held-out run after the freeze is the real number.
 
 `npm run tune` refuses held-out, robustness and live-subset files, and any case whose `split` isn't `dev`. That is the team rule until the hour-15 freeze.
 
