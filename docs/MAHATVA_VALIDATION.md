@@ -5,7 +5,7 @@ The checks below verify implementation behavior, not frozen detector accuracy or
 | Check | Result |
 | --- | --- |
 | Gateway TypeScript check | Pass |
-| Combined gateway, detector and access unit/security checks | 391 passed |
+| Combined gateway, detector and access unit/security checks | 408 passed |
 | Combined integration checks with real MongoDB and HTTP | 49 passed |
 | Existing React console production build and lint | Pass; approval polling and canonical API integration connected |
 | Dependency audit, including development dependencies | 0 reported vulnerabilities at validation time |
