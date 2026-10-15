@@ -39,7 +39,8 @@ const RULES: SecretRule[] = [
 
 // Values that look like code identifiers or placeholders, not real secrets.
 function looksLikePlaceholder(v: string): boolean {
-  if (/^[A-Za-z_$][\w$.]*(\(.*\))?;?,?$/.test(v) && !/\d/.test(v)) return true;
+  // identifier, member access or a call (the value may stop at a quote, leaving "input(" unclosed)
+  if (/^[A-Za-z_$][\w$.]*(\(.*)?;?,?$/.test(v) && !/\d/.test(v)) return true;
   if (/^(x+|\*+|\.+|<.*>|\{.*\}|\$\{.*\}|changeme|password|your[_-]?\w*|example|dummy|test|null|undefined|none|true|false)$/i.test(v)) return true;
   if (/^process\.env|^os\.environ|^env\./i.test(v)) return true;
   return false;
