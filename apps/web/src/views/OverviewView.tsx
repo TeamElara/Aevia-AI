@@ -3,6 +3,7 @@ import { getStats, subscribeEvents } from '../api/client'
 import { actionLabel, type Action, type Stats } from '../api/contract'
 import { Chamfer } from '../components/Chamfer'
 import { BarList, ColumnChart, StatTile } from '../components/charts'
+import { ms } from '../lib/format'
 import { useAdmin } from '../lib/useAdmin'
 
 const WINDOWS = [
@@ -82,8 +83,8 @@ export function OverviewView() {
             <StatTile label="Masked" value={stats ? `${stats.masked_pct}%` : '–'} sub="values sent as tokens" />
             <StatTile
               label="Gateway overhead"
-              value={stats?.overhead_ms_p50 != null ? `${stats.overhead_ms_p50}ms` : '–'}
-              sub={stats?.overhead_ms_p95 != null ? `p50 · p95 ${stats.overhead_ms_p95}ms · excl. LLM` : 'p50 · excl. LLM'}
+              value={ms(stats?.overhead_ms_p50)}
+              sub={stats?.overhead_ms_p95 != null ? `p50 · p95 ${ms(stats.overhead_ms_p95)} · excl. LLM` : 'p50 · excl. LLM'}
             />
           </div>
         </Chamfer>

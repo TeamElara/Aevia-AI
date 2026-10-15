@@ -106,5 +106,14 @@ export const actionLabel: Record<Action, string> = {
   block_response: 'WITHHELD',
 }
 
+// The gateway may send an empty answer when nothing came back from the model.
+const STOPPED_TEXT: Partial<Record<Action, string>> = {
+  block: 'Nothing was sent to the model.',
+  block_response: 'The response was withheld.',
+  deny: 'No documents you can access matched.',
+  require_approval: 'Waiting for admin approval.',
+}
+export const answerText = (r: Pick<ChatResponse, 'answer' | 'action'>) => r.answer || STOPPED_TEXT[r.action] || ''
+
 // Actions that stopped the request or the answer; drawn inverted.
 export const isStop = (a: Action) => a === 'block' || a === 'block_response' || a === 'deny'
