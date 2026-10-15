@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-15T11:38:43.667Z",
+  "status": 200,
+  "selected_model": "openai/gpt-oss-20b",
+  "response_model": "openai/gpt-oss-20b",
+  "source": "direct authenticated inference preflight; separate from evaluation cases",
+  "headers": {
+    "x-ratelimit-limit-requests": "1000",
+    "x-ratelimit-limit-tokens": "8000",
+    "x-ratelimit-remaining-requests": "850",
+    "x-ratelimit-remaining-tokens": "7910",
+    "x-ratelimit-reset-requests": "3h36m0s",
+    "x-ratelimit-reset-tokens": "674ms"
+  },
+  "documented_header_windows": {
+    "RPD": 1000,
+    "TPM": 8000,
+    "RPM": null,
+    "TPD": null
+  },
+  "header_semantics_source": "https://console.groq.com/docs/rate-limits",
+  "ZDR": "unverified; no organization Data Controls session",
+  "key_recorded": false
+}

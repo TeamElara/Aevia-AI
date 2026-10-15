@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-15T12:25:23.151Z",
+  "freeze_tag": "eval-freeze-v2",
+  "mode": "real Groq HTTP approval rehearsal; not joint browser rehearsal",
+  "pending_action": "require_approval",
+  "pending_provider_calls": 0,
+  "result_status": 200,
+  "result_action": "allow",
+  "result_provider_calls": 1,
+  "answer_present": true,
+  "citation_ids": [
+    "garuda"
+  ],
+  "second_read_status": 404,
+  "owner_scope_note": "Original Meera retrieval checked here; cross-user ownership covered by integration suite."
+}

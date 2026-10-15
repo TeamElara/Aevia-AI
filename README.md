@@ -102,3 +102,16 @@ Ojaswi's detector branch and Alwaz's access branch are included with their autho
 ## Limits
 
 This is a single-process hackathon gateway: restart discards conversations and pending in-memory state; horizontal scaling needs shared secure session storage. Scanner timeouts cannot interrupt synchronous code that blocks Node's event loop, so detector implementations must bound their computation. Canaries/fingerprints are extra checks, not proof against paraphrased leaks. Document-derived PII is irreversibly redacted. Frozen real-Groq results retain an IFSC policy mismatch, false positives and Hinglish misses; do not claim zero leakage or universal accuracy. LLM generation in automated integration tests is simulated; separate actual-provider evidence is linked above.
+
+## Current frozen evidence and team handoff
+
+The integrated decision code is tagged [eval-freeze-v2](https://github.com/TeamElara/Aevia-AI/tree/eval-freeze-v2), created 15 October 2026 at 17:02:11 IST. Use npm and the root package-lock. CLASSIFIER_BACKEND stays none.
+
+- [Real Groq held-out, baseline and robustness results](results/freeze-v2-groq/RESULTS.md)
+- [Eight-slide editable team deck](docs/LeakShield-Freeze-v2.pptx)
+- [Freeze time and reproduction commands](docs/EVAL-FREEZE-V2.md)
+- [Limitations and known misses](docs/LIMITATIONS.md)
+- [Arihant/Ojaswi narration and proposed rehearsal slots](docs/REHEARSAL-AND-NARRATION.md)
+- [Groq model, observed quota windows and unverified ZDR](docs/GROQ-ACCOUNT-CHECK.md)
+
+The v2 protected run has 1 provider-leak flag versus 12 baseline flags, not zero. The original freeze and historical reports/decks remain preserved. Follow the per-report provenance when presenting numbers.
