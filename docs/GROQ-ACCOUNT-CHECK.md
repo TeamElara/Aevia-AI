@@ -42,13 +42,13 @@ The key was disclosed in chat and should be rotated after testing; never paste i
 
 ## Account owner confirmation
 
-For the account owner to complete; no organization setting is inferred or filled in here.
+ZDR is recorded from the authenticated account check above: Global and Inference APIs ZDR are disabled in the checked Personal organization. The remaining fields are for the account owner to complete; demo-key association and project overrides retain the scope caveat above.
 
 | Field | Confirmation |
 | --- | --- |
 | Date | |
 | Verifier | |
-| ZDR on/off | |
+| ZDR on/off | Disabled |
 | RPM | |
 | RPD | |
 | TPM | |
