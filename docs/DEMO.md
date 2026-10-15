@@ -67,3 +67,19 @@ This is the single team demo/rehearsal script. The running order and narrator li
 - **Misses and Q&A:** cover the four remaining Hinglish injection misses and distinguish detector recall from interventions caused by ACL/output safeguards. The DPDP control mapping supports the explanation; it does not establish legal compliance. In the signed-in Personal organization we checked, inference ZDR is disabled, so we do not claim zero retention. Fingerprints detect copying rather than arbitrary paraphrases. See [LIMITATIONS.md](LIMITATIONS.md) and [GROQ-ACCOUNT-CHECK.md](GROQ-ACCOUNT-CHECK.md).
 - **First run:** verify masking/restoration, zero-call blocks, ACLs, approval ownership and the actual report/model. Record elapsed time and failures.
 - **Second run:** repeat transitions and Q&A without changing the frozen decision source. Mahatva records the five-minute backup video after the team agrees. Record actual participants, time, provider/model and the video location only after that recording exists.
+
+## Garuda approval verification
+
+15 October 2026, 19:09 IST: fresh remote-main clone at `fbc4691`, production gateway through the existing isolated validation host, temporary seeded MongoDB, real Groq `openai/gpt-oss-120b`, classifier `none`, baseline disabled. This is a post-freeze HTTP smoke check, not a new frozen evaluation.
+
+| Check | Observed |
+| --- | --- |
+| Meera submits the Garuda starter from the running order | `require_approval`, 0 provider calls |
+| Meera polls her own request before approval | HTTP 202 |
+| Admin approves the pending item's exact request hash | HTTP 200, `approved` |
+| Meera reads the result in the original conversation | HTTP 200, `allow`, nonempty answer, 1 provider call |
+| Meera attempts a second result read | HTTP 404; result is single-use |
+
+The browser attempt to open `http://localhost:5173` returned `net::ERR_BLOCKED_BY_CLIENT`. Therefore **the click-through UI check and screenshots are still pending**; no browser success or full end-to-end console rehearsal is claimed. The API smoke did not reproduce a gateway failure, so no product-bug issue was filed. No gateway or web code was changed.
+
+For the outstanding UI check, keep Meera selected, submit the existing Garuda starter, capture the pending badge and zero calls, open **Approvals**, approve the matching item, then return to **Chat** as Meera and wait for result polling. Approvals uses its own admin session; switching the Chat avatar or refreshing clears the original conversation and is not part of this scene. Capture both the approval state and Meera's returned answer/one-call counter using synthetic fixtures only. If the result fails, file an issue with revision, provider/model, action/call counters and safe screenshots; do not change decision code.
