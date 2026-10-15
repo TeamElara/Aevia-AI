@@ -1,4 +1,4 @@
-const allowedCodes = new Set(['STARTED', 'STOPPED', 'START_FAILED', 'REQUEST_FAILED', 'UNCAUGHT_EXCEPTION', 'UNHANDLED_REJECTION']);
+const allowedCodes = new Set(['STARTED', 'STOPPED', 'START_FAILED', 'REQUEST_FAILED', 'UNCAUGHT_EXCEPTION', 'UNHANDLED_REJECTION', 'SECURITY_WARNINGS_OFF']);
 export function safeLog(code: string, fields: { port?: number; status?: number } = {}): void {
   const safe: Record<string, string | number> = { code: allowedCodes.has(code) ? code : 'REQUEST_FAILED' };
   if (Number.isInteger(fields.port)) safe.port = fields.port!;

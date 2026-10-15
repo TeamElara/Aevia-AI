@@ -19,7 +19,8 @@ const envSchema = z.object({
   EVAL_MODE: z.enum(['true', 'false', '1', '0']).default('false').transform(v => v === 'true' || v === '1'),
   DEMO_AUTH: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   BASELINE_MODE: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
-  SECURITY_ESCALATION_ENABLED: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
+  // Unset means on wherever it can work (DB-backed identities, not baseline). Set false to turn it off.
+  SECURITY_ESCALATION_ENABLED: z.enum(['true', 'false']).optional(),
   SECURITY_HIERARCHY_PATH: z.string().default('apps/gateway/security-hierarchy.json'),
   CORS_ORIGIN: z.url().default('http://localhost:5173'),
   API_KEYS_JSON: z.string().default('[]'),
@@ -29,10 +30,12 @@ export function loadConfig() {
   if (env.JWT_SECRET === env.AUDIT_HMAC_SECRET) throw new Error('independent secrets required');
   if (env.EVAL_MODE && env.HOST !== '127.0.0.1') throw new Error('evaluation capture is loopback-only');
   if (env.BASELINE_MODE && (!env.EVAL_MODE || env.HOST !== '127.0.0.1')) throw new Error('baseline requires explicit loopback evaluation mode');
-  if (env.SECURITY_ESCALATION_ENABLED && (!env.RETRIEVAL_MODULE || env.BASELINE_MODE)) throw new Error('security escalation requires DB-backed identities and a protected gateway');
+  const escalationPossible = !!env.RETRIEVAL_MODULE && !env.BASELINE_MODE;
+  if (env.SECURITY_ESCALATION_ENABLED === 'true' && !escalationPossible) throw new Error('security escalation requires DB-backed identities and a protected gateway');
   if (env.LLM_PROVIDER === 'groq' && (!env.GROQ_API_KEY || !env.GROQ_MODEL)) throw new Error('Groq key and model required');
   if (env.LLM_PROVIDER === 'ollama' && !env.OLLAMA_MODEL) throw new Error('Ollama model required');
   const apiKeys = z.array(z.object({ key: z.string().min(32), user: z.object({ id: z.string().min(1).max(100), groups: z.array(z.string().regex(/^[a-z][a-z0-9-]{0,39}$/)).max(20) }).strict() }).strict()).max(100).parse(JSON.parse(env.API_KEYS_JSON));
   if (env.DEMO_AUTH && apiKeys.length === 0) apiKeys.push({ key: 'ls_demo_asha', user: { id: 'asha', groups: ['employee'] } });
-  return { ...env, apiKeys };
+  const SECURITY_ESCALATION = env.SECURITY_ESCALATION_ENABLED ? env.SECURITY_ESCALATION_ENABLED === 'true' : escalationPossible;
+  return { ...env, apiKeys, SECURITY_ESCALATION, SECURITY_ESCALATION_EXPLICIT: env.SECURITY_ESCALATION_ENABLED === 'true' };
 }

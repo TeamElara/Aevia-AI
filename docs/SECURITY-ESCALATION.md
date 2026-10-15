@@ -44,17 +44,17 @@ Signals have a one-hour TTL and are counted by timestamps rather than waiting fo
 
 ## Enable and verify
 
-Production is off by default:
+Warnings are on by default wherever they can work: a gateway with DB-backed identities (`RETRIEVAL_MODULE` set) that is not in baseline mode. To turn them off:
 
 ```dotenv
 SECURITY_ESCALATION_ENABLED=false
 SECURITY_HIERARCHY_PATH=apps/gateway/security-hierarchy.json
 ```
 
-Enable only after configuring and testing hierarchy against the users in the target database. DB-backed principals are required; the feature cannot run in unprotected baseline mode. Frozen eval reports and datasets are untouched. A future evaluation must record the flag and hierarchy configuration.
+Keep the hierarchy file matched to the users in the target database. When warnings are on only by default and the hierarchy does not match (for example a user in it is missing), the gateway starts without warnings and logs `SECURITY_WARNINGS_OFF`. With `SECURITY_ESCALATION_ENABLED=true` it refuses to start instead. Warnings cannot run in unprotected baseline mode. Frozen eval reports and datasets are untouched. A future evaluation must record the flag and hierarchy configuration.
 
-For an isolated keyless demo, set `SECURITY_ESCALATION_ENABLED=true` in the shell and run `npm run demo:gateway`. It uses a temporary database and a clearly simulated provider; it does not enable the feature in an existing production process. On Windows, the shell assignment is `$env:SECURITY_ESCALATION_ENABLED='true'`.
+The keyless demo (`npm run demo:gateway`) also has warnings on unless `SECURITY_ESCALATION_ENABLED=false` is set in the shell (on Windows: `$env:SECURITY_ESCALATION_ENABLED='false'`). It uses a temporary database and a clearly simulated provider.
 
 Demo: as Asha, send the supplied synthetic injection starter three times in new chats. Each request stays blocked at zero model calls. Switch to Ravi: a manager warning appears. At six attempts CEO receives the next-level warning; at ten Admin receives the security warning. Acknowledgement marks it reviewed without changing Asha's access. Separately, repeated Admin activity routes to CEO rather than Admin reviewing themselves.
 
-Validation covers real-Mongo routing for every seeded identity, actor/peer isolation, fake-clock boundaries, concurrent duplicates, cooldown renewal, restart persistence, outbox recovery, default-off behavior, unchanged disclosure controls, privacy, and late UI responses across identity switches.
+Validation covers real-Mongo routing for every seeded identity, actor/peer isolation, fake-clock boundaries, concurrent duplicates, cooldown renewal, restart persistence, outbox recovery, behavior when the feature is off, unchanged disclosure controls, privacy, and late UI responses across identity switches.

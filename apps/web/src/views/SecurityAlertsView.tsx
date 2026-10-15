@@ -26,7 +26,7 @@ export function SecurityAlertsView({ warnings }: { warnings: SecurityWarnings })
     {warnings.error && <p role="alert" className="mt-4 rounded-xl border border-line p-4">{warnings.error}</p>}
     {warnings.loading && <p role="status" className="mt-6 text-muted">Loading warnings…</p>}
     {warnings.data && !warnings.data.enabled && <p className="card mt-6 p-6">Security warnings are not enabled for this workspace.</p>}
-    {warnings.data?.enabled && warnings.data.alerts.length === 0 && <p className="card mt-6 p-6">No warnings in this inbox.</p>}
+    {warnings.data?.enabled && warnings.data.alerts.length === 0 && <p className="card mt-6 p-6 text-muted">No warnings right now. If someone you review keeps sending risky requests, it will show up here.</p>}
     {warnings.data?.truncated && <p className="mt-4 text-[13px] text-faint">Showing the latest 100 warnings.</p>}
     <ul className="mt-6 space-y-4" aria-label="Security warnings">
       {warnings.data?.alerts.map(alert => <li key={alert.id} className="card p-5 sm:p-6">
