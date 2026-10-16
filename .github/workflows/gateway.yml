@@ -23,6 +23,7 @@ jobs:
       - run: npm run typecheck:access
       - run: npm test
       - run: npm run test:integration
+      - run: node --test tests/deployment/vercel-proxy.test.mjs
       - run: npm run build --workspace @leakshield/web
       - run: node eval/validate.mjs eval/contributions/mahatva/dev.jsonl eval/contributions/mahatva/heldout.jsonl
       - run: npm audit --omit=dev

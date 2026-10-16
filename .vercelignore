@@ -1,0 +1,12 @@
+.git
+.cache
+.agents
+.codex
+.env
+.env.*
+**/node_modules
+**/dist
+**/*.log
+seed/tokens.json
+docs/**/*.pptx
+results/bug-bash/img
