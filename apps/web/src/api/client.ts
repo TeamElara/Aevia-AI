@@ -40,13 +40,26 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
   return res.json()
 }
 
-// The Vite proxy answers 5xx when nothing is listening on the gateway port.
+// The Vite proxy answers 5xx when nothing is listening on the gateway port, and a hosted gateway
+// that is down can leave the request hanging. In either case, including "live" mode, the console
+// falls back to the clearly labelled offline demo instead of staying on "connecting" forever.
+const PROBE_MS = 20_000
 let backendProbe: Promise<Backend> | null = null
 export function detectBackend(): Promise<Backend> {
-  if (MODE !== 'auto') return Promise.resolve(MODE)
-  backendProbe ??= fetch('/api/health')
-    .then(async (r) => !r.ok ? 'mock' : (await r.json()).provider_mode === 'simulated' ? 'simulated' : 'live')
-    .catch(() => 'mock' as Backend)
+  if (MODE === 'mock') return Promise.resolve('mock')
+  backendProbe ??= (async (): Promise<Backend> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), PROBE_MS)
+    try {
+      const r = await fetch('/api/health', { signal: controller.signal })
+      if (!r.ok) return 'mock'
+      return (await r.json()).provider_mode === 'simulated' ? 'simulated' : 'live'
+    } catch {
+      return 'mock'
+    } finally {
+      clearTimeout(timer)
+    }
+  })()
   return backendProbe
 }
 
