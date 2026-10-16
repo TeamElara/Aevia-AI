@@ -20,24 +20,31 @@ const errorText = (e: unknown, status: number) =>
   typeof e === 'string' ? e : (e as { message?: string; code?: string })?.message ?? (e as { code?: string })?.code ?? `Gateway returned ${status}`
 
 async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, token?: string, headers: Record<string, string> = {}): Promise<T> {
-  const res = await fetch(path, {
-    method,
-    headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  }).catch(() => { throw new ApiError('GATEWAY_UNREACHABLE') })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    // The dev proxy answers 5xx with no gateway error body when nothing is listening.
-    if (res.status >= 500 && !data.error) throw new ApiError('GATEWAY_UNREACHABLE', res.status)
-    // A hosting platform may refuse a large body itself, with a plain-text page.
-    if (res.status === 413 && !data.error) throw new ApiError('FILE_TOO_LARGE', 413)
-    throw new ApiError(errorText(data.error, res.status), res.status)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 90_000)
+  try {
+    const res = await fetch(path, {
+      signal: controller.signal,
+      method,
+      headers: {
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }).catch(() => { throw new ApiError('GATEWAY_UNREACHABLE') })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      // The dev proxy answers 5xx with no gateway error body when nothing is listening.
+      if (res.status >= 500 && !data.error) throw new ApiError('GATEWAY_UNREACHABLE', res.status)
+      // A hosting platform may refuse a large body itself, with a plain-text page.
+      if (res.status === 413 && !data.error) throw new ApiError('FILE_TOO_LARGE', 413)
+      throw new ApiError(errorText(data.error, res.status), res.status)
+    }
+    return await res.json()
+  } finally {
+    clearTimeout(timer)
   }
-  return res.json()
 }
 
 // The Vite proxy answers 5xx when nothing is listening on the gateway port, and a hosted gateway

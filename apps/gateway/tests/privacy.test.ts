@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { Audit } from '../src/audit.js';
-import { installConsolePrivacyFilter, safeLog } from '../src/logger.js';
+import { installConsolePrivacyFilter, safeLog, startupFailure } from '../src/logger.js';
 import { employee, harness } from './helpers.js';
 
 afterEach(() => vi.restoreAllMocks());
@@ -21,6 +21,15 @@ describe('privacy boundaries', () => {
     const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     safeLog('2345 6789 0124', { port: 3001, raw: 'ABCDE1234F' } as never);
     expect(output.mock.calls[0]?.[0]).toBe('{"code":"REQUEST_FAILED","port":3001}\n');
+  });
+  it('reports startup category without exception text or connection credentials', () => {
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    startupFailure({ name: 'MongoParseError', message: 'mongodb://private:password@example.invalid' }, 2);
+    startupFailure({ name: 'private exception value', code: 'secret' }, 500);
+    expect(output.mock.calls.map(c => c[0])).toEqual([
+      '{"code":"START_FAILED","phase":2,"failure":5}\n',
+      '{"code":"START_FAILED","failure":0}\n',
+    ]);
   });
   it('uses domain-separated keyed fingerprints rather than plain hashes', () => {
     const audit = new Audit({ insert: async () => {} }, 'test-key');
