@@ -10,7 +10,7 @@ import { HandButterfly } from './HandButterfly'
 import { BarIntro } from './BarIntro'
 import { Markdown } from './Markdown'
 import { AttachmentCard, FileChip } from './Attachment'
-import { MAX_UPLOAD_BYTES, UPLOAD_TYPES, type Backend } from '../api/client'
+import { MAX_PDF_BYTES, MAX_PHOTO_BYTES, UPLOAD_TYPES, type Backend } from '../api/client'
 
 export type Turn = {
   id: string
@@ -20,13 +20,18 @@ export type Turn = {
   file?: { name: string; size: number }
   response?: ChatResponse
   error?: string
+  /** Shown above the answer, e.g. when the gateway had to start a fresh conversation. */
+  notice?: string
 }
 
 // Gateway codes for file uploads, as sentences.
 const UPLOAD_ERRORS: Record<string, string> = {
   UNSUPPORTED_FILE: 'That file type is not supported. Send a PNG, JPEG or WebP photo, or a PDF.',
-  FILE_TOO_LARGE: 'That file is larger than 8 MB.',
-  PAYLOAD_TOO_LARGE: 'That file is larger than 8 MB.',
+  FILE_TOO_LARGE: 'That file is too large. Send a photo, or a PDF up to 3 MB.',
+  PAYLOAD_TOO_LARGE: 'That file is too large. Send a photo, or a PDF up to 3 MB.',
+  PHOTO_UNREADABLE: 'That photo could not be opened in the browser. Try a PNG or JPEG.',
+  CONVERSATION_BUSY: 'The previous message in this chat is still running. Wait for it, then send again.',
+  RATE_LIMITED: 'Too many requests in a minute. Wait a few seconds, then send again.',
   TOO_MANY_PAGES: 'That PDF has more than 20 pages.',
   TOO_MANY_SCANNED_PAGES: 'That PDF has more than 5 scanned pages.',
   NO_TEXT_FOUND: 'No readable text was found in that file.',
@@ -199,6 +204,7 @@ function TurnView({
 
           {r && (
             <>
+              {turn.notice && <p role="status" className="mb-2 text-[12.5px] text-faint">{turn.notice}</p>}
               <Markdown text={answerText(r)} animate={fresh} />
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12.5px] text-faint">
                 <ActionBadge label={actionLabel[r.action]} stop={isStop(r.action)} className={fresh ? 'verdict' : ''} />
@@ -293,7 +299,10 @@ function Composer({ onSend, disabled, busy, big, focusRequest = 0 }: { onSend: (
   const choose = (picked: File | undefined) => {
     if (!picked) return
     if (!UPLOAD_TYPES.split(',').includes(picked.type)) return setFileError('Choose a PNG, JPEG or WebP photo, or a PDF.')
-    if (picked.size > MAX_UPLOAD_BYTES) return setFileError('That file is larger than 8 MB.')
+    // Photos are shrunk in the browser before upload; PDFs are sent as they are.
+    if (picked.type === 'application/pdf' ? picked.size > MAX_PDF_BYTES : picked.size > MAX_PHOTO_BYTES) {
+      return setFileError(picked.type === 'application/pdf' ? 'That PDF is larger than 3 MB.' : 'That photo is larger than 25 MB.')
+    }
     setFileError(null)
     setFile(picked)
     box.current?.focus()
