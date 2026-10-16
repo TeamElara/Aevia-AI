@@ -9,7 +9,7 @@ import { Auth } from './auth.js';
 import { OfflineBaseline } from './baseline.js';
 import { loadConfig } from './config.js';
 import { GatewayError } from './errors.js';
-import { installConsolePrivacyFilter, safeLog } from './logger.js';
+import { installConsolePrivacyFilter, safeLog, startupFailure } from './logger.js';
 import { Gateway } from './pipeline.js';
 import { PolicyStore } from './policy.js';
 import { HttpProvider } from './provider.js';
@@ -23,6 +23,7 @@ import { loadRuntimeClassifier } from './classifier-adapter.js';
 import { loadSecurityHierarchy, SecurityEscalation } from './security-escalation.js';
 
 installConsolePrivacyFilter();
+let phase = 10;
 async function start() {
   const config = loadConfig();
   const classifier = config.CLASSIFIER_BACKEND === 'node' ? await loadRuntimeClassifier(config.CLASSIFIER_CACHE_DIR) : undefined;
@@ -37,20 +38,25 @@ async function start() {
   let restrictedOverlap: ((text: string, user: import('../../../types.js').User) => Promise<boolean>) | undefined;
   let principal: ((id: string) => Promise<import('../../../types.js').User>) | undefined;
   const client = new MongoClient(config.MONGODB_URI, { serverSelectionTimeoutMS: 5000, socketTimeoutMS: 5000 });
+  phase = 11;
   await client.connect();
   const store = new MongoAuditStore(client.db(config.MONGODB_DB));
+  phase = 12;
   await store.initialise();
   const audit = new Audit(store, config.AUDIT_HMAC_SECRET);
   let delegations: Delegations | undefined;
   if (config.RETRIEVAL_MODULE) {
+    phase = 13;
     delegations = new Delegations(client.db(config.MONGODB_DB), audit);
     await delegations.initialise();
     ({ retrieve, restrictedOverlap, principal } = await loadAccessAdapter(client.db(config.MONGODB_DB), config.RETRIEVAL_MODULE, config.FINGERPRINT_KEY, id => delegations!.lentTo(id)));
   }
   const policies = new PolicyStore(config.POLICY_PATH);
+  phase = 14;
   policies.snapshot();
   let securityEscalation: SecurityEscalation | undefined;
   if (config.SECURITY_ESCALATION) {
+    phase = 15;
     try {
       if (!principal) throw new GatewayError('SECURITY_ESCALATION_REQUIRES_DB_PRINCIPAL');
       securityEscalation = new SecurityEscalation(client.db(config.MONGODB_DB), audit, loadSecurityHierarchy(config.SECURITY_HIERARCHY_PATH));
@@ -68,6 +74,7 @@ async function start() {
     : { kind: 'ollama', baseURL: config.OLLAMA_URL, model: config.OLLAMA_MODEL! });
   const deps = { scanner: new Scanner(detect), provider, audit, policies, vault, retrieve, approvals: undefined as ApprovalService | undefined, restrictedOverlap, evalMode: config.EVAL_MODE, splitSecrets: detectorHelpers?.splitSecrets, findLinks: detectorHelpers?.findLinks, securityEscalation };
   let gateway: Gateway;
+  phase = 16;
   const approvalBridge = config.APPROVALS_MODULE ? await createApprovalBridge({ db: client.db(config.MONGODB_DB), audit, policies, principal, modulePath: config.APPROVALS_MODULE, gateway: () => gateway }) : undefined;
   deps.approvals = approvalBridge?.service;
   gateway = new Gateway(deps);
@@ -78,6 +85,7 @@ async function start() {
   }) : undefined;
   const app = createApp({ gateway, auth: new Auth(config.JWT_SECRET, config.apiKeys, principal), audit, policies, ready: () => detectorReady, corsOrigin: config.CORS_ORIGIN, demoAuth: config.DEMO_AUTH, signingSecret: config.JWT_SECRET, proxySecret: config.GATEWAY_PROXY_SECRET, evalMode: config.EVAL_MODE, baseline, approvalBridge, providerMode: config.LLM_PROVIDER, delegations, attachments, securityEscalation });
   const server = app.listen(config.PORT, config.HOST, () => safeLog('STARTED', { port: config.PORT }));
+  phase = 17;
   const stop = () => {
     server.close(() => { vault.close(); policies.close(); baseline?.close(); approvalBridge?.close(); securityEscalation?.close(); void attachments.close(); void classifier?.close(); void client.close().then(() => process.exit(0)); });
     server.closeIdleConnections();
@@ -89,4 +97,4 @@ async function start() {
 }
 process.on('uncaughtException', () => { safeLog('UNCAUGHT_EXCEPTION'); process.exit(1); });
 process.on('unhandledRejection', () => { safeLog('UNHANDLED_REJECTION'); process.exit(1); });
-start().catch(() => { safeLog('START_FAILED'); process.exit(1); });
+start().catch(error => { startupFailure(error, phase); process.exit(1); });

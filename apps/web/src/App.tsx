@@ -39,6 +39,7 @@ export default function App() {
   const [cardDir, setCardDir] = useState<1 | -1>(1)
   const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
   const [unreachable, setUnreachable] = useState(false)
+  const [loginAttempt, setLoginAttempt] = useState(0)
   const [assignOpen, setAssignOpen] = useState(false)
   const posts = useActingPosts(session)
   const warnings = useSecurityAlerts(session)
@@ -93,15 +94,16 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     setSession(null)
+    setUnreachable(false)
     resetChat()
     login(activeUser)
       .then((r) => !cancelled && setSession({ token: r.token, backend: r.backend }))
-      .catch(() => !cancelled && setSession(null))
+      .catch(() => { if (!cancelled) { setSession(null); setUnreachable(true) } })
     return () => {
       cancelled = true
       chatGeneration.current += 1
     }
-  }, [activeUser])
+  }, [activeUser, loginAttempt])
 
   useEffect(() => {
     if (!session || session.backend === 'mock') return
@@ -225,6 +227,10 @@ export default function App() {
       <aside className="sticky top-0 z-20 hidden h-screen border-r border-line bg-paper/70 backdrop-blur-xl lg:block">{sidebar}</aside>
 
       <div className="flex min-w-0 flex-col">
+        {unreachable && !session && <div role="alert" className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 text-[13px] sm:px-8">
+          <span>The gateway could not connect. Please retry.</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => setLoginAttempt(n => n + 1)}>Retry connection</button>
+        </div>}
         {warnings.unread > 0 && <div role="status" className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 text-[13px] sm:px-8">
           <span>{warnings.unread} security {warnings.unread === 1 ? 'warning needs' : 'warnings need'} your review.</span>
           <button className="btn btn-ghost btn-sm" onClick={() => go('Warnings')}>View warnings</button>

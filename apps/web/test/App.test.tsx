@@ -71,6 +71,16 @@ describe('chat response ownership', () => {
     expect(api.chat).toHaveBeenLastCalledWith('live', 'ravi-token', { conversation_id: null, message: 'test message' })
   })
 
+  it('offers a retry when sign-in fails and enables sending after recovery', async () => {
+    api.login.mockRejectedValueOnce(new Error('Gateway unavailable'))
+    await click('Ravi Menon')
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not connect')
+    expect([...container.querySelectorAll('button')].find(b => b.textContent === 'Send test message')?.disabled).toBe(true)
+    await click('Retry connection')
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+    expect([...container.querySelectorAll('button')].find(b => b.textContent === 'Send test message')?.disabled).toBe(false)
+  })
+
   it('does not overwrite Ravi’s established conversation when Asha finishes later', async () => {
     const old = deferred<ChatResponse>()
     api.chat.mockReturnValueOnce(old.promise).mockResolvedValue(reply('ravi-conversation'))
