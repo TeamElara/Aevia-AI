@@ -33,6 +33,8 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
     const data = await res.json().catch(() => ({}))
     // The dev proxy answers 5xx with no gateway error body when nothing is listening.
     if (res.status >= 500 && !data.error) throw new ApiError('GATEWAY_UNREACHABLE', res.status)
+    // A hosting platform may refuse a large body itself, with a plain-text page.
+    if (res.status === 413 && !data.error) throw new ApiError('FILE_TOO_LARGE', 413)
     throw new ApiError(errorText(data.error, res.status), res.status)
   }
   return res.json()
@@ -68,10 +70,38 @@ export function chat(
   return request<ChatResponse>('POST', '/api/chat', req, token, opts.evalCapture ? { 'X-Eval-Capture': '1' } : {})
 }
 
-export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+// The hosted route (Vercel) refuses request bodies above about 4.5 MB, and base64 adds a third,
+// so what we send stays under 3 MB. Photos are shrunk first; the gateway reads at most 2400 px anyway.
+export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024
+export const MAX_PDF_BYTES = MAX_UPLOAD_BYTES
+export const MAX_PHOTO_BYTES = 25 * 1024 * 1024
 export const UPLOAD_TYPES = 'image/png,image/jpeg,image/webp,application/pdf'
+const PHOTO_SIDE = 2400
 
-const fileData = (file: File) =>
+/** Downscale a large photo to what OCR needs, as a JPEG; small photos are sent unchanged. */
+export async function shrinkPhoto(file: File): Promise<Blob> {
+  if (!file.type.startsWith('image/')) return file
+  const bitmap = await createImageBitmap(file).catch(() => { throw new ApiError('PHOTO_UNREADABLE') })
+  try {
+    const scale = Math.min(1, PHOTO_SIDE / Math.max(bitmap.width, bitmap.height))
+    if (scale === 1 && file.size <= 1.5 * 1024 * 1024) return file
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    const g = canvas.getContext('2d')
+    if (!g) return file
+    g.fillStyle = '#fff'
+    g.fillRect(0, 0, canvas.width, canvas.height)
+    g.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    for (const quality of [0.9, 0.8, 0.7]) {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+      if (blob && blob.size <= MAX_UPLOAD_BYTES) return blob
+    }
+    return file
+  } finally { bitmap.close() }
+}
+
+const fileData = (file: Blob) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
@@ -82,12 +112,13 @@ const fileData = (file: File) =>
 // A photo or PDF goes to the gateway, which reads and cleans it before anything reaches a model.
 export async function chatWithFile(backend: Backend, token: string, req: ChatRequest, file: File): Promise<ChatResponse> {
   if (backend === 'mock') throw new ApiError('ATTACHMENTS_NEED_GATEWAY')
-  if (file.size > MAX_UPLOAD_BYTES) throw new ApiError('FILE_TOO_LARGE', 413)
+  const body = await shrinkPhoto(file)
+  if (body.size > MAX_UPLOAD_BYTES) throw new ApiError('FILE_TOO_LARGE', 413)
   const message = req.message.trim()
   return request<ChatResponse>('POST', '/api/chat/attachment', {
     ...(message ? { message } : {}),
     conversation_id: req.conversation_id ?? null,
-    file: { name: file.name, data: await fileData(file) },
+    file: { name: file.name, data: await fileData(body) },
   }, token)
 }
 

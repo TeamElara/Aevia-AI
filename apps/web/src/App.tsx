@@ -146,12 +146,22 @@ export default function App() {
     const id = crypto.randomUUID()
     setTurns((ts) => [...ts, { id, prompt: text, status: 'pending', ...(file ? { file: { name: file.name, size: file.size } } : {}) }])
     try {
-      const req = { conversation_id: conversationId, message: text }
-      const res = file ? await chatWithFile(session.backend, session.token, req, file) : await chat(session.backend, session.token, req)
+      const ask = (conversation: string | null) => {
+        const req = { conversation_id: conversation, message: text }
+        return file ? chatWithFile(session.backend, session.token, req, file) : chat(session.backend, session.token, req)
+      }
+      let notice: string | undefined
+      const res = await ask(conversationId).catch((e: Error) => {
+        // The gateway keeps conversations in memory: after a restart or 30 idle minutes it no
+        // longer knows this one. Start a fresh conversation once instead of failing the message.
+        if (!conversationId || e.message !== 'CONVERSATION_NOT_FOUND') throw e
+        notice = 'This chat had expired on the gateway, so this reply starts a fresh conversation. Earlier messages are not part of its context.'
+        return ask(null)
+      })
       if (generation !== chatGeneration.current) return
       setConversationId(res.conversation_id)
       setUnreachable(false)
-      setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'done', response: res } : t)))
+      setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, status: 'done', response: res, notice } : t)))
       setSelectedId(id)
     } catch (e) {
       if (generation !== chatGeneration.current) return

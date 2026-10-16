@@ -1,0 +1,17 @@
+name: Keep hosted gateway awake
+# Render's free instance sleeps after 15 idle minutes and a restart clears in-memory chats and
+# pending approvals. A public health check every few minutes keeps the hosted demo awake.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ping:
+    if: github.repository == 'TeamElara/Aevia-AI'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping gateway health
+        run: curl -fsS --retry 3 --retry-delay 10 --max-time 90 https://leakshield-gateway.onrender.com/health
